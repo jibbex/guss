@@ -1,11 +1,12 @@
 /**
  * \file error.hpp
- * \brief Error types and std::expected aliases for Apex SSG.
+ * \brief Error types and expected aliases for Guss SSG.
  *
  * \details
- * This file provides a structured error handling system using C++23's std::expected.
- * It defines error codes categorized by subsystem, an Error struct with code, message,
- * and context, and convenience macros for early-return error propagation.
+ * This file provides a structured error handling system using tl::expected
+ * (a C++23 std::expected polyfill). It defines error codes categorized by
+ * subsystem, an Error struct with code, message, and context, and convenience
+ * macros for early-return error propagation.
  *
  * Example usage:
  * \code
@@ -34,10 +35,9 @@
  */
 #pragma once
 
-#include <expected>
+#include "tl/expected.hpp"
 #include <string>
 #include <string_view>
-#include <source_location>
 
 namespace guss::error {
 
@@ -66,6 +66,9 @@ enum class ErrorCode {
     AdapterParseError = 203,
     AdapterNotImplemented = 204,
     AdapterRateLimited = 205,
+    AdapterBadRequest = 206,
+    AdapterNotFound = 207,
+    AdapterServerError = 208,
 
     ContentNotFound = 300,
     ContentParseError = 301,
@@ -110,26 +113,26 @@ struct Error {
 };
 
 /**
- * \brief Result type alias using std::expected.
+ * \brief Result type alias using tl::expected.
  * \tparam T The success value type.
  */
 template<typename T>
-using Result = std::expected<T, Error>;
+using Result = tl::expected<T, Error>;
 
 /**
  * \brief Void result for operations that don't return a value.
  */
-using VoidResult = Result<void>;
+using VoidResult = tl::expected<void, Error>;
 
 /**
  * \brief Helper to create an unexpected error.
  * \param code The error code.
  * \param message Human-readable error message.
  * \param context Optional additional context (e.g., file path).
- * \return std::unexpected wrapping the Error.
+ * \return tl::unexpected wrapping the Error.
  */
-inline std::unexpected<Error> make_error(ErrorCode code, std::string message, std::string context = "") {
-    return std::unexpected(Error(code, std::move(message), std::move(context)));
+inline tl::unexpected<Error> make_error(ErrorCode code, std::string message, std::string context = "") {
+    return tl::unexpected<Error>(Error(code, std::move(message), std::move(context)));
 }
 
 /**
@@ -139,7 +142,7 @@ inline std::unexpected<Error> make_error(ErrorCode code, std::string message, st
  */
 #define GUSS_TRY(var, expr) \
     auto _guss_result_##__LINE__ = (expr); \
-    if (!_guss_result_##__LINE__) return std::unexpected(_guss_result_##__LINE__.error()); \
+    if (!_guss_result_##__LINE__) return tl::unexpected(_guss_result_##__LINE__.error()); \
     var = std::move(*_guss_result_##__LINE__)
 
 /**
@@ -147,6 +150,6 @@ inline std::unexpected<Error> make_error(ErrorCode code, std::string message, st
  * \param expr Expression returning a VoidResult.
  */
 #define GUSS_TRY_VOID(expr) \
-    if (auto _guss_result = (expr); !_guss_result) return std::unexpected(_guss_result.error())
+    if (auto _guss_result = (expr); !_guss_result) return tl::unexpected(_guss_result.error())
 
 } // namespace guss::error
