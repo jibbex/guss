@@ -8,8 +8,13 @@ project(guss
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_EXTENSIONS ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# Ensure pthread is properly linked (fixes GCC 14 mutex init issues)
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+link_libraries(Threads::Threads)
 
 # -----------------------------------------------------------------------------
 # Options
@@ -48,7 +53,11 @@ CPMAddPackage(
     NAME inja
     GITHUB_REPOSITORY pantor/inja
     VERSION 3.4.0
-    OPTIONS "INJA_USE_EMBEDDED_JSON OFF"
+    OPTIONS
+        "INJA_USE_EMBEDDED_JSON OFF"
+        "INJA_BUILD_TESTS OFF"
+        "BUILD_TESTING OFF"
+        "BUILD_BENCHMARK OFF"
 )
 
 # SIMD-accelerated JSON parsing (CMS API responses)
@@ -59,6 +68,9 @@ CPMAddPackage(
     NAME yaml-cpp
     GITHUB_REPOSITORY jbeder/yaml-cpp
     GIT_TAG yaml-cpp-0.9.0
+    OPTIONS
+        "YAML_CPP_BUILD_TESTS OFF"
+        "YAML_CPP_BUILD_TOOLS OFF"
 )
 
 # HTTP client (header-only)
@@ -74,13 +86,13 @@ CPMAddPackage(
     NAME cmark
     GITHUB_REPOSITORY commonmark/cmark
     GIT_TAG 0.31.2
+    OPTIONS
+        "CMARK_TESTS OFF"
+        "BUILD_SHARED_LIBS OFF"
 )
 
 # CLI argument parsing
 CPMAddPackage("gh:CLIUtils/CLI11@2.4.2")
-
-# Logging
-CPMAddPackage("gh:gabime/spdlog@1.14.1")
 
 # Progress bars
 CPMAddPackage("gh:p-ranav/indicators@2.3")
@@ -90,6 +102,8 @@ CPMAddPackage(
     NAME efsw
     GITHUB_REPOSITORY SpartanJ/efsw
     GIT_TAG 1.5.1
+    OPTIONS
+        "BUILD_SHARED_LIBS OFF"
 )
 
 # Formatting
@@ -99,11 +113,29 @@ CPMAddPackage(
     GIT_TAG 12.1.0
 )
 
+# Logging
+CPMAddPackage(
+    NAME spdlog
+    GITHUB_REPOSITORY gabime/spdlog
+    VERSION 1.14.1
+    OPTIONS
+    "SPDLOG_FMT_EXTERNAL OFF"
+    "SPDLOG_BUILD_SHARED OFF"
+)
+
 # Prefer OpenMP if available, fall back to BS::thread_pool
 find_package(OpenMP)
 if(NOT OpenMP_CXX_FOUND)
     CPMAddPackage("gh:bshoshany/thread-pool@5.1.0")
 endif()
+
+# Expected (C++23 polyfill for older compilers)
+CPMAddPackage(
+    NAME tl-expected
+    GITHUB_REPOSITORY TartanLlama/expected
+    VERSION 1.1.0
+    OPTIONS "EXPECTED_BUILD_TESTS OFF"
+)
 
 # Google Test (if building tests)
 if(GUSS_BUILD_TESTS)
@@ -113,36 +145,35 @@ endif()
 # -----------------------------------------------------------------------------
 # Core library
 # -----------------------------------------------------------------------------
-#add_library(guss-core
-    #src/core/config.cpp
-    #src/core/model.cpp
-    #src/core/permalink.cpp
-    #src/core/markdown.cpp
-#)
+add_library(guss-core
+    src/core/config.cpp
+    src/core/error.cpp
+    src/core/permalink.cpp
+)
 
-#target_include_directories(guss-core PUBLIC include)
-#target_link_libraries(guss-core PUBLIC
-#    nlohmann_json::nlohmann_json
-#    simdjson
-#    yaml-cpp
-#    spdlog::spdlog
-#    fmt::fmt
-#)
+target_include_directories(guss-core PUBLIC include)
+target_link_libraries(guss-core PUBLIC
+    nlohmann_json::nlohmann_json
+    simdjson
+    yaml-cpp
+    spdlog::spdlog
+    fmt::fmt
+    expected
+)
 
 if(TARGET cmark)
-    #target_link_libraries(guss-core PUBLIC cmark)
+    target_link_libraries(guss-core PUBLIC cmark)
 elseif(TARGET libcmark)
-    #target_link_libraries(guss-core PUBLIC libcmark)
+    target_link_libraries(guss-core PUBLIC libcmark)
 endif()
 
 # -----------------------------------------------------------------------------
 # Adapters library
 # -----------------------------------------------------------------------------
-#add_library(guss-adapters
-    #src/adapters/ghost/ghost_adapter.cpp
-    #src/adapters/wordpress/wordpress_adapter.cpp
-    #src/adapters/markdown/markdown_adapter.cpp
-#)
+add_library(guss-adapters
+    src/adapters/ghost/ghost_adapter.cpp
+    src/adapters/ghost/json_parser.cpp
+)
 
 target_include_directories(guss-adapters PUBLIC include)
 target_link_libraries(guss-adapters PUBLIC
@@ -154,9 +185,9 @@ target_link_libraries(guss-adapters PUBLIC
 # -----------------------------------------------------------------------------
 # Render library
 # -----------------------------------------------------------------------------
-#add_library(guss-render
-#    src/render/inja_engine.cpp
-#)
+add_library(guss-render
+    src/render/inja_engine.cpp
+)
 
 target_include_directories(guss-render PUBLIC include)
 target_link_libraries(guss-render PUBLIC
@@ -168,13 +199,13 @@ target_link_libraries(guss-render PUBLIC
 # -----------------------------------------------------------------------------
 # Builder library
 # -----------------------------------------------------------------------------
-#add_library(guss-builder
-#    src/builder/pipeline.cpp
-#)
+add_library(guss-builder
+    src/builder/pipeline.cpp
+)
 
 target_include_directories(guss-builder PUBLIC include)
 target_link_libraries(guss-builder PUBLIC
-#    guss-core
+    guss-core
     guss-adapters
     guss-render
     indicators
@@ -185,21 +216,22 @@ if(OpenMP_CXX_FOUND)
     target_link_libraries(guss-builder PUBLIC OpenMP::OpenMP_CXX)
     target_compile_definitions(guss-builder PUBLIC GUSS_USE_OPENMP)
 else()
-    target_link_libraries(guss-builder PUBLIC BS_thread_pool)
+    if(TARGET BS_thread_pool)
+        target_link_libraries(guss-builder PUBLIC BS_thread_pool)
+    endif()
 endif()
 
 # -----------------------------------------------------------------------------
-# Watch library
+# Watch library (stub for now)
 # -----------------------------------------------------------------------------
-#add_library(guss-watch
-#    src/watch/coordinator.cpp
-#)
+add_library(guss-watch INTERFACE)
 
-target_include_directories(guss-watch PUBLIC include)
-target_link_libraries(guss-watch PUBLIC
-    guss-core
-    efsw
-)
+target_include_directories(guss-watch INTERFACE include)
+if(TARGET efsw-static)
+    target_link_libraries(guss-watch INTERFACE guss-core efsw-static)
+elseif(TARGET efsw)
+    target_link_libraries(guss-watch INTERFACE guss-core efsw)
+endif()
 
 # -----------------------------------------------------------------------------
 # Server (optional)
@@ -227,7 +259,6 @@ target_link_libraries(guss PRIVATE
     guss-adapters
     guss-render
     guss-builder
-    guss-watch
     CLI11::CLI11
     spdlog::spdlog
     indicators
@@ -235,6 +266,7 @@ target_link_libraries(guss PRIVATE
 
 if(GUSS_BUILD_SERVER)
     target_link_libraries(guss PRIVATE guss-server)
+    add_executable(new_target)
     target_compile_definitions(guss PRIVATE GUSS_HAS_SERVER)
 endif()
 
@@ -244,12 +276,13 @@ endif()
 if(GUSS_BUILD_TESTS)
     enable_testing()
     add_executable(guss-tests
-        tests/test_permalink.cpp
-        tests/test_markdown.cpp
         tests/test_config.cpp
+        tests/test_permalink.cpp
+        tests/test_ghost_json.cpp
     )
     target_link_libraries(guss-tests PRIVATE
         guss-core
+        guss-adapters
         guss-render
         GTest::gtest_main
     )
