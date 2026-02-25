@@ -106,13 +106,6 @@ CPMAddPackage(
         "BUILD_SHARED_LIBS OFF"
 )
 
-# Formatting
-CPMAddPackage(
-    NAME fmt
-    GITHUB_REPOSITORY fmtlib/fmt
-    GIT_TAG 12.1.0
-)
-
 # Logging
 CPMAddPackage(
     NAME spdlog
@@ -157,7 +150,6 @@ target_link_libraries(guss-core PUBLIC
     simdjson
     yaml-cpp
     spdlog::spdlog
-    fmt::fmt
     expected
 )
 
@@ -211,16 +203,6 @@ target_link_libraries(guss-builder PUBLIC
     indicators
 )
 
-# Prefer OpenMP if available, fall back to BS::thread_pool
-if(OpenMP_CXX_FOUND)
-    target_link_libraries(guss-builder PUBLIC OpenMP::OpenMP_CXX)
-    target_compile_definitions(guss-builder PUBLIC GUSS_USE_OPENMP)
-else()
-    if(TARGET BS_thread_pool)
-        target_link_libraries(guss-builder PUBLIC BS_thread_pool)
-    endif()
-endif()
-
 # -----------------------------------------------------------------------------
 # Watch library (stub for now)
 # -----------------------------------------------------------------------------
@@ -268,6 +250,16 @@ if(GUSS_BUILD_SERVER)
     target_link_libraries(guss PRIVATE guss-server)
     add_executable(new_target)
     target_compile_definitions(guss PRIVATE GUSS_HAS_SERVER)
+endif()
+
+# Prefer OpenMP if available, fall back to BS::thread_pool
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(guss PUBLIC OpenMP::OpenMP_CXX)
+    target_compile_definitions(guss PUBLIC GUSS_USE_OPENMP)
+else()
+    if(TARGET BS_thread_pool)
+        target_link_libraries(guss PUBLIC BS_thread_pool)
+    endif()
 endif()
 
 # -----------------------------------------------------------------------------
