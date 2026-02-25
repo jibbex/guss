@@ -75,4 +75,4 @@ struct Category {
     }
 };
 
-} // namespace guass::model
+} // namespace guss::model

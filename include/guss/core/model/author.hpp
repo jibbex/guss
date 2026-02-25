@@ -1,7 +1,6 @@
 #pragma once
 
 #include <nlohmann/json.hpp>
-#include <simdjson.h>
 #include <string>
 #include <optional>
 
@@ -43,20 +42,6 @@ struct Author {
         if (j.contains("website")) author.website = j["website"].get<std::string>();
         if (j.contains("twitter")) author.twitter = j["twitter"].get<std::string>();
         if (j.contains("facebook")) author.facebook = j["facebook"].get<std::string>();
-        return author;
-    }
-
-    static Author from_json(const simdjson& j) {
-        Author author;
-        author.id = j["id"].get_string();
-        author.name = j["name"].get_string();
-        author.slug = j["slug"].get_string();
-        if (j.contains("email")) author.email = j["email"].get_string();
-        if (j.contains("bio")) author.bio = j["bio"].get_string();
-        if (j.contains("profile_image")) author.profile_image = j["profile_image"].get_string();
-        if (j.contains("website")) author.website = j["website"].get_string();
-        if (j.contains("twitter")) author.twitter = j["twitter"].get_string();
-        if (j.contains("facebook")) author.facebook = j["facebook"].get_string();
         return author;
     }
 };

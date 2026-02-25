@@ -2,7 +2,6 @@
 
 #include "./author.hpp"
 #include "./taxonomy.hpp"
-#include "../config.hpp"
 #include <nlohmann/json.hpp>
 #include <string>
 #include <optional>
@@ -21,7 +20,7 @@ inline std::string post_status_to_string(PostStatus status) {
     switch (status) {
         case PostStatus::Published: return "published";
         case PostStatus::Scheduled: return "scheduled";
-        case PostStatus::Draft: [[fallthrough]]
+        case PostStatus::Draft: [[fallthrough]];
         default: return "draft";
     }
 }
@@ -84,7 +83,7 @@ struct Post {
             auto time_t = std::chrono::system_clock::to_time_t(tp);
             std::tm tm = *std::gmtime(&time_t);
             char buf[32];
-            std::strftime(buf, sizeof(buf), Config::, &tm);
+            std::strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%SZ", &tm);
             return buf;
         };
 
