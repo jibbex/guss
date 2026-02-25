@@ -27,7 +27,7 @@ private:
      * @param endpoint API endpoint path (e.g., "/ghost/api/content/posts/")
      * @return Response body as string or error.
      */
-    error::Result<std::string> api_get(const std::string& endpoint);
+    error::Result<std::string> api_get(const std::string& endpoint) const;
 };
 
 } // namespace guss::adapters
