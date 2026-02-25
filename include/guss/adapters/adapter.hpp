@@ -110,10 +110,38 @@ using AdapterPtr = std::unique_ptr<ContentAdapter>;
 
 /**
  * \brief Helper to extract error information from an HTTP response.
- * \param res The HTTP response to analyze.
+ * \param res The constance reference to HTTP response.
  * \retval std::unexpected<error::Error> An Error if the response indicates an error
- * \retval std::nullopt if successful
  */
-std::optional<std::unexpected<error::Error>> get_error(const httplib::Response& res);
+inline std::optional<std::unexpected<error::Error>> get_error(const httplib::Response &res) {
+    switch (res.status()) {
+        case 400:
+            return error::make_error(
+                error::ErrorCode::AdapterBadRequest,
+                "Bad request",
+                res.body);
+        case 401:
+            return error::make_error(
+                error::ErrorCode::AdapterAuthFailed,
+                "Unauthorized",
+                res.body);
+        case 403:
+            return error::make_error(
+                error::ErrorCode::AdapterAuthFailed,
+                "Forbidden",
+                res.body);
+        case 404:
+            return error::make_error(
+                error::ErrorCode::AdapterNotFound,
+                "Not found",
+                res.body);
+        case 500:
+            return error::make_error(
+                error::ErrorCode::AdapterServerError,
+                "Internal server error",
+                res.body);
+        default: return std::nullopt;
+    }
+}
 
 } // namespace guss::adapters
