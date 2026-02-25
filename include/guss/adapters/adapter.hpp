@@ -34,15 +34,21 @@
  */
 #pragma once
 
-#include "../core/error.hpp"
-#include "../core/model/post.hpp"
-#include "../core/model/page.hpp"
-#include "../core/model/author.hpp"
-#include "../core/model/taxonomy.hpp"
-#include "../core/model/asset.hpp"
-#include <memory>
-#include <vector>
+#include <expected>
+
+
 #include <functional>
+#include <memory>
+#include <optional>
+#include <vector>
+#include "guss/core/error.hpp"
+#include "guss/core/model/asset.hpp"
+#include "guss/core/model/author.hpp"
+#include "guss/core/model/page.hpp"
+#include "guss/core/model/post.hpp"
+#include "guss/core/model/taxonomy.hpp"
+
+#include <httplib.h>
 
 namespace guss::adapters {
 
@@ -101,5 +107,13 @@ public:
  * \brief Unique pointer type alias for adapters.
  */
 using AdapterPtr = std::unique_ptr<ContentAdapter>;
+
+/**
+ * \brief Helper to extract error information from an HTTP response.
+ * \param res The HTTP response to analyze.
+ * \retval std::unexpected<error::Error> An Error if the response indicates an error
+ * \retval std::nullopt if successful
+ */
+std::optional<std::unexpected<error::Error>> get_error(const httplib::Response& res);
 
 } // namespace guss::adapters

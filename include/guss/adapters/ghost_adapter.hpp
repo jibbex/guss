@@ -1,11 +1,7 @@
-/**
-* @file ghost_adapter.hpp
- * @brief Ghost CMS adapter for Apex SSG
- */
 #pragma once
 
-#include "./adapter.hpp"
-#include "../core/config.hpp"
+#include "guss/adapters/adapter.hpp"
+#include "guss/core/config.hpp"
 
 namespace guss::adapters {
 
@@ -26,11 +22,12 @@ public:
 private:
     config::GhostAdapterConfig config_;
 
-    error::Result<nlohmann::json> api_request(const std::string& endpoint);
-    model::Post json_to_post(const nlohmann::json& j);
-    model::Page json_to_page(const nlohmann::json& j);
-    model::Author json_to_author(const nlohmann::json& j);
-    model::Tag json_to_tag(const nlohmann::json& j);
+    /**
+     * @brief Make an HTTP GET request to the Ghost Content API.
+     * @param endpoint API endpoint path (e.g., "/ghost/api/content/posts/")
+     * @return Response body as string or error.
+     */
+    error::Result<std::string> api_get(const std::string& endpoint);
 };
 
 } // namespace guss::adapters
