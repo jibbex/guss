@@ -5,7 +5,7 @@
 
 namespace guss::error {
 
-std::string_view Error::code_name() const noexcept {
+std::string_view Error::code_name(ErrorCode code) const noexcept {
     switch (code) {
         case ErrorCode::ConfigNotFound: return "ConfigNotFound";
         case ErrorCode::ConfigParseError: return "ConfigParseError";
