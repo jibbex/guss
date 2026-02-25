@@ -10,6 +10,9 @@
 #include <spdlog/spdlog.h>
 #include <sstream>
 
+#include "guss/core/permalink.hpp"
+#include "guss/render/inja_engine.hpp"
+
 #ifdef GUSS_USE_OPENMP
 #include <omp.h>
 #endif
@@ -165,7 +168,7 @@ error::VoidResult Pipeline::ping() const {
     return {};
 }
 
-error::Result<adapters::FetchResult> Pipeline::phase_fetch(ProgressCallback progress) const {
+std::expected<adapters::FetchResult, error::Error> Pipeline::phase_fetch(ProgressCallback progress) const {
     return adapter_->fetch_all([&progress](size_t current, size_t total) {
         if (progress && total > 0) {
             float p = 0.25f * static_cast<float>(current) / static_cast<float>(total);

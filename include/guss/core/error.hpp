@@ -35,9 +35,12 @@
  */
 #pragma once
 
-#include "tl/expected.hpp"
+#include <expected>
+
+
 #include <string>
 #include <string_view>
+#include "tl/expected.hpp"
 
 namespace guss::error {
 
@@ -107,7 +110,7 @@ struct Error {
     Error(ErrorCode c, std::string msg, std::string ctx = "")
         : code(c), message(std::move(msg)), context(std::move(ctx)) {}
 
-    [[nodiscard]] std::string_view code_name() const noexcept;
+    [[nodiscard]] std::string_view code_name(ErrorCode code) const noexcept;
     [[nodiscard]] std::string format() const;
     [[nodiscard]] bool is(ErrorCode c) const noexcept { return code == c; }
 };
@@ -117,22 +120,22 @@ struct Error {
  * \tparam T The success value type.
  */
 template<typename T>
-using Result = tl::expected<T, Error>;
+using Result = std::expected<T, Error>;
 
 /**
  * \brief Void result for operations that don't return a value.
  */
-using VoidResult = tl::expected<void, Error>;
+using VoidResult = std::expected<void, Error>;
 
 /**
  * \brief Helper to create an unexpected error.
  * \param code The error code.
  * \param message Human-readable error message.
  * \param context Optional additional context (e.g., file path).
- * \return tl::unexpected wrapping the Error.
+ * \return std::unexpected wrapping the Error.
  */
-inline tl::unexpected<Error> make_error(ErrorCode code, std::string message, std::string context = "") {
-    return tl::unexpected<Error>(Error(code, std::move(message), std::move(context)));
+inline std::unexpected<Error> make_error(ErrorCode code, std::string message, std::string context = "") {
+    return std::unexpected<Error>(Error(code, std::move(message), std::move(context)));
 }
 
 /**
@@ -142,7 +145,7 @@ inline tl::unexpected<Error> make_error(ErrorCode code, std::string message, std
  */
 #define GUSS_TRY(var, expr) \
     auto _guss_result_##__LINE__ = (expr); \
-    if (!_guss_result_##__LINE__) return tl::unexpected(_guss_result_##__LINE__.error()); \
+    if (!_guss_result_##__LINE__) return std::unexpected(_guss_result_##__LINE__.error()); \
     var = std::move(*_guss_result_##__LINE__)
 
 /**
@@ -150,6 +153,6 @@ inline tl::unexpected<Error> make_error(ErrorCode code, std::string message, std
  * \param expr Expression returning a VoidResult.
  */
 #define GUSS_TRY_VOID(expr) \
-    if (auto _guss_result = (expr); !_guss_result) return tl::unexpected(_guss_result.error())
+    if (auto _guss_result = (expr); !_guss_result) return std::unexpected(_guss_result.error())
 
 } // namespace guss::error

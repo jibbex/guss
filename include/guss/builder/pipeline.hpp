@@ -28,15 +28,12 @@
 #pragma once
 
 #include <chrono>
-#include <expected>
 #include <functional>
 #include <memory>
 #include <string>
 #include "guss/adapters/adapter.hpp"
 #include "guss/core/config.hpp"
 #include "guss/core/error.hpp"
-#include "guss/core/permalink.hpp"
-#include "guss/render/inja_engine.hpp"
 
 namespace guss::builder {
 
@@ -99,20 +96,19 @@ public:
      * @param progress Optional progress callback.
      * @return Build statistics or error.
      */
-    [[nodiscard]] std::expected<BuildStats, error::Error> build(const ProgressCallback &progress = nullptr) const;
-    error::VoidResult clean() const;
+    [[nodiscard]] std::expected<BuildStats, error::Error> build(const ProgressCallback& progress) const;
 
     /**
      * @brief Clean the output directory.
      * @return Success or error.
      */
-    [[nodiscard]] error::VoidResult clean();
+    error::VoidResult clean() const;
 
     /**
-     * @brief Test connection to the content source.
-     * @return Success or error with details.
+     * @brief Test connectivity to the content source.
+     * @return Success or error.
      */
-    [[nodiscard]] error::VoidResult ping() const;
+    error::VoidResult ping() const;
 
 private:
     adapters::AdapterPtr adapter_;
@@ -125,7 +121,7 @@ private:
     /**
      * @brief Phase 1: Fetch content from adapter.
      */
-    [[nodiscard]] error::Result<adapters::FetchResult> phase_fetch(ProgressCallback progress) const;
+    [[nodiscard]] std::expected<adapters::FetchResult, error::Error> phase_fetch(ProgressCallback progress) const;
 
     /**
      * @brief Phase 2: Prepare content (compute permalinks, etc).
