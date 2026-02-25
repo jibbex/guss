@@ -38,14 +38,14 @@
  */
 #pragma once
 
-#include "./error.hpp"
-#include <yaml-cpp/yaml.h>
-#include <nlohmann/json.hpp>
-#include <string>
+#include <filesystem>
+#include <memory>
 #include <optional>
+#include <string>
 #include <variant>
 #include <vector>
-#include <filesystem>
+#include <yaml-cpp/yaml.h>
+#include "guss/core/error.hpp"
 
 namespace guss::config {
 
@@ -82,7 +82,7 @@ struct MarkdownAdapterConfig {
 /**
  * \brief Variant type for adapter configuration selection.
  */
-using AdapterConfig = std::variant<GhostAdapterConfig>; //, WordPressAdapterConfig, MarkdownAdapterConfig>;
+using AdapterConfig = std::variant<GhostAdapterConfig, WordPressAdapterConfig, MarkdownAdapterConfig>;
 
 /**
  * \brief Permalink pattern configuration with date token support.
@@ -150,32 +150,75 @@ struct SiteConfig {
     std::optional<std::string> facebook;
 };
 
-/**
- * \brief Root configuration structure containing all settings.
- */
-struct Config {
-    SiteConfig site;
-    AdapterConfig adapter;
-    PermalinkConfig permalinks;
-    WatchConfig watch;
-    OutputConfig output;
-    TemplateConfig templates;
-    int parallel_workers = 0;  ///< 0 = auto-detect based on CPU cores
-    std::string log_level = "info";
+class Config final {
+public:
+    /**
+     * \brief Returns the singleton instance of the Config class.
+     *
+     * \param config_path Pointer to the path of the configuration file.
+     * The configuration will be initialized with this path on the first call.
+     * Subsequent calls will return the already initialized instance, ignoring this parameter.
+     * \return A const reference to the singleton instance of the Config.
+     */
+    static const Config& instance(std::optional<const std::string *> config_path);
+    static const Config& instance();
+
+    const SiteConfig &site() const { return _site; }
+    const AdapterConfig& adapter() const { return _adapter; }
+    const PermalinkConfig& permalinks() const { return _permalinks; }
+    const WatchConfig& watch() const { return _watch; }
+    const OutputConfig& output() const { return _output; }
+    const TemplateConfig& templates() const { return _templates; }
+    int parallel_workers() const { return _parallel_workers; }
+    const std::string& log_level() const { return _log_level; }
+
+    Config() = delete;             ///< Deleted default constructor to prevent direct instantiation.
+    Config(const Config&) = delete; ///< Deleted copy constructor to prevent copying.
+    Config& operator=(const Config&) = delete; ///< Deleted copy assignment operator to prevent copying.
+    Config(Config&&) = delete;      ///< Deleted move constructor to prevent moving.
+
+private:
+    /**
+     * \brief Constructs a Config object by reading configuration from a specified file.
+     *
+     * \param config_path Path to the configuration file.
+     */
+    explicit Config(std::string_view config_path);
+
+    /**
+     * \defgroup ConfigMembers Private member variables for configuration sections.
+     * \{
+     * \brief Configuration sections for site metadata, adapter settings, permalinks, watch mode, output settings, and templates.
+     * Each section is represented by a struct that encapsulates related configuration options.
+    */
+
+    SiteConfig _site;
+    AdapterConfig _adapter;
+    PermalinkConfig _permalinks;
+    WatchConfig _watch;
+    OutputConfig _output;
+    TemplateConfig _templates;
+    int _parallel_workers  { 0 };
+    std::string _log_level { "info" };
+
+    /**
+    * \}
+    */
 };
 
 /**
- * \brief Load configuration from a YAML file.
+ * \brief Load and validate configuration from a YAML file.
  * \param path Path to the YAML configuration file.
- * \return Result containing the parsed Config or an Error.
+ * \return VoidResult indicating success or Error.
+ * \note This initializes the singleton Config::instance() with the given path.
  */
-error::Result<Config> load_config(const std::filesystem::path& path);
+error::VoidResult load_config(const std::filesystem::path& path);
 
 /**
- * \brief Parse configuration from a YAML string.
+ * \brief Validate YAML configuration content.
  * \param yaml_content Raw YAML content string.
- * \return Result containing the parsed Config or an Error.
+ * \return VoidResult indicating success or Error.
  */
-error::Result<Config> parse_yaml(const std::string& yaml_content);
+error::VoidResult validate_yaml(const std::string& yaml_content);
 
 } // namespace guss::config
