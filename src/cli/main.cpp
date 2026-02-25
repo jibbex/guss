@@ -429,7 +429,7 @@ void setup_logging(const std::string& level) {
 int cmd_init(const std::string& directory) {
     fs::path project_dir = directory.empty() ? fs::current_path() : fs::path(directory);
 
-    spdlog::info(fmt::format("Initializing Guss project in {}", project_dir.string()));
+    spdlog::info("Initializing Guss project in " + project_dir.string());
 
     // Create directories
     try {
@@ -439,7 +439,7 @@ int cmd_init(const std::string& directory) {
         fs::create_directories(project_dir / "content");
         fs::create_directories(project_dir / "dist");
     } catch (const fs::filesystem_error& e) {
-        spdlog::error(fmt::format("Failed to create directories: {}", e.what()));
+        spdlog::error("Failed to create directories: " + std::to_string(*e.what()));
         return 1;
     }
 
@@ -457,7 +457,7 @@ int cmd_init(const std::string& directory) {
         if (!fs::exists(path)) {
             std::ofstream file(path);
             file << content;
-            spdlog::info(fmt::format("Created templates/{}", name));
+            spdlog::info("Created templates/" + name);
         }
     };
 
@@ -488,7 +488,7 @@ int cmd_build(const std::string& config_path, bool verbose, bool clean_first) {
     setup_logging(verbose ? "debug" : "info");
 
     spdlog::info("Guss Static Site Generator");
-    spdlog::info(fmt::format("Loading configuration from {}", config_path));
+    spdlog::info("Loading configuration from " + config_path);
 
     // Load config
     const std::string& cfg_path = config_path;
@@ -500,7 +500,7 @@ int cmd_build(const std::string& config_path, bool verbose, bool clean_first) {
     if (std::holds_alternative<guss::config::GhostAdapterConfig>(config.adapter())) {
         const auto& ghost_cfg = std::get<guss::config::GhostAdapterConfig>(config.adapter());
         adapter = std::make_unique<guss::adapters::GhostAdapter>(ghost_cfg);
-        spdlog::info(fmt::format("Using Ghost adapter: {}", ghost_cfg.api_url));
+        spdlog::info("Using Ghost adapter: " + ghost_cfg.api_url);
     } else if (std::holds_alternative<guss::config::WordPressAdapterConfig>(config.adapter())) {
         spdlog::error("WordPress adapter not yet implemented");
         return 1;
@@ -522,7 +522,7 @@ int cmd_build(const std::string& config_path, bool verbose, bool clean_first) {
     if (clean_first) {
         auto clean_result = pipeline.clean();
         if (!clean_result) {
-            spdlog::error(fmt::format("Clean failed: {}", clean_result.error().format()));
+            spdlog::error("Clean failed: {}", clean_result.error().format());
             return 1;
         }
     }
@@ -550,22 +550,22 @@ int cmd_build(const std::string& config_path, bool verbose, bool clean_first) {
     std::cout << std::endl;
 
     if (!result) {
-        spdlog::error(fmt::format("Build failed: {}", result.error().format()));
+        spdlog::error("Build failed: " + result.error().format());
         return 1;
     }
 
     const auto& stats = *result;
     spdlog::info("Build complete!");
-    spdlog::info(fmt::format("  Posts:    {}", stats.posts_rendered));
-    spdlog::info(fmt::format("  Pages:    {}", stats.pages_rendered));
-    spdlog::info(fmt::format("  Tags:     {}", stats.tag_archives_rendered));
-    spdlog::info(fmt::format("  Authors:  {}", stats.author_archives_rendered));
-    spdlog::info(fmt::format("  Index:    {}", stats.index_pages_rendered));
-    spdlog::info(fmt::format("  Assets:   {}", stats.assets_copied));
+    spdlog::info("  Posts:    " + std::to_string(stats.posts_rendered));
+    spdlog::info("  Pages:    " + std::to_string(stats.pages_rendered));
+    spdlog::info("  Tags:     " + std::to_string(stats.tag_archives_rendered));
+    spdlog::info("  Authors:  " + std::to_string(stats.author_archives_rendered));
+    spdlog::info("  Index:    " + std::to_string(stats.index_pages_rendered));
+    spdlog::info("  Assets:   " + std::to_string(stats.assets_copied));
     if (stats.errors > 0) {
-        spdlog::warn(fmt::format("  Errors:   {}", stats.errors));
+        spdlog::warn("  Errors:   " + std::to_string(stats.errors));
     }
-    spdlog::info(fmt::format("  Duration: {}ms", stats.total_duration.count()));
+    spdlog::info("  Duration: " + std::to_string(stats.total_duration.count()) + "ms");
 
     return stats.errors > 0 ? 1 : 0;
 }
@@ -585,7 +585,7 @@ int cmd_ping(const std::string& config_path) {
     if (std::holds_alternative<guss::config::GhostAdapterConfig>(config.adapter())) {
         const auto& ghost_cfg = std::get<guss::config::GhostAdapterConfig>(config.adapter());
         adapter = std::make_unique<guss::adapters::GhostAdapter>(ghost_cfg);
-        spdlog::info(fmt::format("Adapter: Ghost ({})", ghost_cfg.api_url));
+        spdlog::info("Adapter: Ghost ({})", ghost_cfg.api_url);
     } else {
         spdlog::error("Unsupported adapter type");
         return 1;
@@ -602,7 +602,7 @@ int cmd_ping(const std::string& config_path) {
 
     auto result = pipeline.ping();
     if (!result) {
-        spdlog::error(fmt::format("Connection failed: {}", result.error().format()));
+        spdlog::error("Connection failed: {}", result.error().format());
         return 1;
     }
 
@@ -616,7 +616,7 @@ int cmd_clean(const std::string& config_path) {
     const std::string& cfg_path = config_path;
     const auto& config = guss::config::Config::instance(&cfg_path);
 
-    spdlog::info(fmt::format("Cleaning output directory: {}", config.output().output_dir.string()));
+    spdlog::info("Cleaning output directory: {}", config.output().output_dir.string());
 
     try {
         if (fs::exists(config.output().output_dir)) {
@@ -626,7 +626,7 @@ int cmd_clean(const std::string& config_path) {
             spdlog::info("Output directory does not exist");
         }
     } catch (const fs::filesystem_error& e) {
-        spdlog::error(fmt::format("Failed to clean: {}", e.what()));
+        spdlog::error("Failed to clean: {}", e.what());
         return 1;
     }
 
