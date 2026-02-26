@@ -114,7 +114,7 @@ using AdapterPtr = std::unique_ptr<ContentAdapter>;
  * \retval std::unexpected<error::Error> An Error if the response indicates an error
  */
 inline std::optional<std::unexpected<error::Error>> get_error(const httplib::Response &res) {
-    switch (res.status()) {
+    switch (res.status) {
         case 400:
             return error::make_error(
                 error::ErrorCode::AdapterBadRequest,
