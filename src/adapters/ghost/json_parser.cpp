@@ -4,8 +4,7 @@
  */
 #include "guss/adapters/ghost/json_parser.hpp"
 #include <ctime>
-#include <iomanip>
-#include <sstream>
+#include <cstdio>
 
 namespace guss::adapters::ghost {
 
@@ -38,14 +37,22 @@ std::optional<std::chrono::system_clock::time_point> parse_timestamp(std::string
         return std::nullopt;
     }
 
-    std::tm tm = {};
-    std::istringstream ss{std::string(ts)};
+    std::string s {ts};
+    int year = 0, month = 0, day = 0, hour = 0, minute = 0, second = 0;
 
-    // Ghost uses ISO 8601 format: 2024-01-15T10:30:00.000Z
-    ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
-    if (ss.fail()) {
+    if (std::scanf(s.c_str(), "%4d-%2d-%2dT%2d:%2d:%2d",
+        &year, &month, &day, &hour, &minute, &second) != 6) {
         return std::nullopt;
     }
+
+    // Ghost uses ISO 8601 format: 2024-01-15T10:30:00.000Z
+    std::tm tm = {};
+    tm.tm_year = year - 1900;
+    tm.tm_mon  = month - 1;
+    tm.tm_mday = day;
+    tm.tm_hour = hour;
+    tm.tm_min  = minute;
+    tm.tm_sec  = second;
 
     // Convert to time_t (UTC)
     #ifdef _WIN32
