@@ -110,7 +110,7 @@ struct Error {
     Error(ErrorCode c, std::string msg, std::string ctx = "")
         : code(c), message(std::move(msg)), context(std::move(ctx)) {}
 
-    [[nodiscard]] std::string_view code_name(ErrorCode code) const noexcept;
+    [[nodiscard]] std::string_view code_name() const noexcept;
     [[nodiscard]] std::string format() const;
     [[nodiscard]] bool is(ErrorCode c) const noexcept { return code == c; }
 };
