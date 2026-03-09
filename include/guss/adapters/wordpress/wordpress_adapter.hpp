@@ -2,7 +2,6 @@
 
 #include "guss/adapters/adapter.hpp"
 #include "guss/core/config.hpp"
-#include <string_view>
 
 namespace guss::adapters {
 
@@ -11,24 +10,24 @@ public:
     explicit WordPressAdapter(const config::WordPressAdapterConfig& cfg);
 
     error::Result<FetchResult> fetch_all(FetchCallback progress = nullptr) override;
-    error::Result<std::vector<domain::Post>> fetch_posts(FetchCallback progress = nullptr) override;
-    error::Result<std::vector<domain::Page>> fetch_pages(FetchCallback progress = nullptr) override;
-    error::Result<std::vector<domain::Author>> fetch_authors() override;
-    error::Result<std::vector<domain::Tag>> fetch_tags() override;
-    error::Result<std::vector<domain::Category>> fetch_categories() override;
-    error::Result<std::vector<domain::Asset>> fetch_assets() override;
+    error::Result<std::vector<model::Post>> fetch_posts(FetchCallback progress = nullptr) override;
+    error::Result<std::vector<model::Page>> fetch_pages(FetchCallback progress = nullptr) override;
+    error::Result<std::vector<model::Author>> fetch_authors() override;
+    error::Result<std::vector<model::Tag>> fetch_tags() override;
+    error::Result<std::vector<model::Category>> fetch_categories() override;
+    error::Result<std::vector<model::Asset>> fetch_assets() override;
 
     std::string adapter_name() const override { return "wordpress"; }
 
 private:
     config::WordPressAdapterConfig config_;
 
-    error::Result<std::string> api_request(const std::string& endpoint);
-    domain::Post json_to_post(std::string_view json);
-    domain::Page json_to_page(std::string_view json);
-    domain::Author json_to_author(std::string_view json);
-    domain::Tag json_to_tag(std::string_view json);
-    domain::Category json_to_category(std::string_view json);
+    /**
+     * @brief Make an HTTP GET request to the Ghost Content API.
+     * @param endpoint API endpoint path (e.g., "/ghost/api/content/posts/")
+     * @return Response body as string or error.
+     */
+    [[nodiscard]] error::Result<std::string> api_get(const std::string& endpoint) const;
 };
 
 } // namespace guss::adapters
