@@ -226,7 +226,7 @@ constexpr std::string_view DEFAULT_POST_TEMPLATE = R"(<!DOCTYPE html>
         <header class="mb-12">
             <time datetime="{{ post.published_at }}"
                   class="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-primary dark:text-primary-dark mb-4 block">
-                {{ post.published_at }}
+                {{ post.published_at | date("%d.%m.%Y") }}
             </time>
             <h1 class="font-thin tracking-tight text-4xl sm:text-6xl text-on-surface-strong dark:text-on-surface-dark-strong leading-none tracking-tight mb-6">
                 {{ post.title }}
@@ -549,7 +549,7 @@ constexpr std::string_view DEFAULT_INDEX_TEMPLATE = R"(<!DOCTYPE html>
                     {% if post.excerpt %}
                     <p class="text-white/70 text-sm max-w-xl line-clamp-2">{{ post.excerpt | truncate(160) }}</p>
                     {% endif %}
-                    <time datetime="{{ post.published_at }}" class="mt-4 block text-white/60 text-xs font-medium">{{ post.published_at }}</time>
+                    <time datetime="{{ post.published_at }}" class="mt-4 block text-white/60 text-xs font-medium">{{ post.published_at | date("%d.%m.%Y") }}</time>
                 </div>
             </div>
         </a>
@@ -568,7 +568,7 @@ constexpr std::string_view DEFAULT_INDEX_TEMPLATE = R"(<!DOCTYPE html>
                 {% endif %}
             </div>
             <div class="flex flex-col flex-1 p-5">
-                <time datetime="{{ post.published_at }}" class="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-on-surface-muted dark:text-on-surface-dark-muted mb-2">{{ post.published_at }}</time>
+                <time datetime="{{ post.published_at }}" class="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-on-surface-muted dark:text-on-surface-dark-muted mb-2">{{ post.published_at | date("%d.%m.%Y") }}</time>
                 <h3 class="font-thin tracking-tight text-lg text-on-surface-strong dark:text-on-surface-dark-strong leading-snug mb-2 group-hover:text-primary dark:group-hover:text-primary-dark transition-colors flex-1">
                     {{ post.title }}
                 </h3>
@@ -701,7 +701,7 @@ constexpr std::string_view DEFAULT_PAGE_TEMPLATE = R"(<!DOCTYPE html>
 
 <div class="pt-28 pb-16 px-6 relative overflow-hidden">
     <div class="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-primary/8 dark:bg-primary-dark/10 blur-3xl pointer-events-none -z-10"></div>
-    <div class="mx-auto max-w-3xl">
+    <div class="mx-auto max-w-7xl">
         <h1 class="font-thin tracking-tight text-5xl sm:text-6xl text-on-surface-strong dark:text-on-surface-dark-strong leading-none tracking-tight mb-10 pb-8 border-b border-outline dark:border-outline-dark">
             {{ page.title }}
         </h1>
@@ -810,7 +810,7 @@ constexpr std::string_view DEFAULT_TAG_TEMPLATE = R"(<!DOCTYPE html>
                 {% endif %}
             </div>
             <div class="flex flex-col flex-1 p-5">
-                <time datetime="{{ post.published_at }}" class="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-on-surface-muted dark:text-on-surface-dark-muted mb-2">{{ post.published_at }}</time>
+                <time datetime="{{ post.published_at }}" class="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-on-surface-muted dark:text-on-surface-dark-muted mb-2">{{ post.published_at | date("%d.%m.%Y") }}</time>
                 <h2 class="font-thin tracking-tight text-lg text-on-surface-strong dark:text-on-surface-dark-strong leading-snug group-hover:text-primary dark:group-hover:text-primary-dark transition-colors flex-1">{{ post.title }}</h2>
                 <div class="mt-4 flex items-center gap-1 text-xs font-semibold text-primary dark:text-primary-dark">
                     Read
@@ -935,7 +935,7 @@ constexpr std::string_view DEFAULT_AUTHOR_TEMPLATE = R"(<!DOCTYPE html>
                 {% endif %}
             </div>
             <div class="flex flex-col flex-1 p-5">
-                <time datetime="{{ post.published_at }}" class="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-on-surface-muted dark:text-on-surface-dark-muted mb-2">{{ post.published_at }}</time>
+                <time datetime="{{ post.published_at }}" class="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-on-surface-muted dark:text-on-surface-dark-muted mb-2">{{ post.published_at | date("%d.%m.%Y") }}</time>
                 <h2 class="font-thin tracking-tight text-lg text-on-surface-strong dark:text-on-surface-dark-strong leading-snug group-hover:text-primary dark:group-hover:text-primary-dark transition-colors flex-1">{{ post.title }}</h2>
                 <div class="mt-4 flex items-center gap-1 text-xs font-semibold text-primary dark:text-primary-dark">
                     Read <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="size-3 group-hover:translate-x-1 transition-transform"><path fill-rule="evenodd" d="M6.22 4.22a.75.75 0 0 1 1.06 0l3.25 3.25a.75.75 0 0 1 0 1.06l-3.25 3.25a.75.75 0 0 1-1.06-1.06L8.94 8 6.22 5.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd"/></svg>
