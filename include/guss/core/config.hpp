@@ -43,8 +43,6 @@
 #include <optional>
 #include <string>
 #include <variant>
-#include <vector>
-#include <yaml-cpp/yaml.h>
 #include "guss/core/error.hpp"
 
 namespace guss::config {
@@ -160,14 +158,14 @@ public:
      */
     explicit Config(std::string_view config_path);
 
-    const SiteConfig &site() const { return _site; }
-    const AdapterConfig& adapter() const { return _adapter; }
-    const PermalinkConfig& permalinks() const { return _permalinks; }
-    const WatchConfig& watch() const { return _watch; }
-    const OutputConfig& output() const { return _output; }
-    const TemplateConfig& templates() const { return _templates; }
-    int parallel_workers() const { return _parallel_workers; }
-    const std::string& log_level() const { return _log_level; }
+    [[nodiscard]] const SiteConfig &site() const { return site_; }
+    [[nodiscard]] const AdapterConfig& adapter() const { return adapter_; }
+    [[nodiscard]] const PermalinkConfig& permalinks() const { return permalinks_; }
+    [[nodiscard]] const WatchConfig& watch() const { return watch_; }
+    [[nodiscard]] const OutputConfig& output() const { return output_; }
+    [[nodiscard]] const TemplateConfig& templates() const { return templates_; }
+    [[nodiscard]] int parallel_workers() const { return parallel_workers_; }
+    [[nodiscard]] const std::string& log_level() const { return log_level_; }
 
 private:
 
@@ -178,14 +176,14 @@ private:
      * Each section is represented by a struct that encapsulates related configuration options.
     */
 
-    SiteConfig _site;
-    AdapterConfig _adapter;
-    PermalinkConfig _permalinks;
-    WatchConfig _watch;
-    OutputConfig _output;
-    TemplateConfig _templates;
-    int _parallel_workers  { 0 };
-    std::string _log_level { "info" };
+    SiteConfig site_;               ///< Site metadata configuration (title, description, URL, etc.)
+    AdapterConfig adapter_;         ///< Adapter configuration (variant for Ghost, WordPress, Markdown)
+    PermalinkConfig permalinks_;    ///< Permalink pattern configuration for posts, pages, tags, categories, authors
+    WatchConfig watch_;             ///< Watch mode configuration for automatic rebuilds (filesystem, webhook, polling)
+    OutputConfig output_;           ///< Output settings for generated files (output directory, assets handling, sitemap/RSS generation)
+    TemplateConfig templates_;      ///< Template configuration for Inja rendering (templates directory, default templates for posts/pages/index/tag/author)
+    int parallel_workers_;          ///< Number of parallel workers for build operations (default: number of hardware threads)
+    std::string log_level_;         ///< Logging level for the application (e.g., "info", "debug", "error")
 
     /**
     * \}

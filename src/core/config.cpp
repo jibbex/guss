@@ -4,6 +4,8 @@
  */
 #include "guss/core/config.hpp"
 
+#include <yaml-cpp/yaml.h>
+
 namespace guss::config {
 
 namespace {
@@ -153,7 +155,7 @@ TemplateConfig parse_template_config(const YAML::Node& node) {
 
 } // anonymous namespace
 
-Config::Config(std::string_view config_path) {
+Config::Config(std::string_view config_path): parallel_workers_ { 0 }, log_level_ {"info"} {
     YAML::Node root;
     try {
         root = YAML::LoadFile(std::string(config_path));
@@ -162,14 +164,14 @@ Config::Config(std::string_view config_path) {
         return;
     }
 
-    _site = parse_site_config(root["site"]);
-    _adapter = parse_adapter_config(root["source"]);
-    _permalinks = parse_permalink_config(root["permalinks"]);
-    _watch = parse_watch_config(root["watch"]);
-    _output = parse_output_config(root["output"]);
-    _templates = parse_template_config(root["templates"]);
-    _parallel_workers = get_int(root, "parallel_workers", 0);
-    _log_level = get_string(root, "log_level", "info");
+    site_ = parse_site_config(root["site"]);
+    adapter_ = parse_adapter_config(root["source"]);
+    permalinks_ = parse_permalink_config(root["permalinks"]);
+    watch_ = parse_watch_config(root["watch"]);
+    output_ = parse_output_config(root["output"]);
+    templates_ = parse_template_config(root["templates"]);
+    parallel_workers_ = get_int(root, "parallel_workers", 0);
+    log_level_ = get_string(root, "log_level", "info");
 }
 
 error::Result<Config> load_config(const std::filesystem::path& path) {
