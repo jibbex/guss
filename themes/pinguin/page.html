@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="{{ site.language }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page.title }} - {{ site.title }}</title>
+        <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&display=swap">
+    <link rel="stylesheet" href="/assets/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style type="text/tailwindcss">
+        @variant dark (&:where(.dark, .dark *));
+        @theme {
+            --color-surface: oklch(0.98 0.002 260); --color-surface-alt: oklch(0.94 0.006 260); --color-surface-elevated: oklch(1 0 0);
+            --color-on-surface: oklch(0.40 0.016 260); --color-on-surface-strong: oklch(0.12 0.010 260); --color-on-surface-muted: oklch(0.60 0.012 260);
+            --color-primary: oklch(0.52 0.22 265); --color-primary-light: oklch(0.65 0.18 265); --color-on-primary: oklch(1 0 0);
+            --color-accent: oklch(0.72 0.20 35); --color-outline: oklch(0.88 0.006 260); --color-outline-strong: oklch(0.72 0.014 260);
+            --color-surface-dark: oklch(0.10 0.018 265); --color-surface-dark-alt: oklch(0.15 0.022 265); --color-surface-dark-elevated: oklch(0.18 0.020 265);
+            --color-on-surface-dark: oklch(0.65 0.016 265); --color-on-surface-dark-strong: oklch(0.96 0.005 265); --color-on-surface-dark-muted: oklch(0.45 0.012 265);
+            --color-primary-dark: oklch(0.74 0.18 265); --color-on-primary-dark: oklch(0.10 0.018 265);
+            --color-accent-dark: oklch(0.80 0.18 35); --color-outline-dark: oklch(0.24 0.018 265); --color-outline-dark-strong: oklch(0.38 0.022 265);
+            --radius-radius: var(--radius-xl); --font-sans: 'Inter', system-ui, sans-serif; --font-heading: 'Inter', system-ui, sans-serif;
+        }
+        html { font-family: var(--font-sans); }
+
+        [x-cloak] { display: none !important; }
+    </style>
+    <script>(() => { const s = localStorage.getItem('theme'); if (s === 'dark' || (!s && window.matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.classList.add('dark'); })();</script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+</head>
+<body class="bg-surface dark:bg-surface-dark text-on-surface dark:text-on-surface-dark transition-colors duration-300">
+
+<nav x-data="{ open: false }" x-on:click.away="open = false"
+     class="fixed top-0 inset-x-0 z-50 border-b border-outline/50 dark:border-outline-dark/50 bg-surface/80 dark:bg-surface-dark/80 backdrop-blur-xl">
+    <div class="mx-auto max-w-7xl px-6 flex h-16 items-center justify-between gap-6">
+        <a href="/" class="font-thin tracking-tight text-2xl italic text-on-surface-strong dark:text-on-surface-dark-strong hover:text-primary dark:hover:text-primary-dark transition-colors">{{ site.title }}</a>
+        <div class="flex items-center gap-3">
+            <button id="themeBtn" type="button" aria-label="Toggle theme" class="size-9 rounded-full border border-outline dark:border-outline-dark bg-surface-alt dark:bg-surface-dark-alt grid place-items-center text-on-surface dark:text-on-surface-dark hover:border-primary dark:hover:border-primary-dark hover:text-primary dark:hover:text-primary-dark transition-all hover:scale-110">
+                <svg id="iconSun" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" class="size-[1.1rem] hidden"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2m0 14v2M3 12H1m22 0h-2m-2.636-6.364-1.414 1.414M6.05 17.95l-1.414 1.414m0-12.728 1.414 1.414M17.95 17.95l1.414 1.414M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"/></svg>
+                <svg id="iconMoon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" class="size-[1.1rem]"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
+            </button>
+        </div>
+    </div>
+</nav>
+
+<div class="pt-28 pb-16 px-6 relative overflow-hidden">
+    <div class="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-primary/8 dark:bg-primary-dark/10 blur-3xl pointer-events-none -z-10"></div>
+    <div class="mx-auto max-w-7xl">
+        <h1 class="font-thin tracking-tight text-5xl sm:text-6xl text-on-surface-strong dark:text-on-surface-dark-strong leading-none tracking-tight mb-10 pb-8 border-b border-outline dark:border-outline-dark">
+            {{ page.title }}
+        </h1>
+        <div class="prose text-on-surface dark:text-on-surface-dark">
+            {{ page.content | safe }}
+        </div>
+    </div>
+</div>
+
+<footer class="border-t border-outline dark:border-outline-dark mt-8">
+    <div class="mx-auto max-w-7xl px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-on-surface-muted dark:text-on-surface-dark-muted">
+        <span class="font-semibold text-on-surface-strong dark:text-on-surface-dark-strong">{{ site.title }}</span>
+        <nav class="flex items-center gap-6 flex-wrap justify-center sm:justify-end">
+            <a href="/datenschutz/" class="hover:text-primary dark:hover:text-primary-dark transition-colors no-underline">Datenschutz</a>
+            <a href="/impressum/"   class="hover:text-primary dark:hover:text-primary-dark transition-colors no-underline">Impressum</a>
+            <span>&copy; {{ site.title }}</span>
+        </nav>
+    </div>
+</footer>
+
+<script>
+    (() => {
+        const btn = document.getElementById('themeBtn'), sun = document.getElementById('iconSun'), moon = document.getElementById('iconMoon'), html = document.documentElement;
+        const sync = () => { const d = html.classList.contains('dark'); sun.classList.toggle('hidden', !d); moon.classList.toggle('hidden', d); };
+        sync();
+        btn.addEventListener('click', () => { const d = html.classList.toggle('dark'); localStorage.setItem('theme', d ? 'dark' : 'light'); sync(); });
+    })();
+</script>
+</body>
+</html>
