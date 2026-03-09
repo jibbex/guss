@@ -3,7 +3,6 @@
  * @brief Configuration system implementation for Guss SSG using yaml-cpp.
  */
 #include "guss/core/config.hpp"
-#include <fstream>
 
 namespace guss::config {
 
@@ -173,22 +172,7 @@ Config::Config(std::string_view config_path) {
     _log_level = get_string(root, "log_level", "info");
 }
 
-const Config& Config::instance(std::optional<const std::string*> config_path) {
-    static std::string cfg_path = "guss.yaml";
-
-    if (config_path.has_value() && config_path.value() != nullptr && !config_path.value()->empty()) {
-        cfg_path = *config_path.value();
-    }
-
-    static Config instance(cfg_path);
-    return instance;
-}
-
-const Config& Config::instance() {
-    return instance(std::nullopt);
-}
-
-error::VoidResult load_config(const std::filesystem::path& path) {
+error::Result<Config> load_config(const std::filesystem::path& path) {
     if (!std::filesystem::exists(path)) {
         return error::make_error(
             error::ErrorCode::ConfigNotFound,
@@ -197,28 +181,7 @@ error::VoidResult load_config(const std::filesystem::path& path) {
         );
     }
 
-    std::ifstream file(path);
-    if (!file.is_open()) {
-        return error::make_error(
-            error::ErrorCode::FileReadError,
-            "Failed to open configuration file",
-            path.string()
-        );
-    }
-
-    // Initialize the singleton with this path
-    const std::string path_str = path.string();
-    try {
-        Config::instance(&path_str);
-    } catch (const YAML::Exception& e) {
-        return error::make_error(
-            error::ErrorCode::ConfigParseError,
-            std::string("YAML parse error: ") + e.what(),
-            path.string()
-        );
-    }
-
-    return {};
+    return Config(path.string());
 }
 
 error::VoidResult validate_yaml(const std::string& yaml_content) {

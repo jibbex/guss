@@ -1,6 +1,5 @@
 #pragma once
 
-#include <nlohmann/json.hpp>
 #include <string>
 #include <optional>
 #include <chrono>
@@ -46,36 +45,21 @@ struct Asset {
     std::optional<size_t> file_size;
     std::optional<std::string> mime_type;
 
-    [[nodiscard]] nlohmann::json to_json() const {
-        nlohmann::json j;
-        j["id"] = id;
-        j["source_path"] = source_path;
-        j["output_path"] = output_path;
-        j["url"] = url;
-        j["type"] = asset_type_to_string(type);
-        if (alt_text) j["alt_text"] = *alt_text;
-        if (title) j["title"] = *title;
-        if (width) j["width"] = *width;
-        if (height) j["height"] = *height;
-        if (file_size) j["file_size"] = *file_size;
-        if (mime_type) j["mime_type"] = *mime_type;
+    [[nodiscard]] std::string to_json() const {
+        std::string j;
+        j += "{\"id\":\"" + id + "\",";
+        j += "\"source_path\":\"" + source_path + "\",";
+        j += "\"output_path\":\"" + output_path + "\",";
+        j += "\"url\":\"" + url + "\",";
+        j += "\"type\":\"" + asset_type_to_string(type) + "\"";
+        if (alt_text) j += ",\"alt_text\":\"" + *alt_text + "\"";
+        if (title) j += ",\"title\":\"" + *title + "\"";
+        if (width) j += ",\"width\":" + std::to_string(*width);
+        if (height) j += ",\"height\":" + std::to_string(*height);
+        if (file_size) j += ",\"file_size\":" + std::to_string(*file_size);
+        if (mime_type) j += ",\"mime_type\":\"" + *mime_type + "\"";
+        j += "}";
         return j;
-    }
-
-    static Asset from_json(const nlohmann::json& j) {
-        Asset asset;
-        asset.id = j.value("id", "");
-        asset.source_path = j.value("source_path", "");
-        asset.output_path = j.value("output_path", "");
-        asset.url = j.value("url", "");
-        asset.type = asset_type_from_string(j.value("type", "other"));
-        if (j.contains("alt_text")) asset.alt_text = j["alt_text"].get<std::string>();
-        if (j.contains("title")) asset.title = j["title"].get<std::string>();
-        if (j.contains("width")) asset.width = j["width"].get<size_t>();
-        if (j.contains("height")) asset.height = j["height"].get<size_t>();
-        if (j.contains("file_size")) asset.file_size = j["file_size"].get<size_t>();
-        if (j.contains("mime_type")) asset.mime_type = j["mime_type"].get<std::string>();
-        return asset;
     }
 };
 

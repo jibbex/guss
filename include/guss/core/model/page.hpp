@@ -1,7 +1,6 @@
 #pragma once
 
 #include "./author.hpp"
-#include <nlohmann/json.hpp>
 #include <string>
 #include <optional>
 #include <vector>
@@ -52,28 +51,7 @@ struct Page {
     int menu_order = 0;
     bool show_in_menu = false;
 
-    [[nodiscard]] nlohmann::json to_json() const {
-        nlohmann::json j;
-        j["id"] = id;
-        j["title"] = title;
-        j["slug"] = slug;
-        j["source_path"] = source_path;
-        j["content"] = content_html;
-        j["content_markdown"] = content_markdown;
-        j["status"] = page_status_to_string(status);
-        j["permalink"] = permalink;
-        j["output_path"] = output_path;
-        j["menu_order"] = menu_order;
-        j["show_in_menu"] = show_in_menu;
-
-        if (feature_image) j["feature_image"] = *feature_image;
-        if (feature_image_alt) j["feature_image_alt"] = *feature_image_alt;
-        if (meta_title) j["meta_title"] = *meta_title;
-        if (meta_description) j["meta_description"] = *meta_description;
-        if (canonical_url) j["canonical_url"] = *canonical_url;
-        if (custom_template) j["custom_template"] = *custom_template;
-        if (parent_slug) j["parent_slug"] = *parent_slug;
-
+    [[nodiscard]] std::string to_json() const {
         auto format_time = [](const std::chrono::system_clock::time_point& tp) -> std::string {
             auto time_t = std::chrono::system_clock::to_time_t(tp);
             std::tm tm = *std::gmtime(&time_t);
@@ -82,20 +60,41 @@ struct Page {
             return buf;
         };
 
-        j["created_at"] = format_time(created_at);
-        if (published_at) j["published_at"] = format_time(*published_at);
-        if (updated_at) j["updated_at"] = format_time(*updated_at);
+        std::string j;
+        j += "{\"id\":\"" + id + "\",";
+        j += "\"title\":\"" + title + "\",";
+        j += "\"slug\":\"" + slug + "\",";
+        j += "\"source_path\":\"" + source_path + "\",";
+        j += "\"content\":\"" + content_html + "\",";
+        j += "\"content_markdown\":\"" + content_markdown + "\",";
+        j += "\"status\":\"" + page_status_to_string(status) + "\",";
+        j += "\"permalink\":\"" + permalink + "\",";
+        j += "\"output_path\":\"" + output_path + "\",";
+        j += "\"menu_order\":" + std::to_string(menu_order) + ",";
+        j += "\"show_in_menu\":" + std::string(show_in_menu ? "true" : "false");
+        if (feature_image) j += ",\"feature_image\":\"" + *feature_image + "\"";
+        if (feature_image_alt) j += ",\"feature_image_alt\":\"" + *feature_image_alt + "\"";
+        if (meta_title) j += ",\"meta_title\":\"" + *meta_title + "\"";
+        if (meta_description) j += ",\"meta_description\":\"" + *meta_description + "\"";
+        if (canonical_url) j += ",\"canonical_url\":\"" + *canonical_url + "\"";
+        if (custom_template) j += ",\"custom_template\":\"" + *custom_template + "\"";
+        if (parent_slug) j += ",\"parent_slug\":\"" + *parent_slug + "\"";
+        j += ",\"created_at\":\"" + format_time(created_at) + "\"";
+        if (published_at) j += ",\"published_at\":\"" + format_time(*published_at) + "\"";
+        if (updated_at) j += ",\"updated_at\":\"" + format_time(*updated_at) + "\"";
 
-        nlohmann::json authors_json = nlohmann::json::array();
-        for (const auto& author : authors) {
-            authors_json.push_back(author.to_json());
+        j += ",\"authors\":[";
+        for (size_t i = 0; i < authors.size(); ++i) {
+            if (i > 0) j += ",";
+            j += authors[i].to_json();
         }
-        j["authors"] = authors_json;
+        j += "]";
 
         if (!authors.empty()) {
-            j["author"] = authors[0].to_json();
+            j += ",\"author\":" + authors[0].to_json();
         }
 
+        j += "}";
         return j;
     }
 };

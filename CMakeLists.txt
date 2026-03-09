@@ -28,6 +28,10 @@ if(GUSS_ENABLE_SANITIZERS)
     add_link_options(-fsanitize=address,undefined)
 endif()
 
+if(NOT DEFINED MAX_RECURSION)
+    set(MAX_RECURSION 100000)
+endif()
+
 # -----------------------------------------------------------------------------
 # Dependencies via CPM
 # -----------------------------------------------------------------------------
@@ -45,23 +49,13 @@ if(NOT EXISTS "${CPM_PATH}")
 endif()
 include("${CPM_PATH}")
 
-# JSON (template contexts, config serialization)
-CPMAddPackage("gh:nlohmann/json@3.11.3")
-
-# Jinja2-like template engine
+# SIMD-accelerated JSON parsing (CMS API responses)
 CPMAddPackage(
-    NAME inja
-    GITHUB_REPOSITORY pantor/inja
-    VERSION 3.4.0
-    OPTIONS
-        "INJA_USE_EMBEDDED_JSON OFF"
-        "INJA_BUILD_TESTS OFF"
-        "BUILD_TESTING OFF"
-        "BUILD_BENCHMARK OFF"
+    NAME simdjson
+    GITHUB_REPOSITORY simdjson/simdjson
+    GIT_TAG v4.3.1
 )
 
-# SIMD-accelerated JSON parsing (CMS API responses)
-CPMAddPackage("gh:simdjson/simdjson@3.10.1")
 
 # YAML config parsing
 CPMAddPackage(
@@ -142,12 +136,11 @@ add_library(guss-core
     src/core/config.cpp
     src/core/error.cpp
     src/core/permalink.cpp
+    src/core/value.cpp
 )
 
 target_include_directories(guss-core PUBLIC include)
 target_link_libraries(guss-core PUBLIC
-    nlohmann_json::nlohmann_json
-    simdjson
     yaml-cpp
     spdlog::spdlog
     expected
@@ -178,14 +171,17 @@ target_link_libraries(guss-adapters PUBLIC
 # Render library
 # -----------------------------------------------------------------------------
 add_library(guss-render
-    src/render/inja_engine.cpp
+    src/render/lexer.cpp
+    src/render/parser.cpp
+    src/render/context.cpp
+    src/render/compiler.cpp
+    src/render/filters.cpp
+    src/render/engine.cpp
 )
 
 target_include_directories(guss-render PUBLIC include)
 target_link_libraries(guss-render PUBLIC
     guss-core
-    inja
-    nlohmann_json::nlohmann_json
 )
 
 # -----------------------------------------------------------------------------
@@ -246,6 +242,8 @@ target_link_libraries(guss PRIVATE
     indicators
 )
 
+target_compile_definitions(guss PRIVATE MAX_RECURSION=${MAX_RECURSION})
+
 if(GUSS_BUILD_SERVER)
     target_link_libraries(guss PRIVATE guss-server)
     add_executable(new_target)
@@ -268,9 +266,17 @@ endif()
 if(GUSS_BUILD_TESTS)
     enable_testing()
     add_executable(guss-tests
+        tests/test_value.cpp
+        tests/test_context.cpp
         tests/test_config.cpp
         tests/test_permalink.cpp
         tests/test_ghost_json.cpp
+        tests/test_lexer.cpp
+        tests/test_parser.cpp
+        tests/test_compiler.cpp
+        tests/test_engine.cpp
+        tests/test_inheritance.cpp
+        tests/test_filters.cpp
     )
     target_link_libraries(guss-tests PRIVATE
         guss-core

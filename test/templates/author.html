@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="{{ site.language }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ author.name }} - {{ site.title }}</title>
+    <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="/">{{ site.title }}</a>
+        </nav>
+    </header>
+
+    <main>
+        <header class="author-header">
+            {% if author.profile_image %}
+            <img src="{{ author.profile_image }}" alt="{{ author.name }}" class="avatar">
+            {% endif %}
+            <h1>{{ author.name }}</h1>
+            {% if author.bio %}
+            <p class="bio">{{ author.bio }}</p>
+            {% endif %}
+        </header>
+
+        <section class="posts">
+            <h2>Posts by {{ author.name }}</h2>
+            {% for post in posts %}
+            <article>
+                <h3><a href="{{ post.permalink }}">{{ post.title }}</a></h3>
+                <time datetime="{{ post.published_at }}">
+                    {% if post.published_at %}{{ post.published_at | date("%d. %m. %Y") }}{% endif %}
+                </time>
+            </article>
+            {% endfor %}
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; {{ site.title }}</p>
+    </footer>
+</body>
+</html>
