@@ -1,6 +1,5 @@
 #pragma once
 
-#include <nlohmann/json.hpp>
 #include <string>
 #include <optional>
 
@@ -17,32 +16,19 @@ struct Author {
     std::optional<std::string> twitter;
     std::optional<std::string> facebook;
 
-    [[nodiscard]] nlohmann::json to_json() const {
-        nlohmann::json j;
-        j["id"] = id;
-        j["name"] = name;
-        j["slug"] = slug;
-        if (email) j["email"] = *email;
-        if (bio) j["bio"] = *bio;
-        if (profile_image) j["profile_image"] = *profile_image;
-        if (website) j["website"] = *website;
-        if (twitter) j["twitter"] = *twitter;
-        if (facebook) j["facebook"] = *facebook;
+    [[nodiscard]] std::string to_json() const {
+        std::string j;
+        j += "{\"id\":\"" + id + "\",";
+        j += "\"name\":\"" + name + "\",";
+        j += "\"slug\":\"" + slug + "\"";
+        if (email) j += ",\"email\":\"" + *email + "\"";
+        if (bio) j += ",\"bio\":\"" + *bio + "\"";
+        if (profile_image) j += ",\"profile_image\":\"" + *profile_image + "\"";
+        if (website) j += ",\"website\":\"" + *website + "\"";
+        if (twitter) j += ",\"twitter\":\"" + *twitter + "\"";
+        if (facebook) j += ",\"facebook\":\"" + *facebook + "\"";
+        j += "}";
         return j;
-    }
-
-    static Author from_json(const nlohmann::json& j) {
-        Author author;
-        author.id = j.value("id", "");
-        author.name = j.value("name", "");
-        author.slug = j.value("slug", "");
-        if (j.contains("email")) author.email = j["email"].get<std::string>();
-        if (j.contains("bio")) author.bio = j["bio"].get<std::string>();
-        if (j.contains("profile_image")) author.profile_image = j["profile_image"].get<std::string>();
-        if (j.contains("website")) author.website = j["website"].get<std::string>();
-        if (j.contains("twitter")) author.twitter = j["twitter"].get<std::string>();
-        if (j.contains("facebook")) author.facebook = j["facebook"].get<std::string>();
-        return author;
     }
 };
 

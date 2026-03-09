@@ -9,7 +9,6 @@
 #include "./author.hpp"
 #include "./taxonomy.hpp"
 #include "./asset.hpp"
-#include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -27,17 +26,18 @@ struct SiteMetadata {
     std::optional<std::string> twitter;
     std::optional<std::string> facebook;
 
-    [[nodiscard]] nlohmann::json to_json() const {
-        nlohmann::json j;
-        j["title"] = title;
-        j["description"] = description;
-        j["url"] = url;
-        j["language"] = language;
-        if (logo) j["logo"] = *logo;
-        if (icon) j["icon"] = *icon;
-        if (cover_image) j["cover_image"] = *cover_image;
-        if (twitter) j["twitter"] = *twitter;
-        if (facebook) j["facebook"] = *facebook;
+    [[nodiscard]] std::string to_json() const {
+        std::string j;
+        j += "{\"title\":\"" + title + "\",";
+        j += "\"description\":\"" + description + "\",";
+        j += "\"url\":\"" + url + "\",";
+        j += "\"language\":\"" + language + "\"";
+        if (logo) j += ",\"logo\":\"" + *logo + "\"";
+        if (icon) j += ",\"icon\":\"" + *icon + "\"";
+        if (cover_image) j += ",\"cover_image\":\"" + *cover_image + "\"";
+        if (twitter) j += ",\"twitter\":\"" + *twitter + "\"";
+        if (facebook) j += ",\"facebook\":\"" + *facebook + "\"";
+        j += "}";
         return j;
     }
 };
@@ -48,18 +48,20 @@ struct MenuItem {
     bool is_current = false;
     std::vector<MenuItem> children;
 
-    [[nodiscard]] nlohmann::json to_json() const {
-        nlohmann::json j;
-        j["label"] = label;
-        j["url"] = url;
-        j["is_current"] = is_current;
+    [[nodiscard]] std::string to_json() const {
+        std::string j;
+        j += "{\"label\":\"" + label + "\",";
+        j += "\"url\":\"" + url + "\",";
+        j += "\"is_current\":" + std::string(is_current ? "true" : "false");
         if (!children.empty()) {
-            nlohmann::json children_json = nlohmann::json::array();
-            for (const auto& child : children) {
-                children_json.push_back(child.to_json());
+            j += ",\"children\":[";
+            for (size_t i = 0; i < children.size(); ++i) {
+                if (i > 0) j += ",";
+                j += children[i].to_json();
             }
-            j["children"] = children_json;
+            j += "]";
         }
+        j += "}";
         return j;
     }
 };
@@ -133,51 +135,61 @@ struct SiteData {
         return result;
     }
 
-    [[nodiscard]] nlohmann::json to_json() const {
-        nlohmann::json j;
+    [[nodiscard]] std::string to_json() const {
+        std::string j;
+        j += "{\"site\":" + metadata.to_json();
 
-        j["site"] = metadata.to_json();
-
-        nlohmann::json posts_json = nlohmann::json::array();
+        j += ",\"posts\":[";
+        bool first = true;
         for (const auto& post : posts) {
             if (post.status == PostStatus::Published) {
-                posts_json.push_back(post.to_json());
+                if (!first) j += ",";
+                j += post.to_json();
+                first = false;
             }
         }
-        j["posts"] = posts_json;
+        j += "]";
 
-        nlohmann::json pages_json = nlohmann::json::array();
+        j += ",\"pages\":[";
+        first = true;
         for (const auto& page : pages) {
             if (page.status == PageStatus::Published) {
-                pages_json.push_back(page.to_json());
+                if (!first) j += ",";
+                j += page.to_json();
+                first = false;
             }
         }
-        j["pages"] = pages_json;
+        j += "]";
 
-        nlohmann::json authors_json = nlohmann::json::array();
-        for (const auto& author : authors) {
-            authors_json.push_back(author.to_json());
+        j += ",\"authors\":[";
+        for (size_t i = 0; i < authors.size(); ++i) {
+            if (i > 0) j += ",";
+            j += authors[i].to_json();
         }
-        j["authors"] = authors_json;
+        j += "]";
 
-        nlohmann::json tags_json = nlohmann::json::array();
-        for (const auto& tag : tags) {
-            tags_json.push_back(tag.to_json());
+        j += ",\"tags\":[";
+        for (size_t i = 0; i < tags.size(); ++i) {
+            if (i > 0) j += ",";
+            j += tags[i].to_json();
         }
-        j["tags"] = tags_json;
+        j += "]";
 
-        nlohmann::json cats_json = nlohmann::json::array();
-        for (const auto& cat : categories) {
-            cats_json.push_back(cat.to_json());
+        j += ",\"categories\":[";
+        for (size_t i = 0; i < categories.size(); ++i) {
+            if (i > 0) j += ",";
+            j += categories[i].to_json();
         }
-        j["categories"] = cats_json;
+        j += "]";
 
-        nlohmann::json nav_json = nlohmann::json::array();
-        for (const auto& item : navigation) {
-            nav_json.push_back(item.to_json());
+        j += ",\"navigation\":[";
+        for (size_t i = 0; i < navigation.size(); ++i) {
+            if (i > 0) j += ",";
+            j += navigation[i].to_json();
         }
-        j["navigation"] = nav_json;
+        j += "]";
 
+        j += "}";
         return j;
     }
 };

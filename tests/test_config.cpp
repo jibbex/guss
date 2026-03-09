@@ -47,7 +47,7 @@ source:
 
     auto path = test_dir_ / "guss.yaml";
     const std::string path_str = path.string();
-    const auto& config = guss::config::Config::instance(&path_str);
+    guss::config::Config config(path_str);
 
     EXPECT_EQ(config.site().title, "Test Site");
     EXPECT_EQ(config.site().url, "https://example.com");
@@ -73,7 +73,7 @@ permalinks:
 
     auto path = test_dir_ / "guss.yaml";
     const std::string path_str = path.string();
-    const auto& config = guss::config::Config::instance(&path_str);
+    guss::config::Config config(path_str);
 
     EXPECT_EQ(config.permalinks().post_pattern, "/blog/{slug}/");
     EXPECT_EQ(config.permalinks().page_pattern, "/p/{slug}/");
@@ -95,7 +95,7 @@ output:
 
     auto path = test_dir_ / "guss.yaml";
     const std::string path_str = path.string();
-    const auto& config = guss::config::Config::instance(&path_str);
+    guss::config::Config config(path_str);
 
     EXPECT_EQ(config.output().output_dir, "./public");
     EXPECT_FALSE(config.output().generate_sitemap);
@@ -112,7 +112,7 @@ site:
 
     auto path = test_dir_ / "guss.yaml";
     const std::string path_str = path.string();
-    const auto& config = guss::config::Config::instance(&path_str);
+    guss::config::Config config(path_str);
 
     // Check defaults
     EXPECT_EQ(config.site().language, "en");
@@ -136,7 +136,7 @@ source:
 
     auto path = test_dir_ / "guss.yaml";
     const std::string path_str = path.string();
-    const auto& config = guss::config::Config::instance(&path_str);
+    guss::config::Config config(path_str);
 
     ASSERT_TRUE(std::holds_alternative<guss::config::MarkdownAdapterConfig>(config.adapter()));
     const auto& md = std::get<guss::config::MarkdownAdapterConfig>(config.adapter());
@@ -159,7 +159,7 @@ templates:
 
     auto path = test_dir_ / "guss.yaml";
     const std::string path_str = path.string();
-    const auto& config = guss::config::Config::instance(&path_str);
+    guss::config::Config config(path_str);
 
     EXPECT_EQ(config.templates().templates_dir, "./theme");
     EXPECT_EQ(config.templates().default_post_template, "single.html");

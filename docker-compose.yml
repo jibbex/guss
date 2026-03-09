@@ -1,0 +1,48 @@
+# Usage:
+#   docker compose build             # build / refresh the guss:builder image
+#   docker compose run --rm release  # optimised release build
+#   docker compose run --rm debug    # debug build with symbols
+#   docker compose run --rm test     # debug build + run all tests
+#
+# Build artifacts land in host directories (bind mounts) so they are
+# accessible directly from Windows after the container exits.
+# Note: bind mounts to Windows NTFS are slower than named volumes; if
+# incremental build speed matters more than host access, switch back to
+# named volumes and use `docker cp` to extract binaries.
+
+x-builder: &builder
+  build:
+    context: .
+    target: builder
+  image: guss:builder
+  volumes:
+    - .:/app
+
+services:
+  release:
+    <<: *builder
+    volumes:
+      - .:/app
+      - ./cmake-build:/app/cmake-build
+    environment:
+      BUILD_TYPE: Release
+
+  debug:
+    <<: *builder
+    volumes:
+      - .:/app
+      - ./cmake-build-debug:/app/cmake-build-debug
+    environment:
+      BUILD_TYPE: Debug
+      BUILD_DIR: cmake-build-debug
+
+  test:
+    <<: *builder
+    volumes:
+      - .:/app
+      - ./cmake-build-test:/app/cmake-build-test
+    environment:
+      BUILD_TYPE: Debug
+      BUILD_DIR: cmake-build-test
+      BUILD_TESTS: "ON"
+      RUN_TESTS: "ON"

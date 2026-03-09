@@ -14,7 +14,7 @@
 A pluggable static site generator written in C++23 that:
 
 - **FORGES** pages from Ghost, WordPress, or Markdown at SIMD-accelerated speed
-- **CASTS** them through Jinja2 templates with the precision of a German foundry
+- **CASTS** them through a custom bytecode template engine with the precision of a German foundry
 - **HARDENS** the output into static HTML that loads before your users even CLICK
 - **WATCHES** your CMS for changes and rebuilds before you finish your coffee
 
@@ -73,7 +73,7 @@ guss/
 ├── include/guss/
 │   ├── core/        # Domain model, interfaces
 │   ├── adapters/    # Ghost, WordPress, Markdown implementations
-│   ├── render/      # inja template engine
+│   ├── render/      # custom bytecode template engine (Value, Context, Engine)
 │   ├── builder/     # Parallel build pipeline (OpenMP)
 │   ├── server/      # cpp-httplib serve layer
 │   └── watch/       # efsw filesystem watcher
@@ -85,21 +85,20 @@ guss/
 
 ## 🔧 Stack
 
-| What         | Choice        | Why                                |
-|--------------|---------------|------------------------------------|
-| Language     | C++23         | Because we RESPECT the machine     |
-| JSON parsing | simdjson      | SIMD-accelerated, gigabytes/second |
-| JSON objects | nlohmann/json | inja needs it, we give it          |
-| Templates    | inja          | Jinja2 for C++, header-only        |
-| Markdown     | cmark         | GitHub Flavored, C-fast            |
-| HTTP client  | cpp-httplib   | Header-only, OpenSSL               |
-| CLI          | CLI11         | Header-only, elegant               |
-| Logging      | spdlog        | Console + syslog, sub-nanosecond   |
-| Progress     | indicators    | Because builds should look GOOD    |
-| File watch   | efsw          | Cross-platform, lightweight        |
-| Parallelism  | OpenMP        | One pragma, all cores              |
-| Build system | CMake + CPM   | Zero external dependencies         |
-| Tests        | Google Test   | Industry standard                  |
+| What         | Choice               | Why                                         |
+|--------------|----------------------|---------------------------------------------|
+| Language     | C++23                | Because we RESPECT the machine              |
+| JSON parsing | simdjson             | SIMD-accelerated, gigabytes/second (adapters only) |
+| Templates    | guss::render         | Custom bytecode compiler — one pass, linear scan |
+| Markdown     | cmark                | GitHub Flavored, C-fast                     |
+| HTTP client  | cpp-httplib          | Header-only, OpenSSL                        |
+| CLI          | CLI11                | Header-only, elegant                        |
+| Logging      | spdlog               | Console + syslog, sub-nanosecond            |
+| Progress     | indicators           | Because builds should look GOOD             |
+| File watch   | efsw                 | Cross-platform, lightweight                 |
+| Parallelism  | OpenMP               | One pragma, all cores                       |
+| Build system | CMake + CPM          | Zero external dependencies                  |
+| Tests        | Google Test          | Industry standard                           |
 
 ## 📋 Configuration
 
@@ -117,7 +116,6 @@ source:
 
 theme:
   name: default
-  engine: inja
 
 build:
   output_dir: /var/www/michm.de/public

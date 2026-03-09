@@ -153,15 +153,12 @@ struct SiteConfig {
 class Config final {
 public:
     /**
-     * \brief Returns the singleton instance of the Config class.
+     * \brief Constructs a Config object by reading configuration from a file.
      *
-     * \param config_path Pointer to the path of the configuration file.
-     * The configuration will be initialized with this path on the first call.
-     * Subsequent calls will return the already initialized instance, ignoring this parameter.
-     * \return A const reference to the singleton instance of the Config.
+     * \param config_path Path to the YAML configuration file.
+     * If the file does not exist or cannot be parsed, all sections use their defaults.
      */
-    static const Config& instance(std::optional<const std::string *> config_path);
-    static const Config& instance();
+    explicit Config(std::string_view config_path);
 
     const SiteConfig &site() const { return _site; }
     const AdapterConfig& adapter() const { return _adapter; }
@@ -172,18 +169,7 @@ public:
     int parallel_workers() const { return _parallel_workers; }
     const std::string& log_level() const { return _log_level; }
 
-    Config() = delete;             ///< Deleted default constructor to prevent direct instantiation.
-    Config(const Config&) = delete; ///< Deleted copy constructor to prevent copying.
-    Config& operator=(const Config&) = delete; ///< Deleted copy assignment operator to prevent copying.
-    Config(Config&&) = delete;      ///< Deleted move constructor to prevent moving.
-
 private:
-    /**
-     * \brief Constructs a Config object by reading configuration from a specified file.
-     *
-     * \param config_path Path to the configuration file.
-     */
-    explicit Config(std::string_view config_path);
 
     /**
      * \defgroup ConfigMembers Private member variables for configuration sections.
@@ -209,10 +195,9 @@ private:
 /**
  * \brief Load and validate configuration from a YAML file.
  * \param path Path to the YAML configuration file.
- * \return VoidResult indicating success or Error.
- * \note This initializes the singleton Config::instance() with the given path.
+ * \return Config object on success, or Error if the file is missing or unparseable.
  */
-error::VoidResult load_config(const std::filesystem::path& path);
+error::Result<Config> load_config(const std::filesystem::path& path);
 
 /**
  * \brief Validate YAML configuration content.

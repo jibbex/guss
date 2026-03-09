@@ -2,8 +2,8 @@
  * @file ghost_adapter.cpp
  * @brief Ghost CMS Content API adapter implementation.
  */
+#include "guss/adapters/ghost/ghost_adapter.hpp"
 #include "guss/adapters/adapter.hpp"
-#include "guss/adapters/ghost_adapter.hpp"
 #include "guss/adapters/ghost/json_parser.hpp"
 
 #include <httplib.h>

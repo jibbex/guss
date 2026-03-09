@@ -1,0 +1,12 @@
+# Build artefacts — can be large (compiled objects, CPM _deps)
+cmake-build*/
+
+# VCS and editor state
+.git/
+.vscode/
+.vs/
+.claude/
+
+# OS noise
+.DS_Store
+Thumbs.db

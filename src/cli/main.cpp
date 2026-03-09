@@ -16,10 +16,10 @@
 #include <indicators/progress_bar.hpp>
 #include <indicators/cursor_control.hpp>
 
+#include "guss/adapters/ghost/ghost_adapter.hpp"
+#include "guss/builder/pipeline.hpp"
 #include "guss/core/config.hpp"
 #include "guss/core/error.hpp"
-#include "guss/adapters/ghost_adapter.hpp"
-#include "guss/builder/pipeline.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -432,15 +432,18 @@ int cmd_init(const std::string& directory) {
     spdlog::info("Initializing Guss project in " + project_dir.string());
 
     // Create directories
-    try {
-        fs::create_directories(project_dir);
-        fs::create_directories(project_dir / "templates");
-        fs::create_directories(project_dir / "templates" / "assets");
-        fs::create_directories(project_dir / "content");
-        fs::create_directories(project_dir / "dist");
-    } catch (const fs::filesystem_error& e) {
-        spdlog::error("Failed to create directories: " + std::to_string(*e.what()));
-        return 1;
+    for (const auto& dir : {
+            project_dir,
+            project_dir / "templates",
+            project_dir / "templates" / "assets",
+            project_dir / "content",
+            project_dir / "dist"}) {
+        std::error_code ec;
+        fs::create_directories(dir, ec);
+        if (ec) {
+            spdlog::error("Failed to create directory {}: {}", dir.string(), ec.message());
+            return 1;
+        }
     }
 
     // Write config file
@@ -491,8 +494,7 @@ int cmd_build(const std::string& config_path, bool verbose, bool clean_first) {
     spdlog::info("Loading configuration from " + config_path);
 
     // Load config
-    const std::string& cfg_path = config_path;
-    const auto& config = guss::config::Config::instance(&cfg_path);
+    guss::config::Config config(config_path);
 
     // Create adapter based on config
     guss::adapters::AdapterPtr adapter;
@@ -576,8 +578,7 @@ int cmd_ping(const std::string& config_path) {
     spdlog::info("Testing connection...");
 
     // Load config
-    const std::string& cfg_path = config_path;
-    const auto& config = guss::config::Config::instance(&cfg_path);
+    guss::config::Config config(config_path);
 
     // Create adapter
     guss::adapters::AdapterPtr adapter;
@@ -613,21 +614,20 @@ int cmd_ping(const std::string& config_path) {
 int cmd_clean(const std::string& config_path) {
     setup_logging("info");
 
-    const std::string& cfg_path = config_path;
-    const auto& config = guss::config::Config::instance(&cfg_path);
+    guss::config::Config config(config_path);
 
     spdlog::info("Cleaning output directory: {}", config.output().output_dir.string());
 
-    try {
-        if (fs::exists(config.output().output_dir)) {
-            fs::remove_all(config.output().output_dir);
-            spdlog::info("Output directory cleaned");
-        } else {
-            spdlog::info("Output directory does not exist");
+    std::error_code ec;
+    if (fs::exists(config.output().output_dir, ec) && !ec) {
+        fs::remove_all(config.output().output_dir, ec);
+        if (ec) {
+            spdlog::error("Failed to clean: {}", ec.message());
+            return 1;
         }
-    } catch (const fs::filesystem_error& e) {
-        spdlog::error("Failed to clean: {}", e.what());
-        return 1;
+        spdlog::info("Output directory cleaned");
+    } else {
+        spdlog::info("Output directory does not exist");
     }
 
     return 0;

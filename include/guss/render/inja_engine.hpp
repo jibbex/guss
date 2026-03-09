@@ -27,8 +27,6 @@
 #include "guss/core/model/taxonomy.hpp"
 #include "guss/core/model/author.hpp"
 #include "guss/core/error.hpp"
-#include <inja/inja.hpp>
-#include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
 #include <memory>
@@ -119,28 +117,27 @@ public:
     /**
      * @brief Render an arbitrary template with custom data.
      * @param template_name Template file name.
-     * @param data JSON data for template context.
+     * @param data JSON string data for template context.
      * @return Rendered HTML or error.
      */
     [[nodiscard]] error::Result<std::string> render_template(
         const std::string& template_name,
-        const nlohmann::json& data
+        const std::string& data
     );
 
 private:
     config::SiteConfig site_config_;
     config::TemplateConfig template_config_;
-    inja::Environment env_;
 
     /**
      * @brief Build base context with site metadata.
      */
-    [[nodiscard]] nlohmann::json build_base_context() const;
+    [[nodiscard]] std::string build_base_context() const;
 
     /**
      * @brief Build pagination context.
      */
-    [[nodiscard]] static nlohmann::json build_pagination(int page_num, int total_pages, const std::string& base_path) ;
+    [[nodiscard]] static std::string build_pagination(int page_num, int total_pages, const std::string& base_path);
 
     /**
      * @brief Register custom callbacks with Inja.

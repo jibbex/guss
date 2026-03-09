@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="{{ site.language }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ site.title }}</title>
+    <meta name="description" content="{{ site.description }}">
+    <link rel="stylesheet" href="/assets/style.css">
+    <link rel="alternate" type="application/rss+xml" title="{{ site.title }}" href="/rss.xml">
+</head>
+<body>
+    <header>
+        <h1>{{ site.title }}</h1>
+        <p>{{ site.description }}</p>
+    </header>
+
+    <main>
+        <section class="posts">
+            {% for post in posts %}
+            <article>
+                <h2><a href="{{ post.permalink }}">{{ post.title }}</a></h2>
+                <time datetime="{{ post.published_at }}">
+                    {% if post.published_at %}{{ post.published_at | date("%d. %m. %Y") }}{% endif %}
+                </time>
+                {% if post.excerpt %}
+                <p>{{ post.excerpt | truncate(200) }}</p>
+                {% endif %}
+            </article>
+            {% endfor %}
+        </section>
+
+        {% if pagination.total > 1 %}
+        <nav class="pagination">
+            {% if pagination.has_prev %}
+            <a href="{{ pagination.prev_url }}">&larr; Newer</a>
+            {% endif %}
+            <span>Page {{ pagination.current }} of {{ pagination.total }}</span>
+            {% if pagination.has_next %}
+            <a href="{{ pagination.next_url }}">Older &rarr;</a>
+            {% endif %}
+        </nav>
+        {% endif %}
+    </main>
+
+    <aside>
+        <h3>Tags</h3>
+        <ul class="tags">
+            {% for tag in tags %}
+            <li><a href="/tag/{{ tag.slug }}/">{{ tag.name }} ({{ tag.post_count }})</a></li>
+            {% endfor %}
+        </ul>
+    </aside>
+
+    <footer>
+        <p>&copy; {{ site.title }}</p>
+    </footer>
+</body>
+</html>

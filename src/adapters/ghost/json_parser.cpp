@@ -40,7 +40,7 @@ std::optional<std::chrono::system_clock::time_point> parse_timestamp(std::string
     std::string s {ts};
     int year = 0, month = 0, day = 0, hour = 0, minute = 0, second = 0;
 
-    if (std::scanf(s.c_str(), "%4d-%2d-%2dT%2d:%2d:%2d",
+    if (std::sscanf(s.c_str(), "%4d-%2d-%2dT%2d:%2d:%2d",
         &year, &month, &day, &hour, &minute, &second) != 6) {
         return std::nullopt;
     }

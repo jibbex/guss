@@ -2,7 +2,6 @@
 
 #include "./author.hpp"
 #include "./taxonomy.hpp"
-#include <nlohmann/json.hpp>
 #include <string>
 #include <optional>
 #include <vector>
@@ -59,26 +58,7 @@ struct Post {
     std::string permalink;
     std::string output_path;
 
-    [[nodiscard]] nlohmann::json to_json() const {
-        nlohmann::json j;
-        j["id"] = id;
-        j["title"] = title;
-        j["slug"] = slug;
-        j["source_path"] = source_path;
-        j["content"] = content_html;
-        j["content_markdown"] = content_markdown;
-        j["excerpt"] = excerpt;
-        j["status"] = post_status_to_string(status);
-        j["permalink"] = permalink;
-        j["output_path"] = output_path;
-
-        if (feature_image) j["feature_image"] = *feature_image;
-        if (feature_image_alt) j["feature_image_alt"] = *feature_image_alt;
-        if (meta_title) j["meta_title"] = *meta_title;
-        if (meta_description) j["meta_description"] = *meta_description;
-        if (canonical_url) j["canonical_url"] = *canonical_url;
-        if (custom_template) j["custom_template"] = *custom_template;
-
+    [[nodiscard]] std::string to_json() const {
         auto format_time = [](const std::chrono::system_clock::time_point& tp) -> std::string {
             auto time_t = std::chrono::system_clock::to_time_t(tp);
             std::tm tm = *std::gmtime(&time_t);
@@ -87,40 +67,61 @@ struct Post {
             return buf;
         };
 
-        j["created_at"] = format_time(created_at);
-        if (published_at) j["published_at"] = format_time(*published_at);
-        if (updated_at) j["updated_at"] = format_time(*updated_at);
+        std::string j;
+        j += "{\"id\":\"" + id + "\",";
+        j += "\"title\":\"" + title + "\",";
+        j += "\"slug\":\"" + slug + "\",";
+        j += "\"source_path\":\"" + source_path + "\",";
+        j += "\"content\":\"" + content_html + "\",";
+        j += "\"content_markdown\":\"" + content_markdown + "\",";
+        j += "\"excerpt\":\"" + excerpt + "\",";
+        j += "\"status\":\"" + post_status_to_string(status) + "\",";
+        j += "\"permalink\":\"" + permalink + "\",";
+        j += "\"output_path\":\"" + output_path + "\"";
+        if (feature_image) j += ",\"feature_image\":\"" + *feature_image + "\"";
+        if (feature_image_alt) j += ",\"feature_image_alt\":\"" + *feature_image_alt + "\"";
+        if (meta_title) j += ",\"meta_title\":\"" + *meta_title + "\"";
+        if (meta_description) j += ",\"meta_description\":\"" + *meta_description + "\"";
+        if (canonical_url) j += ",\"canonical_url\":\"" + *canonical_url + "\"";
+        if (custom_template) j += ",\"custom_template\":\"" + *custom_template + "\"";
+        j += ",\"created_at\":\"" + format_time(created_at) + "\"";
+        if (published_at) j += ",\"published_at\":\"" + format_time(*published_at) + "\"";
+        if (updated_at) j += ",\"updated_at\":\"" + format_time(*updated_at) + "\"";
 
         if (published_at) {
             auto time_t = std::chrono::system_clock::to_time_t(*published_at);
             std::tm tm = *std::gmtime(&time_t);
-            j["year"] = tm.tm_year + 1900;
-            j["month"] = tm.tm_mon + 1;
-            j["day"] = tm.tm_mday;
+            j += ",\"year\":" + std::to_string(tm.tm_year + 1900);
+            j += ",\"month\":" + std::to_string(tm.tm_mon + 1);
+            j += ",\"day\":" + std::to_string(tm.tm_mday);
         }
 
-        nlohmann::json authors_json = nlohmann::json::array();
-        for (const auto& author : authors) {
-            authors_json.push_back(author.to_json());
+        j += ",\"authors\":[";
+        for (size_t i = 0; i < authors.size(); ++i) {
+            if (i > 0) j += ",";
+            j += authors[i].to_json();
         }
-        j["authors"] = authors_json;
+        j += "]";
 
         if (!authors.empty()) {
-            j["author"] = authors[0].to_json();
+            j += ",\"author\":" + authors[0].to_json();
         }
 
-        nlohmann::json tags_json = nlohmann::json::array();
-        for (const auto& tag : tags) {
-            tags_json.push_back(tag.to_json());
+        j += ",\"tags\":[";
+        for (size_t i = 0; i < tags.size(); ++i) {
+            if (i > 0) j += ",";
+            j += tags[i].to_json();
         }
-        j["tags"] = tags_json;
+        j += "]";
 
-        nlohmann::json cats_json = nlohmann::json::array();
-        for (const auto& cat : categories) {
-            cats_json.push_back(cat.to_json());
+        j += ",\"categories\":[";
+        for (size_t i = 0; i < categories.size(); ++i) {
+            if (i > 0) j += ",";
+            j += categories[i].to_json();
         }
-        j["categories"] = cats_json;
+        j += "]";
 
+        j += "}";
         return j;
     }
 };

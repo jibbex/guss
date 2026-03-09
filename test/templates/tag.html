@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="{{ site.language }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ tag.name }} - {{ site.title }}</title>
+    <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="/">{{ site.title }}</a>
+        </nav>
+    </header>
+
+    <main>
+        <h1>Posts tagged "{{ tag.name }}"</h1>
+        {% if tag.description %}
+        <p>{{ tag.description }}</p>
+        {% endif %}
+
+        <section class="posts">
+            {% for post in posts %}
+            <article>
+                <h2><a href="{{ post.permalink }}">{{ post.title }}</a></h2>
+                <time datetime="{{ post.published_at }}">
+                    {% if post.published_at %}{{ post.published_at | date("%d. %m. %Y") }}{% endif %}
+                </time>
+            </article>
+            {% endfor %}
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; {{ site.title }}</p>
+    </footer>
+</body>
+</html>
