@@ -1,162 +1,109 @@
 /**
- * @file pipeline.hpp
- * @brief Build pipeline orchestration for Guss SSG.
+ * \file pipeline.hpp
+ * \brief Build pipeline orchestration for Guss SSG.
  *
- * @details
+ * \details
  * The pipeline executes in four phases:
- * 1. Fetch - Pull content from CMS adapter
- * 2. Prepare - Compute permalinks, prepare render contexts
- * 3. Render - Generate HTML from templates (parallel)
- * 4. Write - Output files to disk, copy assets
- *
- * Example usage:
- * @code
- * auto adapter = std::make_unique<guss::adapters::GhostAdapter>(cfg);
- * guss::builder::Pipeline pipeline(
- *     std::move(adapter),
- *     site_config,
- *     template_config,
- *     permalink_config,
- *     output_config
- * );
- *
- * auto result = pipeline.build([](const std::string& msg, float progress) {
- *     std::cout << msg << " (" << (progress * 100) << "%)" << std::endl;
- * });
- * @endcode
+ * 1. Fetch   - Pull content from CMS adapter
+ * 2. Prepare - Expand CollectionMap into flat RenderItem list with archive pages
+ * 3. Render  - Parallel template rendering (OpenMP)
+ * 4. Write   - Output files to disk, copy assets
  */
 #pragma once
 
-#include <chrono>
-#include <functional>
-#include <memory>
-#include <string>
 #include "guss/adapters/adapter.hpp"
 #include "guss/core/config.hpp"
+#include "guss/core/render_item.hpp"
 #include "guss/core/error.hpp"
+#include <chrono>
+#include <filesystem>
+#include <functional>
+#include <string>
+#include <utility>
 
 namespace guss::builder {
 
 /**
- * @brief Statistics from a build run.
+ * \brief Statistics from a build run.
  */
 struct BuildStats {
-    size_t posts_rendered = 0;
-    size_t pages_rendered = 0;
-    size_t tag_archives_rendered = 0;
-    size_t author_archives_rendered = 0;
-    size_t index_pages_rendered = 0;
-    size_t assets_copied = 0;
-    size_t errors = 0;
-
-    std::chrono::milliseconds fetch_duration{0};
-    std::chrono::milliseconds prepare_duration{0};
-    std::chrono::milliseconds render_duration{0};
-    std::chrono::milliseconds write_duration{0};
-    std::chrono::milliseconds total_duration{0};
-
-    [[nodiscard]] size_t total_rendered() const {
-        return posts_rendered + pages_rendered + tag_archives_rendered +
-               author_archives_rendered + index_pages_rendered;
-    }
+    size_t items_rendered   = 0;  ///< Individual content pages rendered
+    size_t archives_rendered = 0; ///< Archive/listing pages rendered
+    size_t assets_copied    = 0;
+    size_t errors           = 0;
+    std::chrono::milliseconds fetch_duration{};
+    std::chrono::milliseconds prepare_duration{};
+    std::chrono::milliseconds render_duration{};
+    std::chrono::milliseconds write_duration{};
+    std::chrono::milliseconds total_duration{};
 };
 
 /**
- * @brief Progress callback for build operations.
- * @param message Current operation description.
- * @param progress Progress value between 0.0 and 1.0.
+ * \brief Progress callback for build operations.
  */
-using ProgressCallback = std::function<void(const std::string& message, float progress)>;
+using ProgressCallback = std::function<void(std::string_view label, float fraction)>;
 
 /**
- * @brief Build pipeline orchestrating the full SSG workflow.
+ * \brief Build pipeline orchestrating the full SSG workflow.
  */
 class Pipeline {
 public:
     /**
-     * @brief Construct a pipeline with all required components.
-     * @param adapter Content adapter for fetching content.
-     * @param site_config Site metadata configuration.
-     * @param template_config Template configuration.
-     * @param permalink_config Permalink pattern configuration.
-     * @param output_config Output directory configuration.
-     * @param posts_per_page Number of posts per index/archive page.
+     * \brief Construct a pipeline.
+     * \param adapter        Content adapter.
+     * \param site_config    Site metadata (used as fallback if adapter site Value is empty).
+     * \param collections    Per-collection rendering configuration (from collections: YAML block).
+     * \param output_config  Output directory and asset settings.
      */
-    Pipeline(
-        adapters::AdapterPtr adapter,
-        const config::SiteConfig& site_config,
-        const config::TemplateConfig& template_config,
-        const config::PermalinkConfig& permalink_config,
-        const config::OutputConfig& output_config,
-        size_t posts_per_page = 10
-    );
+    Pipeline(adapters::AdapterPtr adapter,
+             const config::SiteConfig& site_config,
+             const config::CollectionCfgMap& collections,
+             const config::OutputConfig& output_config);
 
     /**
-     * @brief Execute the full build pipeline.
-     * @param progress Optional progress callback.
-     * @return Build statistics or error.
+     * \brief Execute the full build pipeline.
+     * \param progress Optional progress callback.
+     * \return Build statistics or error.
      */
-    [[nodiscard]] std::expected<BuildStats, error::Error> build(const ProgressCallback& progress) const;
+    [[nodiscard]] std::expected<BuildStats, error::Error>
+    build(const ProgressCallback& progress = nullptr) const;
 
     /**
-     * @brief Clean the output directory.
-     * @return Success or error.
+     * \brief Clean the output directory.
      */
-    error::VoidResult clean() const;
+    [[nodiscard]] error::VoidResult clean() const;
 
     /**
-     * @brief Test connectivity to the content source.
-     * @return Success or error.
+     * \brief Test connectivity to the content source.
      */
-    error::VoidResult ping() const;
+    [[nodiscard]] error::VoidResult ping() const;
 
 private:
-    adapters::AdapterPtr adapter_;
-    config::SiteConfig site_config_;
-    config::TemplateConfig template_config_;
-    config::PermalinkConfig permalink_config_;
-    config::OutputConfig output_config_;
-    size_t posts_per_page_;
+    [[nodiscard]] std::expected<adapters::FetchResult, error::Error>
+    phase_fetch(ProgressCallback progress) const;
 
-    /**
-     * @brief Phase 1: Fetch content from adapter.
-     */
-    [[nodiscard]] std::expected<adapters::FetchResult, error::Error> phase_fetch(ProgressCallback progress) const;
+    /// Returns flat list of all RenderItems (item pages + archive pages) and archive page count.
+    [[nodiscard]] std::pair<std::vector<render::RenderItem>, size_t>
+    phase_prepare(adapters::FetchResult& result) const;
 
-    /**
-     * @brief Phase 2: Prepare content (compute permalinks, etc).
-     */
-    void phase_prepare(adapters::FetchResult& content) const;
-
-    /**
-     * @brief Phase 3: Render all content to HTML.
-     */
     [[nodiscard]] error::Result<std::vector<std::pair<std::filesystem::path, std::string>>>
-    phase_render(const adapters::FetchResult& content, BuildStats& stats, ProgressCallback progress) const;
+    phase_render(const std::vector<render::RenderItem>& items,
+                 size_t archive_count,
+                 const render::Value& site,
+                 BuildStats& stats,
+                 ProgressCallback progress) const;
 
-    /**
-     * @brief Phase 4: Write files to disk.
-     */
     [[nodiscard]] error::VoidResult phase_write(
         const std::vector<std::pair<std::filesystem::path, std::string>>& files,
         BuildStats& stats,
-        ProgressCallback progress
-    ) const;
+        ProgressCallback progress) const;
 
-    /**
-     * @brief Copy static assets from theme.
-     */
     [[nodiscard]] error::VoidResult copy_assets(BuildStats& stats) const;
 
-    /**
-     * @brief Generate sitemap.xml.
-     */
-    [[nodiscard]] std::string generate_sitemap(const adapters::FetchResult& content) const;
-
-    /**
-     * @brief Generate RSS feed.
-     */
-    [[nodiscard]] std::string generate_rss(const adapters::FetchResult& content) const;
+    adapters::AdapterPtr         adapter_;
+    config::SiteConfig           site_config_;
+    config::CollectionCfgMap     collections_;
+    config::OutputConfig         output_config_;
 };
 
 } // namespace guss::builder

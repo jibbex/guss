@@ -132,6 +132,21 @@ public:
     /** \brief Look up an element by index (arrays only; returns null if out of range). */
     Value operator[](size_t index) const;
 
+    /**
+     * \brief Return mutable shared_ptr to the underlying ValueMap (objects only).
+     * \retval shared_ptr<ValueMap>  Pointer to the map if this is an object.
+     * \retval nullptr               If this Value is not an object.
+     */
+    [[nodiscard]] std::shared_ptr<ValueMap> as_object();
+
+    /**
+     * \brief Insert or overwrite a key in the underlying object map.
+     * \param key   Field name.
+     * \param val   Value to store.
+     * \note No-op if this Value is not an object.
+     */
+    void set(std::string key, Value val);
+
 private:
     struct NullTag {};
 
