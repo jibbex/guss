@@ -43,14 +43,46 @@ struct AuthConfig {
 // ---------------------------------------------------------------------------
 
 /**
- * \brief Pagination strategy for a REST API endpoint.
+ * \brief Pagination configuration for REST API endpoints.
+ *
+ * \details
+ * Supports multiple pagination strategies:
+ *  1. `total_pages_header` — one header check on first response, total known, no per-page checks
+ *  2. `link_header` — follow verbatim `Link: rel="next"` URL each round-trip
+ *  3. `json_cursor` — extract cursor token from body each round-trip
+ *  4. `json_next` — check dot-path sentinel in body each round-trip
+ *  5. `optimistic_fetching` — blind GET N+1 until empty/404
+ *  6. none — single page fetch
  */
 struct PaginationConfig {
-    std::string page_param         = "page";
-    std::string limit_param        = "limit";
-    int         limit              = 15;
-    std::string json_next;          ///< dot-path into JSON response; non-null value = has next page
-    std::string total_pages_header; ///< HTTP header for total pages (WordPress style)
+    /**
+     * \brief Page parameter name (e.g. "page"); if not set, pagination is disabled.
+     */
+    std::optional<std::string> page_param;
+    /**
+     * \vrief Limit parameter name (e.g. "limit"); if not set, no limit param is sent. Default value is 15.
+     */
+    std::optional<std::string>  limit_param;
+    /**
+     * \brief JSON cursor path (e.g. "meta.next_cursor"); if not set, cursor-based pagination is not used.
+     */
+    std::optional<std::string> json_cursor;
+    /**
+     * \brief Cursor query parameter name (e.g. "cursor"); required if json_cursor is set.
+     */
+    std::optional<std::string> cursor_param;
+    /**
+     * \brief JSON next page path (e.g. "meta.next_page"); if not set, next page URL is not determined from response body.
+     */
+    std::optional<std::string> json_next;
+    /**
+     * \brief Total pages header name (e.g. "X-Total-Pages"); if not set, total pages are not determined from headers.
+     */
+    std::optional<std::string> total_pages_header;
+
+    int                        limit                = 15;       ///< Default items per page.
+    bool                       link_header          = false;    ///< Whether to parse Link header for pagination info.
+    bool                       optimistic_fetching  = false;    ///< Whether to blindly fetch page N+1 until empty/404.
 };
 
 // ---------------------------------------------------------------------------
