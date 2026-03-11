@@ -29,6 +29,36 @@
 
 namespace guss::render {
 
+/**
+* \brief Initial size of the output buffer used by the bytecode executor.
+*
+* \details
+* The output buffer is a std::string that is appended to during execution.  By
+* reserving 32 KiB upfront, we can avoid multiple reallocations for typical page
+* payloads, which improves performance on the hot path.
+*/
+constexpr size_t WRITE_BUFFER_SIZE = 0x8000;
+
+/**
+ * \brief Maximum size of the value stack used by the bytecode executor.
+ *
+ * \details
+ * The value stack is a fixed-size array allocated on the stack in \c execute().
+ * 64 slots is sufficient for realistic templates; if this limit is exceeded, the
+ * engine will throw a runtime error.
+ */
+constexpr size_t MAX_VALUE_STACK_SIZE = 64;
+
+/**
+ * \brief Maximum size of the loop stack used by the bytecode executor.
+ *
+ * \details
+ * The loop stack is a fixed-size array allocated on the stack in \c execute().
+ * 16 levels of nesting is sufficient for realistic templates; if this limit is
+ * exceeded, the engine will throw a runtime error.
+ */
+constexpr size_t MAX_LOOP_STACK_SIZE = 16;
+
 /** \brief Template engine: cache, filter registry, and bytecode executor. */
 class Engine {
 public:

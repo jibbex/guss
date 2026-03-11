@@ -29,12 +29,12 @@ static Value eval_binary(int32_t op_id, const Value& lhs, const Value& rhs) {
     using TT = lexer::TokenType;
     const auto tt = static_cast<TT>(op_id);
 
-    // Arithmetic — promote to double if either side is floating-point.
+    // Arithmetic, promote to double if either side is floating-point.
     if (tt == TT::Op_Add || tt == TT::Op_Sub ||
         tt == TT::Op_Mul || tt == TT::Op_Div || tt == TT::Op_Mod) {
 
         if ((lhs.is_string() || rhs.is_string()) && tt == TT::Op_Add) {
-            // String concatenation — coerce both operands (Jinja2 semantics).
+            // String concatenation, coerce both operands (Jinja2 semantics).
             return Value(std::string(lhs.to_string()) + rhs.to_string());
         }
 
@@ -42,18 +42,18 @@ static Value eval_binary(int32_t op_id, const Value& lhs, const Value& rhs) {
             const double l = lhs.as_double();
             const double r = rhs.as_double();
             switch (tt) {
-            case TT::Op_Add: return Value(l + r);
-            case TT::Op_Sub: return Value(l - r);
-            case TT::Op_Mul: return Value(l * r);
-            case TT::Op_Div:
-                if (r == 0.0) return Value{};
-                return Value(l / r);
-            case TT::Op_Mod: {
-                const int64_t ri = rhs.as_int();
-                if (ri == 0) return Value{};
-                return Value(lhs.as_int() % ri);
-            }
-            default: break;
+                case TT::Op_Add: return Value(l + r);
+                case TT::Op_Sub: return Value(l - r);
+                case TT::Op_Mul: return Value(l * r);
+                case TT::Op_Div:
+                    if (r == 0.0) return Value{};
+                    return Value(l / r);
+                case TT::Op_Mod: {
+                    const int64_t ri = rhs.as_int();
+                    if (ri == 0) return Value{};
+                    return Value(lhs.as_int() % ri);
+                }
+                default: break;
             }
         }
         return Value{}; // Unsupported operand types.
@@ -68,13 +68,13 @@ static Value eval_binary(int32_t op_id, const Value& lhs, const Value& rhs) {
             const double l = lhs.as_double();
             const double r = rhs.as_double();
             switch (tt) {
-            case TT::Op_Eq: return Value(l == r);
-            case TT::Op_Ne: return Value(l != r);
-            case TT::Op_Lt: return Value(l <  r);
-            case TT::Op_Gt: return Value(l >  r);
-            case TT::Op_Le: return Value(l <= r);
-            case TT::Op_Ge: return Value(l >= r);
-            default: break;
+                case TT::Op_Eq: return Value(l == r);
+                case TT::Op_Ne: return Value(l != r);
+                case TT::Op_Lt: return Value(l <  r);
+                case TT::Op_Gt: return Value(l >  r);
+                case TT::Op_Le: return Value(l <= r);
+                case TT::Op_Ge: return Value(l >= r);
+                default: break;
             }
         }
 
@@ -82,21 +82,21 @@ static Value eval_binary(int32_t op_id, const Value& lhs, const Value& rhs) {
             const auto l = lhs.as_string();
             const auto r = rhs.as_string();
             switch (tt) {
-            case TT::Op_Eq: return Value(l == r);
-            case TT::Op_Ne: return Value(l != r);
-            case TT::Op_Lt: return Value(l <  r);
-            case TT::Op_Gt: return Value(l >  r);
-            case TT::Op_Le: return Value(l <= r);
-            case TT::Op_Ge: return Value(l >= r);
-            default: break;
+                case TT::Op_Eq: return Value(l == r);
+                case TT::Op_Ne: return Value(l != r);
+                case TT::Op_Lt: return Value(l <  r);
+                case TT::Op_Gt: return Value(l >  r);
+                case TT::Op_Le: return Value(l <= r);
+                case TT::Op_Ge: return Value(l >= r);
+                default: break;
             }
         }
 
         if (lhs.is_bool() && rhs.is_bool()) {
             switch (tt) {
-            case TT::Op_Eq: return Value(lhs.as_bool() == rhs.as_bool());
-            case TT::Op_Ne: return Value(lhs.as_bool() != rhs.as_bool());
-            default: break;
+                case TT::Op_Eq: return Value(lhs.as_bool() == rhs.as_bool());
+                case TT::Op_Ne: return Value(lhs.as_bool() != rhs.as_bool());
+                default: break;
             }
         }
 
@@ -210,7 +210,7 @@ void Engine::resolve_filter_ids(CompiledTemplate& tpl) {
 error::Result<const CompiledTemplate*> Engine::load(std::string_view name) {
     const std::string key(name);
 
-    // Cache hit — return immediately.
+    // Cache hit; return immediately.
     auto it = cache_.find(key);
     if (it != cache_.end()) {
         return &it->second;
@@ -287,7 +287,7 @@ error::Result<const CompiledTemplate*> Engine::load(std::string_view name) {
 error::Result<std::string> Engine::render(std::string_view template_name, Context& ctx) {
     GUSS_TRY(const CompiledTemplate* tpl, load(template_name));
     std::string out;
-    out.reserve(32768);
+    out.reserve(WRITE_BUFFER_SIZE);
     execute(*tpl, ctx, out);
     return out;
 }
@@ -298,7 +298,7 @@ error::Result<std::string> Engine::render(std::string_view template_name, Contex
 
 void Engine::execute(const CompiledTemplate& tpl, Context& ctx, std::string& out) {
     // Fixed-size value stack — 64 slots is sufficient for realistic templates.
-    Value  stack[64];
+    Value  stack[MAX_VALUE_STACK_SIZE];
     size_t sp  = 0;
     size_t pc  = 0;
     const size_t end = tpl.code.size();
@@ -310,7 +310,7 @@ void Engine::execute(const CompiledTemplate& tpl, Context& ctx, std::string& out
         size_t length;
         size_t var_name_idx;  // index into tpl.paths for the loop variable name
     };
-    LoopFrame loop_stack[16];
+    LoopFrame loop_stack[MAX_LOOP_STACK_SIZE];
     size_t    lsp = 0;
 
     while (pc < end) {
@@ -318,115 +318,115 @@ void Engine::execute(const CompiledTemplate& tpl, Context& ctx, std::string& out
 
         switch (instr.op) {
 
-        case Op::EmitText:
-            out += tpl.strings[static_cast<size_t>(instr.operand)];
-            break;
+            case Op::EmitText:
+                out += tpl.strings[static_cast<size_t>(instr.operand)];
+                break;
 
-        case Op::Resolve:
-            assert(sp < 64 && "engine: value stack overflow");
-            stack[sp++] = ctx.resolve(tpl.paths[static_cast<size_t>(instr.operand)]);
-            break;
+            case Op::Resolve:
+                assert(sp < 64 && "engine: value stack overflow");
+                stack[sp++] = ctx.resolve(tpl.paths[static_cast<size_t>(instr.operand)]);
+                break;
 
-        case Op::Push:
-            assert(sp < 64 && "engine: value stack overflow");
-            stack[sp++] = tpl.constants[static_cast<size_t>(instr.operand)];
-            break;
+            case Op::Push:
+                assert(sp < 64 && "engine: value stack overflow");
+                stack[sp++] = tpl.constants[static_cast<size_t>(instr.operand)];
+                break;
 
-        case Op::Emit:
-            assert(sp > 0 && "engine: value stack underflow");
-            detail::html_escape_into(stack[--sp].to_string(), out);
-            break;
+            case Op::Emit:
+                assert(sp > 0 && "engine: value stack underflow");
+                detail::html_escape_into(stack[--sp].to_string(), out);
+                break;
 
-        case Op::EmitRaw:
-            assert(sp > 0 && "engine: value stack underflow");
-            out += stack[--sp].to_string();
-            break;
+            case Op::EmitRaw:
+                assert(sp > 0 && "engine: value stack underflow");
+                out += stack[--sp].to_string();
+                break;
 
-        case Op::Filter: {
-            const size_t filter_id = static_cast<size_t>(instr.operand >> 8);
-            const size_t arg_count = static_cast<size_t>(instr.operand & 0xFF);
-            assert(sp >= arg_count + 1 && "engine: value stack underflow");
-            sp -= arg_count;
-            Value& subject = stack[sp - 1];
-            subject = filters_[filter_id](
-                subject,
-                std::span<const Value>(stack + sp, arg_count)
-            );
-            break;
-        }
+            case Op::Filter: {
+                const size_t filter_id = static_cast<size_t>(instr.operand >> 8);
+                const size_t arg_count = static_cast<size_t>(instr.operand & 0xFF);
+                assert(sp >= arg_count + 1 && "engine: value stack underflow");
+                sp -= arg_count;
+                Value& subject = stack[sp - 1];
+                subject = filters_[filter_id](
+                    subject,
+                    std::span<const Value>(stack + sp, arg_count)
+                );
+                break;
+            }
 
-        case Op::BinaryOp:
-            assert(sp >= 2 && "engine: value stack underflow");
-            stack[sp - 2] = eval_binary(instr.operand, stack[sp - 2], stack[sp - 1]);
-            --sp;
-            break;
+            case Op::BinaryOp:
+                assert(sp >= 2 && "engine: value stack underflow");
+                stack[sp - 2] = eval_binary(instr.operand, stack[sp - 2], stack[sp - 1]);
+                --sp;
+                break;
 
-        case Op::UnaryOp:
-            assert(sp > 0 && "engine: value stack underflow");
-            stack[sp - 1] = eval_unary(instr.operand, stack[sp - 1]);
-            break;
+            case Op::UnaryOp:
+                assert(sp > 0 && "engine: value stack underflow");
+                stack[sp - 1] = eval_unary(instr.operand, stack[sp - 1]);
+                break;
 
-        case Op::JumpIfFalse:
-            assert(sp > 0 && "engine: value stack underflow");
-            if (!stack[--sp].is_truthy()) {
+            case Op::JumpIfFalse:
+                assert(sp > 0 && "engine: value stack underflow");
+                if (!stack[--sp].is_truthy()) {
+                    pc = static_cast<size_t>(
+                        static_cast<int32_t>(pc) + instr.operand - 1);
+                }
+                break;
+
+            case Op::Jump:
                 pc = static_cast<size_t>(
                     static_cast<int32_t>(pc) + instr.operand - 1);
+                break;
+
+            case Op::ForBegin: {
+                assert(lsp < 16 && "engine: loop stack overflow");
+                const size_t iterable_idx =
+                    static_cast<size_t>((instr.operand >> 16) & 0xFFFF);
+                const size_t var_idx =
+                    static_cast<size_t>(instr.operand & 0xFFFF);
+                Value iterable = ctx.resolve(tpl.paths[iterable_idx]);
+                const size_t length = iterable.size();
+                loop_stack[lsp++] = {std::move(iterable), 0, length, var_idx};
+                break;
             }
-            break;
 
-        case Op::Jump:
-            pc = static_cast<size_t>(
-                static_cast<int32_t>(pc) + instr.operand - 1);
-            break;
-
-        case Op::ForBegin: {
-            assert(lsp < 16 && "engine: loop stack overflow");
-            const size_t iterable_idx =
-                static_cast<size_t>((instr.operand >> 16) & 0xFFFF);
-            const size_t var_idx =
-                static_cast<size_t>(instr.operand & 0xFFFF);
-            Value iterable = ctx.resolve(tpl.paths[iterable_idx]);
-            const size_t length = iterable.size();
-            loop_stack[lsp++] = {std::move(iterable), 0, length, var_idx};
-            break;
-        }
-
-        case Op::ForNext: {
-            assert(lsp > 0 && "engine: loop stack underflow");
-            LoopFrame& frame = loop_stack[lsp - 1];
-            if (frame.index >= frame.length) {
-                --lsp;
-                pc = static_cast<size_t>(
-                    static_cast<int32_t>(pc) + instr.operand - 1);
-            } else {
-                ctx.set(tpl.paths[frame.var_name_idx], frame.array[frame.index]);
-                ctx.set("loop.index",
-                        Value(static_cast<int64_t>(frame.index + 1)));
-                ctx.set("loop.index0",
-                        Value(static_cast<int64_t>(frame.index)));
-                ctx.set("loop.first",  Value(frame.index == 0));
-                ctx.set("loop.last",
-                        Value(frame.length > 0 &&
-                              frame.index == frame.length - 1));
-                ctx.set("loop.length",
-                        Value(static_cast<int64_t>(frame.length)));
-                ++frame.index;
+            case Op::ForNext: {
+                assert(lsp > 0 && "engine: loop stack underflow");
+                LoopFrame& frame = loop_stack[lsp - 1];
+                if (frame.index >= frame.length) {
+                    --lsp;
+                    pc = static_cast<size_t>(
+                        static_cast<int32_t>(pc) + instr.operand - 1);
+                } else {
+                    ctx.set(tpl.paths[frame.var_name_idx], frame.array[frame.index]);
+                    ctx.set("loop.index",
+                            Value(static_cast<int64_t>(frame.index + 1)));
+                    ctx.set("loop.index0",
+                            Value(static_cast<int64_t>(frame.index)));
+                    ctx.set("loop.first",  Value(frame.index == 0));
+                    ctx.set("loop.last",
+                            Value(frame.length > 0 &&
+                                  frame.index == frame.length - 1));
+                    ctx.set("loop.length",
+                            Value(static_cast<int64_t>(frame.length)));
+                    ++frame.index;
+                }
+                break;
             }
-            break;
-        }
 
-        case Op::ForEnd:
-            // No-op marker — signals end of for-loop region to analysis tools.
-            break;
+            case Op::ForEnd:
+                // No-op marker — signals end of for-loop region to analysis tools.
+                break;
 
-        case Op::BlockCall:
-            // TODO: Full template inheritance — look up block override in cache
-            // using the key "<template_name>::block::<block_name>" and execute it.
-            // For this phase BlockCall is a no-op; the inheritance test covers this.
-            break;
+            case Op::BlockCall:
+                // TODO: Full template inheritance — look up block override in cache
+                // using the key "<template_name>::block::<block_name>" and execute it.
+                // For this phase BlockCall is a no-op; the inheritance test covers this.
+                break;
 
-        case Op::Return:
-            return;
+            case Op::Return:
+                return;
         }
     }
 }
