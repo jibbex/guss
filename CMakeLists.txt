@@ -116,14 +116,6 @@ if(NOT OpenMP_CXX_FOUND)
     CPMAddPackage("gh:bshoshany/thread-pool@5.1.0")
 endif()
 
-# Expected (C++23 polyfill for older compilers)
-CPMAddPackage(
-    NAME tl-expected
-    GITHUB_REPOSITORY TartanLlama/expected
-    VERSION 1.1.0
-    OPTIONS "EXPECTED_BUILD_TESTS OFF"
-)
-
 # Google Test (if building tests)
 if(GUSS_BUILD_TESTS)
     CPMAddPackage("gh:google/googletest@1.15.2")
@@ -143,7 +135,6 @@ target_include_directories(guss-core PUBLIC include)
 target_link_libraries(guss-core PUBLIC
     yaml-cpp
     spdlog::spdlog
-    expected
 )
 
 if(TARGET cmark)
@@ -156,8 +147,9 @@ endif()
 # Adapters library
 # -----------------------------------------------------------------------------
 add_library(guss-adapters
-    src/adapters/ghost/ghost_adapter.cpp
-    src/adapters/ghost/json_parser.cpp
+    src/adapters/adapter.cpp
+    src/adapters/markdown/markdown_adapter.cpp
+    src/adapters/rest/rest_adapter.cpp
 )
 
 target_include_directories(guss-adapters PUBLIC include)
@@ -166,6 +158,11 @@ target_link_libraries(guss-adapters PUBLIC
     httplib::httplib
     simdjson
 )
+
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(guss-adapters PUBLIC OpenMP::OpenMP_CXX)
+    target_compile_definitions(guss-adapters PUBLIC GUSS_USE_OPENMP)
+endif()
 
 # -----------------------------------------------------------------------------
 # Render library
@@ -270,13 +267,14 @@ if(GUSS_BUILD_TESTS)
         tests/test_context.cpp
         tests/test_config.cpp
         tests/test_permalink.cpp
-        tests/test_ghost_json.cpp
         tests/test_lexer.cpp
         tests/test_parser.cpp
         tests/test_compiler.cpp
         tests/test_engine.cpp
         tests/test_inheritance.cpp
         tests/test_filters.cpp
+        tests/test_render_item.cpp
+        tests/test_pipeline_prepare.cpp
     )
     target_link_libraries(guss-tests PRIVATE
         guss-core

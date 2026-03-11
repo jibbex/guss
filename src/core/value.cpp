@@ -172,4 +172,15 @@ Value Value::operator[](size_t index) const {
     return {};
 }
 
+std::shared_ptr<ValueMap> Value::as_object() {
+    if (auto* p = std::get_if<std::shared_ptr<ValueMap>>(&data_)) return *p;
+    return nullptr;
+}
+
+void Value::set(std::string key, Value val) {
+    if (auto* p = std::get_if<std::shared_ptr<ValueMap>>(&data_)) {
+        (**p)[std::move(key)] = std::move(val);
+    }
+}
+
 } // namespace guss::render

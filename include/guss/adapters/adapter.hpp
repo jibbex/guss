@@ -1,147 +1,159 @@
 /**
  * \file adapter.hpp
- * \brief Content adapter interface for Apex SSG.
+ * \brief Content adapter interface for Guss SSG.
  *
  * \details
- * This file defines the abstract ContentAdapter interface for fetching content from
- * various CMS sources. Implementations include MarkdownAdapter (local files),
- * GhostAdapter (Ghost CMS API), and WordPressAdapter (WordPress REST API).
+ * Defines the abstract ContentAdapter base class and FetchResult type.
+ * Adapters convert CMS-specific content into a CollectionMap of RenderItems
+ * plus a site-wide metadata Value.
  *
- * The adapter pattern decouples content sourcing from the build pipeline, allowing
- * Apex SSG to work with multiple content sources through a unified interface.
- *
- * Example usage:
- * \code
- * #include "apex/adapter.hpp"
- * #include "apex/adapters/markdown_adapter.hpp"
- *
- * apex::config::MarkdownAdapterConfig cfg;
- * cfg.content_path = "./content";
- * cfg.pages_path = "./pages";
- *
- * auto adapter = std::make_unique<apex::adapter::MarkdownAdapter>(cfg);
- * auto result = adapter->fetch_all([](size_t current, size_t total) {
- *     std::cout << "Progress: " << current << "/" << total << std::endl;
- * });
- *
- * if (result) {
- *     std::cout << "Fetched " << result->posts.size() << " posts" << std::endl;
- * }
- * \endcode
- *
- * \author Manfred Michaelis
- * \date 2025
+ * ContentAdapter provides protected helpers shared by all concrete adapters:
+ * - build_site_value()  — converts SiteConfig to a Value
+ * - resolve_path()      — navigates a dot-path ("authors.0.slug") through a Value
+ * - apply_field_map()   — renames/projects fields in an item Value
+ * - enrich_item()       — adds year/month/day and permalink to an item Value
  */
 #pragma once
-
-#include <expected>
-
 
 #include <functional>
 #include <memory>
 #include <optional>
-#include <vector>
+#include <string>
+#include <string_view>
+#include <unordered_map>
+#include "guss/core/config.hpp"
 #include "guss/core/error.hpp"
-#include "guss/core/model/asset.hpp"
-#include "guss/core/model/author.hpp"
-#include "guss/core/model/page.hpp"
-#include "guss/core/model/post.hpp"
-#include "guss/core/model/taxonomy.hpp"
-
+#include "guss/core/render_item.hpp"
+#include "guss/core/value.hpp"
 #include <httplib.h>
 
 namespace guss::adapters {
 
 /**
  * \brief Progress callback for fetch operations.
- * \param current Current item number.
- * \param total Total number of items.
+ * \param current Current item count.
+ * \param total   Total item count.
  */
 using FetchCallback = std::function<void(size_t current, size_t total)>;
 
 /**
- * \brief Result of a fetch_all operation containing all content types.
+ * \brief Result of a fetch_all operation.
+ *
+ * \details
+ * items: CollectionMap keyed by collection name (e.g. "posts", "tags").
+ *        Each RenderItem has a pre-computed output_path and template_name.
+ *        The pipeline uses this map to generate archive pages and render all items.
+ *
+ * site:  Site-wide metadata Value (title, description, url, language, ...).
+ *        Adapter may include shared summaries but does NOT put full collection
+ *        arrays here — those live in items.
  */
 struct FetchResult {
-    std::vector<model::Post> posts;
-    std::vector<model::Page> pages;
-    std::vector<model::Author> authors;
-    std::vector<model::Tag> tags;
-    std::vector<model::Category> categories;
-    std::vector<model::Asset> assets;
+    render::CollectionMap items;
+    render::Value         site;
 };
 
 /**
- * \brief Abstract interface for content adapters.
+ * \brief Abstract base class for content adapters.
  *
  * \details
- * Implementations must provide methods to fetch posts, pages, authors,
- * tags, categories, and assets from their respective content sources.
+ * Holds SiteConfig and CollectionCfgMap so every concrete adapter can call
+ * the shared helpers (build_site_value, resolve_path, apply_field_map, enrich_item)
+ * without duplicating code.
  */
 class ContentAdapter {
 public:
+    ContentAdapter(config::SiteConfig site_cfg, config::CollectionCfgMap collections)
+        : site_cfg_(std::move(site_cfg))
+        , collections_(std::move(collections)) {}
+
     virtual ~ContentAdapter() = default;
 
     /**
-     * \brief Fetch all content in one operation.
+     * \brief Fetch all content and return a FetchResult.
      * \param progress Optional progress callback.
-     * \return FetchResult containing all content or an Error.
+     * \return FetchResult on success, Error on failure.
      */
     virtual error::Result<FetchResult> fetch_all(FetchCallback progress = nullptr) = 0;
 
-    virtual error::Result<std::vector<model::Post>> fetch_posts(FetchCallback progress = nullptr) = 0;
-    virtual error::Result<std::vector<model::Page>> fetch_pages(FetchCallback progress = nullptr) = 0;
-    virtual error::Result<std::vector<model::Author>> fetch_authors() = 0;
-    virtual error::Result<std::vector<model::Tag>> fetch_tags() = 0;
-    virtual error::Result<std::vector<model::Category>> fetch_categories() = 0;
-    virtual error::Result<std::vector<model::Asset>> fetch_assets() = 0;
+    /**
+     * \brief Test connectivity without a full fetch.
+     * \return VoidResult indicating success or Error.
+     */
+    virtual error::VoidResult ping() = 0;
 
     /**
-     * \brief Get the adapter name for logging/identification.
-     * \return Adapter name string (e.g., "markdown", "ghost", "wordpress").
+     * \brief Get the adapter name for logging.
+     * \retval std::string Adapter name (e.g. "rest_api", "markdown").
      */
     virtual std::string adapter_name() const = 0;
+
+protected:
+    config::SiteConfig       site_cfg_;
+    config::CollectionCfgMap collections_;
+
+    /**
+     * \brief Convert site_cfg_ to a Value suitable for FetchResult::site.
+     */
+    render::Value build_site_value() const;
+
+    /**
+     * \brief Navigate a dot-path through a Value.
+     *
+     * \details
+     * Splits \p path on '.' and traverses the Value chain. Numeric segments
+     * are treated as array indices. Returns a null Value if any step fails.
+     *
+     * Examples:
+     * - "authors.0"        → v["authors"][0]
+     * - "content.rendered" → v["content"]["rendered"]
+     *
+     * \param v    Root Value to traverse.
+     * \param path Dot-separated path string.
+     * \retval render::Value  The resolved value, or null if the path cannot be resolved.
+     */
+    static render::Value resolve_path(const render::Value& v, std::string_view path);
+
+    /**
+     * \brief Apply a field map to an item Value.
+     *
+     * \details
+     * For each (target, source_path) pair, sets item[target] = resolve_path(item, source_path).
+     * Existing fields are overwritten; missing source paths produce null values.
+     *
+     * \param item      Object Value to modify in-place.
+     * \param field_map Map of target field name to source dot-path.
+     */
+    static void apply_field_map(
+        render::Value& item,
+        const std::unordered_map<std::string, std::string>& field_map);
+
+    /**
+     * \brief Enrich an item Value with date fields, permalink, and output_path.
+     *
+     * \details
+     * 1. If item["published_at"] has >= 10 characters, extracts year/month/day
+     *    and sets them on the item.
+     * 2. Looks up the collection config for \p collection_name.
+     * 3. Calls PermalinkGenerator::expand + permalink_to_path.
+     * 4. Sets item["permalink"] and item["output_path"].
+     *
+     * No-op if collection_name is not in collections_ or its permalink is empty.
+     *
+     * \param item            Object Value to enrich (must be an object).
+     * \param collection_name Collection name to look up permalink pattern.
+     */
+    void enrich_item(render::Value& item, const std::string& collection_name) const;
 };
 
-/**
- * \brief Unique pointer type alias for adapters.
- */
+/** \brief Unique pointer type alias for adapters. */
 using AdapterPtr = std::unique_ptr<ContentAdapter>;
 
 /**
- * \brief Helper to extract error information from an HTTP response.
- * \param res The constance reference to HTTP response.
- * \retval std::unexpected<error::Error> An Error if the response indicates an error
+ * \brief Extract error information from an HTTP response.
+ * \retval std::nullopt                   Response is successful (no error).
+ * \retval std::unexpected<error::Error>  HTTP error with appropriate ErrorCode.
  */
-inline std::optional<std::unexpected<error::Error>> get_error(const httplib::Response &res) {
-    switch (res.status) {
-        case 400:
-            return error::make_error(
-                error::ErrorCode::AdapterBadRequest,
-                "Bad request",
-                res.body);
-        case 401:
-            return error::make_error(
-                error::ErrorCode::AdapterAuthFailed,
-                "Unauthorized",
-                res.body);
-        case 403:
-            return error::make_error(
-                error::ErrorCode::AdapterAuthFailed,
-                "Forbidden",
-                res.body);
-        case 404:
-            return error::make_error(
-                error::ErrorCode::AdapterNotFound,
-                "Not found",
-                res.body);
-        case 500:
-            return error::make_error(
-                error::ErrorCode::AdapterServerError,
-                "Internal server error",
-                res.body);
-        default: return std::nullopt;
-    }
-}
+std::optional<std::unexpected<error::Error>> get_error(const httplib::Result& res);
 
 } // namespace guss::adapters

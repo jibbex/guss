@@ -27,12 +27,16 @@ namespace fs = std::filesystem;
 class EngineTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        tmp_dir_ = fs::temp_directory_path() / "guss_engine_test";
+        const auto* info = ::testing::UnitTest::GetInstance()->current_test_info();
+        std::string dir_name = std::string("guss_engine_test_")
+            + info->test_suite_name() + "_" + info->name();
+        tmp_dir_ = fs::temp_directory_path() / dir_name;
         fs::create_directories(tmp_dir_);
     }
 
     void TearDown() override {
-        fs::remove_all(tmp_dir_);
+        std::error_code ec;
+        fs::remove_all(tmp_dir_, ec);
     }
 
     /** Write \p content to a file named \p name inside the temp directory. */

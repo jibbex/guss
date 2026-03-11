@@ -1,37 +1,12 @@
 /**
  * \file config.hpp
- * \brief Configuration system for Apex SSG using yaml-cpp.
+ * \brief Configuration system for Guss SSG using yaml-cpp.
  *
  * \details
- * This file defines the configuration structures for Apex SSG, parsed from a YAML file
- * (typically `apex.yaml`). It uses std::variant to support multiple adapter types
- * (Markdown, Ghost CMS, WordPress) and provides typed structs for all configuration
- * sections including site metadata, permalinks, output settings, and watch triggers.
- *
- * Example usage:
- * \code
- * #include "apex/config.hpp"
- * #include <iostream>
- *
- * int main() {
- *     auto result = apex::config::load_config("apex.yaml");
- *     if (!result) {
- *         std::cerr << "Error: " << result.error().format() << std::endl;
- *         return 1;
- *     }
- *
- *     const auto& cfg = *result;
- *     std::cout << "Site: " << cfg.site.title << std::endl;
- *     std::cout << "Output: " << cfg.output.output_dir << std::endl;
- *
- *     // Check adapter type
- *     if (std::holds_alternative<apex::config::MarkdownAdapterConfig>(cfg.adapter)) {
- *         std::cout << "Using Markdown adapter" << std::endl;
- *     }
- *
- *     return 0;
- * }
- * \endcode
+ * Defines configuration structures parsed from a YAML file (typically `guss.yaml`).
+ * Uses std::variant to support multiple adapter types (RestApi, Markdown) and
+ * provides typed structs for all configuration sections including site metadata,
+ * output settings, and watch triggers.
  *
  * \author Manfred Michaelis
  * \date 2025
@@ -39,33 +14,118 @@
 #pragma once
 
 #include <filesystem>
-#include <memory>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <variant>
 #include "guss/core/error.hpp"
 
 namespace guss::config {
 
-/**
- * \brief Configuration for the Ghost CMS adapter.
- */
-struct GhostAdapterConfig {
-    std::string api_url;
-    std::string content_api_key;
-    std::optional<std::string> admin_api_key;
-    int timeout_ms = 30000;
-};
+// ---------------------------------------------------------------------------
+// Auth configuration
+// ---------------------------------------------------------------------------
 
 /**
- * \brief Configuration for the WordPress REST API adapter.
+ * \brief Authentication configuration for REST API adapters.
  */
-struct WordPressAdapterConfig {
-    std::string api_url;
-    std::optional<std::string> username;
-    std::optional<std::string> app_password;
-    int timeout_ms = 30000;
+struct AuthConfig {
+    enum class Type { None, ApiKey, Basic, Bearer };
+    Type        type     = Type::None;
+    std::string param;    ///< api_key: query param name
+    std::string value;    ///< api_key: key value; bearer: token
+    std::string username; ///< basic auth username
+    std::string password; ///< basic auth password
 };
+
+// ---------------------------------------------------------------------------
+// Pagination configuration
+// ---------------------------------------------------------------------------
+
+/**
+ * \brief Pagination strategy for a REST API endpoint.
+ */
+struct PaginationConfig {
+    std::string page_param         = "page";
+    std::string limit_param        = "limit";
+    int         limit              = 15;
+    std::string json_next;          ///< dot-path into JSON response; non-null value = has next page
+    std::string total_pages_header; ///< HTTP header for total pages (WordPress style)
+};
+
+// ---------------------------------------------------------------------------
+// Endpoint configuration
+// ---------------------------------------------------------------------------
+
+/// Fixed query params for an endpoint (param name -> value).
+using EndpointParams = std::unordered_map<std::string, std::string>;
+
+/**
+ * \brief Configuration for a single REST API endpoint (one collection).
+ */
+struct EndpointConfig {
+    std::string path;
+    std::string response_key;               ///< JSON key holding items array; empty = root array
+    EndpointParams params;                  ///< extra fixed query params
+    std::optional<PaginationConfig> pagination; ///< overrides global pagination if set
+};
+
+// ---------------------------------------------------------------------------
+// Cross-reference configuration
+// ---------------------------------------------------------------------------
+
+/**
+ * \brief Describes a cross-reference from one collection to another.
+ *
+ * \details
+ * Used to build taxonomy pages (e.g. tags) from data embedded in post items.
+ * Example: tags cross-reference from posts via "tags.slug".
+ */
+struct CrossRefConfig {
+    std::string from;                  ///< source collection name (e.g. "posts")
+    std::string via;                   ///< dot-path to the linking field (e.g. "tags")
+    std::string match_key = "slug";    ///< field within array elements to compare
+                                       ///< against target slug; ignored for scalar via values
+};
+
+// ---------------------------------------------------------------------------
+// Type aliases for REST API config maps
+// ---------------------------------------------------------------------------
+
+/// Map of collection name to its endpoint configuration.
+using EndpointCfgMap = std::unordered_map<std::string, EndpointConfig>;
+
+/// Map of collection name to its field renaming rules (target field -> source dot-path).
+using FieldMapCfg = std::unordered_map<std::string, std::unordered_map<std::string, std::string>>;
+
+/// Map of collection name to its cross-reference configuration.
+using CrossRefCfgMap = std::unordered_map<std::string, CrossRefConfig>;
+
+// ---------------------------------------------------------------------------
+// REST API adapter configuration
+// ---------------------------------------------------------------------------
+
+/**
+ * \brief Configuration for a generic REST CMS adapter.
+ *
+ * \details
+ * Replaces Ghost-specific and WordPress-specific configs.
+ * Any REST-based CMS (Ghost, WordPress, Contentful, etc.) can be
+ * configured using this struct.
+ */
+struct RestApiConfig {
+    std::string      base_url;
+    int              timeout_ms = 30000;
+    AuthConfig       auth;
+    PaginationConfig pagination;
+    EndpointCfgMap   endpoints;
+    FieldMapCfg      field_maps;
+    CrossRefCfgMap   cross_references;
+};
+
+// ---------------------------------------------------------------------------
+// Markdown adapter configuration
+// ---------------------------------------------------------------------------
 
 /**
  * \brief Configuration for the local Markdown file adapter.
@@ -80,58 +140,66 @@ struct MarkdownAdapterConfig {
 /**
  * \brief Variant type for adapter configuration selection.
  */
-using AdapterConfig = std::variant<GhostAdapterConfig, WordPressAdapterConfig, MarkdownAdapterConfig>;
+using AdapterConfig = std::variant<RestApiConfig, MarkdownAdapterConfig>;
 
-/**
- * \brief Permalink pattern configuration with date token support.
- *
- * \details
- * Supported tokens: {slug}, {year}, {month}, {day}, {id}, {title}
- */
-struct PermalinkConfig {
-    std::string post_pattern = "/{year}/{month}/{slug}/";
-    std::string page_pattern = "/{slug}/";
-    std::string tag_pattern = "/tag/{slug}/";
-    std::string category_pattern = "/category/{slug}/";
-    std::string author_pattern = "/author/{slug}/";
-};
+// ---------------------------------------------------------------------------
+// Watch / Output configuration
+// ---------------------------------------------------------------------------
 
 /**
  * \brief Watch mode configuration for automatic rebuilds.
  */
 struct WatchConfig {
-    bool enabled = false;
-    bool filesystem_watch = true;
-    bool webhook_enabled = false;
-    int webhook_port = 9000;
-    std::string webhook_path = "/webhook";
-    bool polling_enabled = false;
-    int polling_interval_seconds = 300;
+    bool        enabled                  = false;
+    bool        filesystem_watch         = true;
+    bool        webhook_enabled          = false;
+    int         webhook_port             = 9000;
+    std::string webhook_path             = "/webhook";
+    bool        polling_enabled          = false;
+    int         polling_interval_seconds = 300;
 };
 
 /**
  * \brief Output and generation settings.
  */
 struct OutputConfig {
-    std::filesystem::path output_dir = "./dist";
-    std::filesystem::path assets_dir = "./assets";
-    bool generate_sitemap = true;
-    bool generate_rss = true;
-    bool minify_html = false;
-    bool copy_assets = true;
+    std::filesystem::path output_dir    = "./dist";
+    std::filesystem::path assets_dir    = "./assets";
+    bool generate_sitemap               = true;
+    bool generate_rss                   = true;
+    bool minify_html                    = false;
+    bool copy_assets                    = true;
 };
 
+// ---------------------------------------------------------------------------
+// Collection configuration
+// ---------------------------------------------------------------------------
+
 /**
- * \brief Template configuration for Inja rendering.
+ * \brief Per-collection rendering configuration.
+ *
+ * \details
+ * Any collection name is valid; no hardcoded types in the pipeline.
+ *
+ * \par Permalink tokens
+ * Tokens like {slug} are plain field lookups against the item's Value.
+ * The adapter is responsible for populating all fields the pattern references.
+ * Date convenience fields (year, month, day) must be pre-computed by the adapter.
  */
-struct TemplateConfig {
-    std::filesystem::path templates_dir = "./templates";
-    std::string default_post_template = "post.html";
-    std::string default_page_template = "page.html";
-    std::string index_template = "index.html";
-    std::string tag_template = "tag.html";
-    std::string author_template = "author.html";
+struct CollectionConfig {
+    std::string item_template;            ///< Template for individual item pages. Empty = no item pages.
+    std::string archive_template;         ///< Template for archive/listing pages. Empty = no archive pages.
+    std::string permalink;                ///< Pattern with {token} placeholders; tokens are field lookups.
+    int         paginate    = 0;          ///< Items per archive page. 0 = single archive page.
+    std::string context_key = "item";     ///< Template variable name for individual item data.
 };
+
+/// Map of collection name to its rendering configuration.
+using CollectionCfgMap = std::unordered_map<std::string, CollectionConfig>;
+
+// ---------------------------------------------------------------------------
+// Site metadata
+// ---------------------------------------------------------------------------
 
 /**
  * \brief Site metadata configuration.
@@ -148,6 +216,10 @@ struct SiteConfig {
     std::optional<std::string> facebook;
 };
 
+// ---------------------------------------------------------------------------
+// Config class
+// ---------------------------------------------------------------------------
+
 class Config final {
 public:
     /**
@@ -158,36 +230,22 @@ public:
      */
     explicit Config(std::string_view config_path);
 
-    [[nodiscard]] const SiteConfig &site() const { return site_; }
-    [[nodiscard]] const AdapterConfig& adapter() const { return adapter_; }
-    [[nodiscard]] const PermalinkConfig& permalinks() const { return permalinks_; }
-    [[nodiscard]] const WatchConfig& watch() const { return watch_; }
-    [[nodiscard]] const OutputConfig& output() const { return output_; }
-    [[nodiscard]] const TemplateConfig& templates() const { return templates_; }
-    [[nodiscard]] int parallel_workers() const { return parallel_workers_; }
-    [[nodiscard]] const std::string& log_level() const { return log_level_; }
+    [[nodiscard]] const SiteConfig&       site()        const { return site_; }
+    [[nodiscard]] const AdapterConfig&    adapter()     const { return adapter_; }
+    [[nodiscard]] const WatchConfig&      watch()       const { return watch_; }
+    [[nodiscard]] const OutputConfig&     output()      const { return output_; }
+    [[nodiscard]] const CollectionCfgMap& collections() const { return collections_; }
+    [[nodiscard]] int                     parallel_workers() const { return parallel_workers_; }
+    [[nodiscard]] const std::string&      log_level()   const { return log_level_; }
 
 private:
-
-    /**
-     * \defgroup ConfigMembers Private member variables for configuration sections.
-     * \{
-     * \brief Configuration sections for site metadata, adapter settings, permalinks, watch mode, output settings, and templates.
-     * Each section is represented by a struct that encapsulates related configuration options.
-    */
-
-    SiteConfig site_;               ///< Site metadata configuration (title, description, URL, etc.)
-    AdapterConfig adapter_;         ///< Adapter configuration (variant for Ghost, WordPress, Markdown)
-    PermalinkConfig permalinks_;    ///< Permalink pattern configuration for posts, pages, tags, categories, authors
-    WatchConfig watch_;             ///< Watch mode configuration for automatic rebuilds (filesystem, webhook, polling)
-    OutputConfig output_;           ///< Output settings for generated files (output directory, assets handling, sitemap/RSS generation)
-    TemplateConfig templates_;      ///< Template configuration for Inja rendering (templates directory, default templates for posts/pages/index/tag/author)
-    int parallel_workers_;          ///< Number of parallel workers for build operations (default: number of hardware threads)
-    std::string log_level_;         ///< Logging level for the application (e.g., "info", "debug", "error")
-
-    /**
-    * \}
-    */
+    SiteConfig       site_;
+    AdapterConfig    adapter_;
+    WatchConfig      watch_;
+    OutputConfig     output_;
+    CollectionCfgMap collections_;
+    int              parallel_workers_;
+    std::string      log_level_;
 };
 
 /**
