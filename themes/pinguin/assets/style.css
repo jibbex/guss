@@ -275,7 +275,7 @@
 }
 
 /* ── View Transition ───────── */
-/// 
+
  @view-transition {
     navigation: auto;
     type: cross-fade;
