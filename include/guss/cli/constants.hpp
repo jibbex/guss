@@ -1363,6 +1363,7 @@ main, body > div {
 @media (max-width: 640px) {
     .kg-bookmark-thumbnail { display: none; }
 }
+
 /* ── Download button (Ghost file card) ───────── */
 .prose button {
     display: inline-flex;
@@ -1371,7 +1372,7 @@ main, body > div {
     padding: 0.5rem 1.1rem;
     border-radius: 0.625rem;
     border: 1px solid oklch(0.86 0.010 260);
-    background: oklch(0.97 0.003 260);
+    background: oklch(90.198% 0.03549 264.409);
     color: oklch(0.40 0.016 260);
     font-family: 'Inter', system-ui, sans-serif;
     font-size: 0.82rem;
@@ -1386,12 +1387,12 @@ main, body > div {
     color: oklch(1 0 0);
     box-shadow: 0 2px 12px oklch(0.52 0.22 265 / 0.25);
 }
-.prose .dark button {
+.dark .prose button {
     border-color: oklch(0.26 0.018 265);
     background: oklch(0.16 0.020 265);
     color: oklch(0.65 0.016 265);
 }
-.prose .dark button:hover {
+.dark .prose button:hover {
     border-color: oklch(0.74 0.18 265);
     background: oklch(0.74 0.18 265);
     color: oklch(0.10 0.018 265);
@@ -1400,16 +1401,11 @@ main, body > div {
 .prose button:has(svg) svg {
     flex-shrink: 0;
 }
-.hl-container.flex-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1em;
-    border-radius: 1em;
-}
-.hl-container.flex-container > div {
-    flex: 1;
-    min-width: 420px;
-    padding: 1em;
+
+/* ── View Transition ───────── */
+ @view-transition {
+    navigation: auto;
+    type: cross-fade;
 }
 )";
 
