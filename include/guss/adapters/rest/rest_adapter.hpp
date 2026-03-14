@@ -66,6 +66,13 @@ private:
      */
     error::Result<HttpResponse> http_get(const std::string& path) const;
 
+    /// Like http_get() but sends \p path verbatim without prepending base_path_.
+    /// Used by link_header and json_next_url strategies to follow extracted URLs.
+    error::Result<HttpResponse> http_get_raw_path(const std::string& path) const;
+
+    /// Core HTTP GET implementation. \p full_path is sent verbatim (no modifications).
+    error::Result<HttpResponse> do_get(const std::string& full_path) const;
+
     /**
      * \brief Fetch all pages of a single endpoint, returning raw Values.
      *

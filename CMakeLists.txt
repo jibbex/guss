@@ -241,6 +241,199 @@ target_link_libraries(guss PRIVATE
 
 target_compile_definitions(guss PRIVATE MAX_RECURSION=${MAX_RECURSION})
 
+# -----------------------------------------------------------------------------
+# Generate include/guss/cli/constants.hpp from themes/pinguin
+# -----------------------------------------------------------------------------
+set(_constants_out "${CMAKE_SOURCE_DIR}/include/guss/cli/constants.hpp")
+
+file(READ "${CMAKE_SOURCE_DIR}/themes/pinguin/index.html"   _tpl_index)
+file(READ "${CMAKE_SOURCE_DIR}/themes/pinguin/post.html"    _tpl_post)
+file(READ "${CMAKE_SOURCE_DIR}/themes/pinguin/page.html"    _tpl_page)
+file(READ "${CMAKE_SOURCE_DIR}/themes/pinguin/tag.html"     _tpl_tag)
+file(READ "${CMAKE_SOURCE_DIR}/themes/pinguin/author.html"  _tpl_author)
+file(READ "${CMAKE_SOURCE_DIR}/themes/pinguin/assets/style.css" _tpl_style)
+
+file(WRITE "${_constants_out}" "\
+#pragma once
+
+// AUTO-GENERATED — do not edit by hand.
+// Re-runs every CMake configure. Source: themes/pinguin/
+
+#include <string_view>
+
+namespace guss::cli {
+
+/// \\brief Embedded content of themes/pinguin/index.html
+constexpr std::string_view DEFAULT_INDEX_TEMPLATE = R\"(
+${_tpl_index})\";
+
+/// \\brief Embedded content of themes/pinguin/post.html
+constexpr std::string_view DEFAULT_POST_TEMPLATE = R\"(
+${_tpl_post})\";
+
+/// \\brief Embedded content of themes/pinguin/page.html
+constexpr std::string_view DEFAULT_PAGE_TEMPLATE = R\"(
+${_tpl_page})\";
+
+/// \\brief Embedded content of themes/pinguin/tag.html
+constexpr std::string_view DEFAULT_TAG_TEMPLATE = R\"(
+${_tpl_tag})\";
+
+/// \\brief Embedded content of themes/pinguin/author.html
+constexpr std::string_view DEFAULT_AUTHOR_TEMPLATE = R\"(
+${_tpl_author})\";
+
+/// \\brief Embedded content of themes/pinguin/assets/style.css
+constexpr std::string_view DEFAULT_STYLE_CSS = R\"(
+${_tpl_style})\";
+
+/// \\brief Default guss.yaml written by guss init
+constexpr std::string_view DEFAULT_CONFIG = R\"(
+# ─────────────────────────────────────────────────────────────
+# SITE METADATA
+# Populates the \"site\" variable in every template.
+# ─────────────────────────────────────────────────────────────
+site:
+  title: \"michaelis_m\"
+  description: \"A site built with Guss\"
+  url: \"https://michm.de\"
+  language: \"de\"
+  # logo: \"/images/logo.png\"
+  # twitter: \"@myhandle\"
+
+
+# ─────────────────────────────────────────────────────────────
+# CONTENT SOURCE
+# type: rest_api  →  generic HTTP CMS (Ghost, WordPress, …)
+# type: markdown  →  local filesystem
+# ─────────────────────────────────────────────────────────────
+source:
+  type: rest_api
+  base_url: \"https://ghost.michm.de/\"
+  timeout_ms: 30000
+
+  # ── Authentication ──────────────────────────────────────────
+  auth:
+    type: api_key          # api_key | basic | bearer | none
+    param: key             # appended as ?key=<value>
+    value: \"your_api_key\"
+    # WordPress: type: basic, username: \"user\", password: \"app-password\"
+    # Bearer:    type: bearer, token: \"mytoken\"
+
+  # ── Pagination defaults (overrideable per endpoint) ─────────
+  pagination:
+    page_param:  page      # ?page=N
+    limit_param: limit     # ?limit=N
+    limit: 15
+    # Ghost: non-null JSON value at this path = there is a next page
+    json_next: \"meta.pagination.next\"
+    # WordPress alternative:
+    # total_pages_header: \"X-WP-TotalPages\"
+
+  # ── Per-collection API endpoints ────────────────────────────
+  # endpoint keys must match the top-level collections: keys
+  endpoints:
+    posts:
+      path: \"ghost/api/content/posts/\"
+      response_key: \"posts\"    # JSON key holding the items array
+      params:                  # fixed extra query parameters
+        include: \"authors,tags\"
+      # WordPress: path: \"wp-json/wp/v2/posts\", response_key: \"\", params: {_embed: 1}
+
+    pages:
+      path: \"ghost/api/content/pages/\"
+      response_key: \"pages\"
+      params:
+        include: \"authors\"
+
+    authors:
+      path: \"ghost/api/content/authors/\"
+      response_key: \"authors\"
+
+    tags:
+      path: \"ghost/api/content/tags/\"
+      response_key: \"tags\"
+
+  # ── Field mappings ──────────────────────────────────────────
+  # target_field: \"source.path\"
+  # Dot-path:  \"authors.0\"        → authors[0]  (first array element)
+  #            \"content.rendered\" → nested field (WordPress)
+  # Applied before anything else; templates always see target names.
+  field_maps:
+    posts:
+      content: \"html\"          # Ghost returns \"html\"; templates expect \"content\"
+      author:  \"authors.0\"     # promote first element → singular \"author\"
+      # WordPress:
+      # published_at: \"date\"
+      # content:      \"content.rendered\"
+      # excerpt:      \"excerpt.rendered\"
+      # author:       \"_embedded.author.0\"
+    pages:
+      content: \"html\"
+      author:  \"authors.0\"
+
+  # ── Cross-references ────────────────────────────────────────
+  # Adds a \"posts\" array to each item in taxonomy collections.
+  # For each tag/author item, finds all posts where the given
+  # dot-path in the post data matches the item's slug.
+  cross_references:
+    tags:
+      from: posts
+      via: \"tags.slug\"         # post.tags[*].slug == tag.slug
+    authors:
+      from: posts
+      via: \"author.slug\"       # post.author.slug == author.slug (after field_map)
+
+
+# ─────────────────────────────────────────────────────────────
+# COLLECTIONS
+# Drives page generation. Keys must match endpoints: keys.
+# context_key: variable name exposed to the template for this item.
+# ─────────────────────────────────────────────────────────────
+collections:
+  posts:
+    item_template:    \"post.html\"
+    archive_template: \"index.html\"
+    permalink:        \"/{year}/{month}/{slug}/\"
+    paginate:         10
+    context_key:      \"post\"
+
+  pages:
+    item_template: \"page.html\"
+    permalink:     \"/{slug}/\"
+    context_key:   \"page\"
+
+  tags:
+    item_template:    \"tag.html\"
+    permalink:        \"/tag/{slug}/\"
+    context_key:      \"tag\"
+
+  authors:
+    item_template:    \"author.html\"
+    permalink:        \"/author/{slug}/\"
+    context_key:      \"author\"
+
+
+# ─────────────────────────────────────────────────────────────
+# OUTPUT
+# ─────────────────────────────────────────────────────────────
+output:
+  output_dir:       \"./dist\"
+  generate_sitemap: true
+  generate_rss:     true
+  minify_html:      false
+  copy_assets:      true
+
+
+# ─────────────────────────────────────────────────────────────
+# BUILD
+# ─────────────────────────────────────────────────────────────
+parallel_workers: 0      # 0 = auto-detect
+log_level: \"info\"        # debug | info | warn | error)\";
+
+} // namespace guss::cli
+")
+
 if(GUSS_BUILD_SERVER)
     target_link_libraries(guss PRIVATE guss-server)
     add_executable(new_target)
@@ -275,6 +468,7 @@ if(GUSS_BUILD_TESTS)
         tests/test_filters.cpp
         tests/test_render_item.cpp
         tests/test_pipeline_prepare.cpp
+        tests/test_rest_adapter.cpp
     )
     target_link_libraries(guss-tests PRIVATE
         guss-core

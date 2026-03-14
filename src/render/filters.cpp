@@ -436,6 +436,47 @@ Value urlencode(const Value& v, std::span<const Value> /*args*/) {
 }
 
 // ---------------------------------------------------------------------------
+// reading_minutes
+// ---------------------------------------------------------------------------
+
+Value reading_minutes(const Value& v, std::span<const Value> args) {
+    if (!v.is_string()) {
+        return {};
+    }
+
+    const std::string_view sv = v.as_string();
+    size_t word_count = 0;
+    bool   inside_tag = false;
+    bool   in_word    = false;
+    for (const unsigned char c : sv) {
+        if (c == '<') {
+            inside_tag = true;
+            in_word    = false;
+        } else if (c == '>') {
+            inside_tag = false;
+        } else if (!inside_tag) {
+            if (std::isspace(c)) {
+                in_word = false;
+            } else if (!in_word) {
+                in_word = true;
+                ++word_count;
+            }
+        }
+    }
+
+    const size_t wpm = (!args.empty() && args[0].is_number())
+        ? static_cast<size_t>(args[0].as_int())
+        : WORDS_PER_MINUTE;
+
+    const int64_t minutes = std::max(
+        int64_t{1},
+        static_cast<int64_t>((word_count + wpm - 1) / wpm)
+    );
+
+    return Value(minutes);
+}
+
+// ---------------------------------------------------------------------------
 // register_all
 // ---------------------------------------------------------------------------
 
@@ -448,21 +489,22 @@ void register_all(std::vector<FilterFn>&                  registry,
         index.emplace(std::move(name), id);
     };
 
-    reg("date",      date);
-    reg("truncate",  truncate);
-    reg("escape",    escape);
-    reg("safe",      safe);
-    reg("default",  default_);
-    reg("length",    length);
-    reg("lower",     lower);
-    reg("upper",     upper);
-    reg("slugify",   slugify);
-    reg("join",      join);
-    reg("first",     first);
-    reg("last",      last);
-    reg("reverse",   reverse);
-    reg("striptags", striptags);
-    reg("urlencode", urlencode);
+    reg("date",             date);
+    reg("truncate",         truncate);
+    reg("escape",           escape);
+    reg("safe",             safe);
+    reg("default",          default_);
+    reg("length",           length);
+    reg("lower",            lower);
+    reg("upper",            upper);
+    reg("slugify",          slugify);
+    reg("join",             join);
+    reg("first",            first);
+    reg("last",             last);
+    reg("reverse",          reverse);
+    reg("striptags",        striptags);
+    reg("urlencode",        urlencode);
+    reg("reading_minutes",  reading_minutes);
 }
 
 } // namespace guss::render::filters

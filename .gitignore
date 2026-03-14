@@ -1,3 +1,7 @@
 .*/
 build/
 cmake-*
+*/**/node_modules
+*lock
+docs/
+include/guss/cli/constants.hpp

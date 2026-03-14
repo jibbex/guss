@@ -73,11 +73,18 @@ PaginationConfig parse_pagination_config(const YAML::Node& node) {
     PaginationConfig cfg;
     if (!node) return cfg;
 
-    cfg.page_param         = get_string(node, "page_param",  "page");
-    cfg.limit_param        = get_string(node, "limit_param", "limit");
-    cfg.limit              = get_int(node,    "limit", 15);
-    cfg.json_next          = get_string(node, "json_next");
-    cfg.total_pages_header = get_string(node, "total_pages_header");
+    cfg.page_param          = get_optional_string(node, "page_param");
+    cfg.limit_param         = get_optional_string(node, "limit_param");
+    cfg.json_next           = get_optional_string(node, "json_next");
+    cfg.total_pages_header  = get_optional_string(node, "total_pages_header");
+    cfg.json_cursor         = get_optional_string(node, "json_cursor");
+    cfg.cursor_param        = get_optional_string(node, "cursor_param");
+    cfg.total_count_header  = get_optional_string(node, "total_count_header");
+    cfg.json_next_url       = get_optional_string(node, "json_next_url");
+    cfg.offset_param        = get_optional_string(node, "offset_param");
+    cfg.optimistic_fetching = get_bool(node, "optimistic_fetching", false);
+    cfg.link_header         = get_bool(node, "link_header", false);
+    cfg.limit               = get_int(node, "limit", 15);
     return cfg;
 }
 

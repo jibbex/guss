@@ -26,6 +26,7 @@
 #include <iostream>
 #include <fstream>
 #include <filesystem>
+#include <stdlib.h>
 
 namespace fs = std::filesystem;
 
@@ -93,7 +94,7 @@ int cmd_init(const std::string& directory) {
     auto css_path = project_dir / "templates" / "assets" / "style.css";
     if (!fs::exists(css_path)) {
         std::ofstream css_file(css_path);
-        css_file << guss::cli::DEFAULT_CSS;
+        css_file << guss::cli::DEFAULT_STYLE_CSS;
         spdlog::info("Created templates/assets/style.css");
     }
 
@@ -256,12 +257,20 @@ int cmd_clean(const std::string& config_path) {
     return 0;
 }
 
+int cmd_serve(std::string_view config_path) {
+    spdlog::info("Starting development server...");
+    return system(std::format(
+        "python3 -m http.server --bind 127.0.0.1 --directory {} 8000",
+        config_path).c_str());
+}
+
 int main(int argc, char** argv) {
     CLI::App app{"Guss - A pluggable static site generator"};
     app.require_subcommand(1);
 
     // Global options
     std::string config_path = "guss.yaml";
+    std::string serve_path = "dist";
 
     // init subcommand
     auto init_cmd = app.add_subcommand("init", "Initialize a new Guss project");
@@ -284,6 +293,10 @@ int main(int argc, char** argv) {
     auto clean_cmd = app.add_subcommand("clean", "Clean the output directory");
     clean_cmd->add_option("-c,--config", config_path, "Configuration file path");
 
+    // serve command
+    auto serve_cmd = app.add_subcommand("serve", "Start a local development server");
+    serve_cmd->add_option("-d, --directory", serve_path, "Directory to serve (default: dist)");
+
     CLI11_PARSE(app, argc, argv);
 
     if (init_cmd->parsed()) {
@@ -300,6 +313,10 @@ int main(int argc, char** argv) {
 
     if (clean_cmd->parsed()) {
         return cmd_clean(config_path);
+    }
+
+    if (serve_cmd->parsed()) {
+        return cmd_serve(serve_path);
     }
 
     return 0;

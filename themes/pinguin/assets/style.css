@@ -1,21 +1,174 @@
 /* ── Alpine cloak ─────────────────────────────── */
-[x-cloak] { display: none !important; }
+[x-cloak] {
+    display: none !important;
+}
 
 /* ── Hide scrollbars (topics bar etc.) ───────── */
 .scrollbar-none {
     scrollbar-width: none;
     -ms-overflow-style: none;
 }
+
 .scrollbar-none::-webkit-scrollbar {
     display: none;
 }
 
+/* ── Mobile-style scrollbar (slim overlay, auto-hide) ─── */
+
+/* transition doesn't work on WebKit scrollbar pseudo-elements — use @keyframes */
+@keyframes sb-fade-in {
+    from {
+        background: transparent;
+    }
+
+    to {
+        background: oklch(0.52 0.22 265 / 0.45);
+    }
+}
+
+@keyframes sb-fade-out {
+    from {
+        background: oklch(0.52 0.22 265 / 0.45);
+    }
+
+    to {
+        background: transparent;
+    }
+}
+
+@keyframes sb-fade-in-dark {
+    from {
+        background: transparent;
+    }
+
+    to {
+        background: oklch(0.75 0.08 265 / 0.45);
+    }
+}
+
+@keyframes sb-fade-out-dark {
+    from {
+        background: oklch(0.75 0.08 265 / 0.45);
+    }
+
+    to {
+        background: transparent;
+    }
+}
+
+html {
+    font-size: 1.1rem;
+}
+
+/* ── Page scrollbar: visible while scrolling (JS-driven) ── */
+/* Firefox — transition works here */
+html {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color 0.4s;
+}
+
+html.is-scrolling {
+    scrollbar-color: oklch(0.52 0.22 265 / 0.45) transparent;
+}
+
+html.dark.is-scrolling {
+    scrollbar-color: oklch(0.75 0.08 265 / 0.45) transparent;
+}
+
+/* WebKit (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 2px;
+}
+
+/* Fade in when scrolling */
+html.is-scrolling ::-webkit-scrollbar-thumb {
+    animation: sb-fade-in 0.35s forwards;
+}
+
+html.dark.is-scrolling ::-webkit-scrollbar-thumb {
+    animation: sb-fade-in-dark 0.35s forwards;
+}
+
+/* Fade out when scrolling stops — sb-was-active prevents this from firing on page load */
+html.sb-was-active:not(.is-scrolling) ::-webkit-scrollbar-thumb {
+    animation: sb-fade-out 0.5s forwards;
+}
+
+html.dark.sb-was-active:not(.is-scrolling) ::-webkit-scrollbar-thumb {
+    animation: sb-fade-out-dark 0.5s forwards;
+}
+
+/* Scrollbar-hover keep-visible is handled in JS via mouse-proximity detection */
+
+/* ── Overflow containers (pre etc.): visible on hover ── */
+/* Firefox — transition works here */
+pre {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color 0.3s;
+}
+
+pre:hover {
+    scrollbar-color: oklch(0.52 0.22 265 / 0.45) transparent;
+}
+
+.dark pre:hover {
+    scrollbar-color: oklch(0.75 0.08 265 / 0.45) transparent;
+}
+
+/* WebKit */
+pre::-webkit-scrollbar {
+    height: 4px;
+}
+
+pre::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+pre::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 2px;
+}
+
+pre:hover::-webkit-scrollbar-thumb {
+    animation: sb-fade-in 0.3s forwards;
+}
+
+.dark pre:hover::-webkit-scrollbar-thumb {
+    animation: sb-fade-in-dark 0.3s forwards;
+}
+
+pre:hover::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.52 0.22 265 / 0.7);
+    animation: none;
+}
+
+.dark pre:hover::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.75 0.08 265 / 0.7);
+    animation: none;
+}
+
 /* ── Prose (post/page body) ───────────────────── */
+html, body {
+    @apply font-lg;
+}
 .prose {
     font-size: 1.0625rem;
     line-height: 1.8;
     font-family: 'Inter', system-ui, sans-serif;
 }
+
 .prose h2,
 .prose h3,
 .prose h4 {
@@ -27,12 +180,32 @@
     line-height: 1.2;
     color: inherit;
 }
-.prose h2 { font-size: 1.6rem; }
-.prose h3 { font-size: 1.25rem; }
-.prose p  { margin-bottom: 1.25rem; }
-.prose a  { text-decoration: underline; text-underline-offset: 3px; }
-.prose strong { font-weight: 600; }
-.prose em { font-style: italic; }
+
+.prose h2 {
+    font-size: 1.6rem;
+}
+
+.prose h3 {
+    font-size: 1.25rem;
+}
+
+.prose p {
+    margin-bottom: 1.25rem;
+}
+
+.prose a {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.prose strong {
+    font-weight: 600;
+}
+
+.prose em {
+    font-style: italic;
+}
+
 .prose blockquote {
     border-left: 2px solid currentColor;
     opacity: 0.7;
@@ -40,6 +213,7 @@
     font-style: italic;
     margin: 1.75rem 0;
 }
+
 .prose pre {
     padding: 1.25rem;
     border-radius: 0.75rem;
@@ -47,29 +221,72 @@
     font-size: 0.85rem;
     margin: 1.75rem 0;
 }
+
 .prose code {
     font-family: 'JetBrains Mono', 'Fira Code', monospace;
     font-size: 0.85em;
     padding: 0.15em 0.4em;
     border-radius: 4px;
 }
-.prose pre code { padding: 0; background: transparent; }
+
+.prose pre code {
+    padding: 0;
+    background: transparent;
+}
+
 .prose img {
     max-width: 100%;
     height: auto;
     border-radius: 0.75rem;
     margin: 1.75rem auto;
     display: block;
-    box-shadow: 0 2px 25px -4px rgb(0 0 0 / 22%), 0 0 1px rgb(83 72 72 / 67%);
 }
-.dark .prose img { box-shadow: 0 2px 25px -4px rgb(0 0 0 / 22%), 0 0 1px rgb(83 72 72 / 67%); }
-.prose ul  { padding-left: 1.5rem; list-style: disc;    margin-bottom: 1.25rem; }
-.prose ol  { padding-left: 1.5rem; list-style: decimal; margin-bottom: 1.25rem; }
-.prose li  { margin-bottom: 0.4rem; }
-.prose hr  { border: none; border-top: 1px solid; opacity: 0.15; margin: 2.5rem 0; }
-.prose table { width: 100%; border-collapse: collapse; margin: 1.75rem 0; font-size: 0.9rem; }
-.prose th, .prose td { padding: 0.6rem 0.9rem; text-align: left; border-bottom: 1px solid; }
-.prose th { font-weight: 600; opacity: 0.65; }
+
+.dark .prose img[src$=".svg"] {
+    filter: invert(1);
+}
+
+.prose ul {
+    padding-left: 1.5rem;
+    list-style: disc;
+    margin-bottom: 1.25rem;
+}
+
+.prose ol {
+    padding-left: 1.5rem;
+    list-style: decimal;
+    margin-bottom: 1.25rem;
+}
+
+.prose li {
+    margin-bottom: 0.4rem;
+}
+
+.prose hr {
+    border: none;
+    border-top: 1px solid;
+    opacity: 0.15;
+    margin: 2.5rem 0;
+}
+
+.prose table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.75rem 0;
+    font-size: 0.9rem;
+}
+
+.prose th,
+.prose td {
+    padding: 0.6rem 0.9rem;
+    text-align: left;
+    border-bottom: 1px solid;
+}
+
+.prose th {
+    font-weight: 600;
+    opacity: 0.65;
+}
 
 /* ── Code blocks ──────────────────────────────── */
 .prose pre {
@@ -78,9 +295,10 @@
     border-radius: 0.875rem;
     overflow: hidden;
     margin: 1.75rem 0;
-    padding: 0;          /* padding lives on code/hljs, not pre */
-    box-shadow: 0 2px 25px -4px rgb(0 0 0 / 22%), 0 0 1px rgb(83 72 72 / 67%);
+    padding: 0;
+    box-shadow: 0 2px 1.5em -1em rgb(0 0 0 / 55%), inset 0 0 1em rgb(255 255 255 / 38%)
 }
+
 .dark .prose pre {
     background: oklch(0.14 0.018 265);
     border-color: oklch(0.22 0.018 265);
@@ -89,7 +307,7 @@
 
 /* hljs adds .hljs to the <code> element — let it own padding & font */
 .hljs {
-    background: transparent !important;  /* our pre provides the bg */
+    background: transparent !important;
     border-radius: 0 !important;
     font-size: 0.84rem !important;
     line-height: 1.65 !important;
@@ -98,7 +316,7 @@
 }
 
 /* Fallback for non-highlighted pre code (no hljs class) */
-.prose pre > code:not(.hljs) {
+.prose pre>code:not(.hljs) {
     display: block;
     padding: 1.25rem 1.5rem;
     font-size: 0.84rem;
@@ -109,7 +327,7 @@
 }
 
 /* ── Inline code ──────────────────────────────── */
-:not(pre) > code {
+:not(pre)>code {
     font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
     font-size: 0.82em;
     padding: 0.2em 0.5em;
@@ -118,7 +336,8 @@
     border: 1px solid oklch(0.84 0.012 260);
     color: oklch(0.38 0.14 265);
 }
-.dark :not(pre) > code {
+
+.dark :not(pre)>code {
     background: oklch(0.18 0.022 265);
     border-color: oklch(0.26 0.022 265);
     color: oklch(0.80 0.14 265);
@@ -136,14 +355,17 @@
     margin: 1.75rem 0;
     background: oklch(0.97 0.003 260);
 }
+
 .dark .kg-bookmark-container {
     border-color: oklch(0.22 0.018 265);
     background: oklch(0.15 0.020 265);
 }
+
 .kg-bookmark-container:hover {
     border-color: oklch(0.52 0.22 265);
     box-shadow: 0 0 0 3px oklch(0.52 0.22 265 / 0.12);
 }
+
 .dark .kg-bookmark-container:hover {
     border-color: oklch(0.74 0.18 265);
     box-shadow: 0 0 0 3px oklch(0.74 0.18 265 / 0.14);
@@ -168,6 +390,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
 .dark .kg-bookmark-title {
     color: oklch(0.94 0.005 265);
 }
@@ -182,6 +405,7 @@
     line-clamp: 2;
     overflow: hidden;
 }
+
 .dark .kg-bookmark-description {
     color: oklch(0.55 0.012 265);
 }
@@ -196,6 +420,7 @@
     white-space: nowrap;
     overflow: hidden;
 }
+
 .dark .kg-bookmark-metadata {
     color: oklch(0.50 0.012 265);
 }
@@ -223,6 +448,7 @@
     flex-shrink: 0;
     overflow: hidden;
 }
+
 .kg-bookmark-thumbnail img {
     width: 100%;
     height: 100%;
@@ -233,7 +459,9 @@
 }
 
 @media (max-width: 640px) {
-    .kg-bookmark-thumbnail { display: none; }
+    .kg-bookmark-thumbnail {
+        display: none;
+    }
 }
 
 /* ── Download button (Ghost file card) ───────── */
@@ -243,39 +471,44 @@
     gap: 0.5rem;
     padding: 0.5rem 1.1rem;
     border-radius: 0.625rem;
-    border: 1px solid oklch(0.86 0.010 260);
-    background: oklch(90.198% 0.03549 264.409);
+    border: 1px solid oklch(0.72 0.02 17.68 / 0.68);
+    background: oklch(0.95 0.001 17.179 / 0.99);
     color: oklch(0.40 0.016 260);
     font-family: 'Inter', system-ui, sans-serif;
     font-size: 0.82rem;
     font-weight: 500;
     cursor: pointer;
     transition: border-color 0.15s, background 0.15s, color 0.15s, box-shadow 0.15s;
+    box-shadow: inset 0 0 1px 2px #ffffff, inset 0 0 1.5rem rgb(255 255 255 / 71%);
     white-space: nowrap;
 }
+
 .prose button:hover {
-    border-color: oklch(0.52 0.22 265);
-    background: oklch(0.52 0.22 265);
+    border: 1px solid oklch(0.51 0.14 266.8 / 0.69);
+    background: oklch(0.41 0.18 264.62);
     color: oklch(1 0 0);
-    box-shadow: 0 2px 12px oklch(0.52 0.22 265 / 0.25);
+    box-shadow: inset 0 0 1px 2px oklch(1 0 0 / 0.52), inset 0 0 1.5rem rgb(234 221 221);
 }
+
 .dark .prose button {
-    border-color: oklch(0.26 0.018 265);
+    border: 1px solid oklch(0.55 0.02 265.44 / 0.39);
     background: oklch(0.16 0.020 265);
     color: oklch(0.65 0.016 265);
+    box-shadow: inset 0 0 1px 2px #060a27, inset 0 0 4px rgb(227 227 227 / 57%);
 }
+
 .dark .prose button:hover {
-    border-color: oklch(0.74 0.18 265);
-    background: oklch(0.74 0.18 265);
-    color: oklch(0.10 0.018 265);
-    box-shadow: 0 2px 12px oklch(0.74 0.18 265 / 0.25);
+    border-color: oklch(0.54 0.2 259.99);
+    background: oklch(0.245 0.072 259.421);
+    color: oklch(0.893 0.024 275.335);
+    box-shadow: inset 0 0 2rem rgb(250 238 238 / 22%), 0 2px 12px oklch(0.73 0.15 262.53 / 0.38);
 }
+
 .prose button:has(svg) svg {
     flex-shrink: 0;
 }
 
 /* ── View Transition ───────── */
- @view-transition {
+@view-transition {
     navigation: auto;
-    type: cross-fade;
 }
