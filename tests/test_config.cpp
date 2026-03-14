@@ -75,7 +75,8 @@ source:
     EXPECT_EQ(rest.auth.type, guss::config::AuthConfig::Type::ApiKey);
     EXPECT_EQ(rest.auth.param, "key");
     EXPECT_EQ(rest.auth.value, "abc123");
-    EXPECT_EQ(rest.pagination.json_next, "meta.pagination.next");
+    ASSERT_TRUE(rest.pagination.json_next.has_value());
+    EXPECT_EQ(*rest.pagination.json_next, "meta.pagination.next");
     ASSERT_TRUE(rest.endpoints.count("posts"));
     EXPECT_EQ(rest.endpoints.at("posts").path, "ghost/api/content/posts/");
     EXPECT_EQ(rest.endpoints.at("posts").response_key, "posts");
@@ -262,4 +263,115 @@ collections:
     guss::config::Config cfg(tmp.string());
     EXPECT_EQ(cfg.collections().at("tags").paginate, 0);
     std::filesystem::remove(tmp);
+}
+
+TEST_F(ConfigTest, ParsesPaginationLinkHeader) {
+    write_config(R"(
+site:
+  title: "T"
+  url: "https://example.com"
+source:
+  type: rest_api
+  base_url: "https://api.example.com"
+  pagination:
+    limit: 10
+    link_header: true
+)");
+    guss::config::Config config((test_dir_ / "guss.yaml").string());
+    const auto& pag = std::get<guss::config::RestApiConfig>(config.adapter()).pagination;
+    EXPECT_TRUE(pag.link_header);
+    EXPECT_EQ(pag.limit, 10);
+    EXPECT_FALSE(pag.page_param.has_value());
+}
+
+TEST_F(ConfigTest, ParsesPaginationJsonCursor) {
+    write_config(R"(
+site:
+  title: "T"
+  url: "https://example.com"
+source:
+  type: rest_api
+  base_url: "https://api.example.com"
+  pagination:
+    json_cursor: "meta.next_cursor"
+    cursor_param: "cursor"
+    limit_param: "per_page"
+)");
+    guss::config::Config config((test_dir_ / "guss.yaml").string());
+    const auto& pag = std::get<guss::config::RestApiConfig>(config.adapter()).pagination;
+    ASSERT_TRUE(pag.json_cursor.has_value());
+    EXPECT_EQ(*pag.json_cursor, "meta.next_cursor");
+    ASSERT_TRUE(pag.cursor_param.has_value());
+    EXPECT_EQ(*pag.cursor_param, "cursor");
+}
+
+TEST_F(ConfigTest, ParsesPaginationOptimisticFetching) {
+    write_config(R"(
+site:
+  title: "T"
+  url: "https://example.com"
+source:
+  type: rest_api
+  base_url: "https://api.example.com"
+  pagination:
+    optimistic_fetching: true
+)");
+    guss::config::Config config((test_dir_ / "guss.yaml").string());
+    const auto& pag = std::get<guss::config::RestApiConfig>(config.adapter()).pagination;
+    EXPECT_TRUE(pag.optimistic_fetching);
+}
+
+TEST_F(ConfigTest, ParsesPaginationOffsetParam) {
+    write_config(R"(
+site:
+  title: "T"
+  url: "https://example.com"
+source:
+  type: rest_api
+  base_url: "https://api.example.com"
+  pagination:
+    offset_param: "offset"
+    limit_param: "limit"
+    limit: 20
+)");
+    guss::config::Config config((test_dir_ / "guss.yaml").string());
+    const auto& pag = std::get<guss::config::RestApiConfig>(config.adapter()).pagination;
+    ASSERT_TRUE(pag.offset_param.has_value());
+    EXPECT_EQ(*pag.offset_param, "offset");
+    EXPECT_EQ(pag.limit, 20);
+}
+
+TEST_F(ConfigTest, ParsesPaginationTotalCountHeader) {
+    write_config(R"(
+site:
+  title: "T"
+  url: "https://example.com"
+source:
+  type: rest_api
+  base_url: "https://api.example.com"
+  pagination:
+    total_count_header: "X-Total-Count"
+    limit: 10
+)");
+    guss::config::Config config((test_dir_ / "guss.yaml").string());
+    const auto& pag = std::get<guss::config::RestApiConfig>(config.adapter()).pagination;
+    ASSERT_TRUE(pag.total_count_header.has_value());
+    EXPECT_EQ(*pag.total_count_header, "X-Total-Count");
+}
+
+TEST_F(ConfigTest, ParsesPaginationJsonNextUrl) {
+    write_config(R"(
+site:
+  title: "T"
+  url: "https://example.com"
+source:
+  type: rest_api
+  base_url: "https://api.example.com"
+  pagination:
+    json_next_url: "links.next"
+)");
+    guss::config::Config config((test_dir_ / "guss.yaml").string());
+    const auto& pag = std::get<guss::config::RestApiConfig>(config.adapter()).pagination;
+    ASSERT_TRUE(pag.json_next_url.has_value());
+    EXPECT_EQ(*pag.json_next_url, "links.next");
 }

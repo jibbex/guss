@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <optional>
 #include <regex>
 #include <string>
 #include <vector>
@@ -179,6 +180,38 @@ std::string lowercase(std::string s) {
     return s;
 }
 
+/// Parse the full JSON body into a render::Value (used for body-inspection strategies).
+render::Value parse_body_value(std::string_view body) {
+    simdjson::ondemand::parser sj_parser;
+    auto padded = simdjson::padded_string(body.data(), body.size());
+    auto doc    = sj_parser.iterate(padded);
+    if (doc.error()) return render::Value{};
+    simdjson::ondemand::value rv;
+    if (doc.get_value().get(rv)) return render::Value{};
+    return from_simdjson(rv);
+}
+
+/// Strip scheme://host:port from an absolute URL, returning the path+query.
+/// Returns the string unchanged if it already starts with '/'.
+std::string url_to_path(const std::string& url) {
+    static const std::regex abs_re(R"(^https?://[^/]+(/.*)?$)");
+    std::smatch m;
+    if (std::regex_match(url, m, abs_re))
+        return m[1].matched ? m[1].str() : "/";
+    if (!url.empty() && url[0] == '/')
+        return url;
+    return "/" + url;
+}
+
+/// Parse RFC 5988 Link header and return the server path of the rel="next" URL.
+std::optional<std::string> parse_link_next(const std::string& link_header) {
+    static const std::regex re(R"(<([^>]+)>\s*;\s*rel\s*=\s*"next")",
+                               std::regex::icase);
+    std::smatch m;
+    if (!std::regex_search(link_header, m, re)) return std::nullopt;
+    return url_to_path(m[1].str());
+}
+
 } // anonymous namespace
 
 // ---------------------------------------------------------------------------
@@ -209,14 +242,13 @@ std::string RestCmsAdapter::HttpResponse::header(std::string_view name) const {
 }
 
 // ---------------------------------------------------------------------------
-// http_get
+// do_get (shared core)
 // ---------------------------------------------------------------------------
 
 error::Result<RestCmsAdapter::HttpResponse>
-RestCmsAdapter::http_get(const std::string& path) const {
-    std::string full_path = base_path_ + path;
-
-    // Append api_key as a query param if configured
+RestCmsAdapter::do_get(const std::string& full_path_with_auth) const {
+    // Auth injection
+    std::string full_path = full_path_with_auth;
     if (cfg_.auth.type == config::AuthConfig::Type::ApiKey &&
         !cfg_.auth.param.empty() && !cfg_.auth.value.empty())
     {
@@ -248,12 +280,29 @@ RestCmsAdapter::http_get(const std::string& path) const {
 
     if (auto err = get_error(res)) return *err;
 
-    // Collect response headers with lowercased names.
     HttpResponse hr;
     hr.body = res->body;
     for (const auto& [k, v] : res->headers)
         hr.headers[lowercase(k)] = v;
     return hr;
+}
+
+// ---------------------------------------------------------------------------
+// http_get
+// ---------------------------------------------------------------------------
+
+error::Result<RestCmsAdapter::HttpResponse>
+RestCmsAdapter::http_get(const std::string& path) const {
+    return do_get(base_path_ + path);
+}
+
+// ---------------------------------------------------------------------------
+// http_get_raw_path
+// ---------------------------------------------------------------------------
+
+error::Result<RestCmsAdapter::HttpResponse>
+RestCmsAdapter::http_get_raw_path(const std::string& path) const {
+    return do_get(path);
 }
 
 // ---------------------------------------------------------------------------
@@ -279,72 +328,146 @@ bool RestCmsAdapter::has_next_page(std::string_view body, std::string_view json_
 // ---------------------------------------------------------------------------
 
 error::Result<std::vector<render::Value>>
-RestCmsAdapter::fetch_endpoint(const std::string&           collection_name,
+RestCmsAdapter::fetch_endpoint(const std::string&            collection_name,
                                const config::EndpointConfig& ep) const
 {
     const config::PaginationConfig& pag =
         ep.pagination ? *ep.pagination : cfg_.pagination;
 
     std::vector<render::Value> all_values;
-    int  page     = 1;
-    int  total_pages = 0;   // known after first header-based response
-    bool has_more = true;
+
+    // Pagination state variables — only the active strategy uses its variables.
+    int         page              = 1;
+    int         total_pages       = 0;   // set on first response for header-based strategies
+    std::string cursor_token;            // cursor token for json_cursor strategy
+    std::optional<std::string> link_next_path;      // link_header strategy
+    std::optional<std::string> json_body_next_path; // json_next_url strategy
+    bool        has_more          = true;
 
     while (has_more) {
-        std::string path = "/" + ep.path;
-        path += build_query(ep.params);
+        // ---- Section A: Build request -----------------------------------
+        error::Result<HttpResponse> resp_r;
 
-        char sep = path.find('?') == std::string::npos ? '?' : '&';
-        path += sep;
-        path += pag.limit_param + "=" + std::to_string(pag.limit);
-        path += "&" + pag.page_param + "=" + std::to_string(page);
+        if (pag.link_header && link_next_path.has_value()) {
+            resp_r = http_get_raw_path(*link_next_path);
+        } else if (pag.json_next_url.has_value() && json_body_next_path.has_value()) {
+            resp_r = http_get_raw_path(*json_body_next_path);
+        } else {
+            std::string path = "/" + ep.path;
+            path += build_query(ep.params);
+            char sep = path.find('?') == std::string::npos ? '?' : '&';
 
-        auto resp_r = http_get(path);
-        if (!resp_r) return std::unexpected(resp_r.error());
+            if (pag.limit_param.has_value()) {
+                path += sep;
+                path += *pag.limit_param + "=" + std::to_string(pag.limit);
+                sep = '&';
+            }
+
+            if (pag.json_cursor.has_value() && !cursor_token.empty()) {
+                path += sep;
+                path += pag.cursor_param.value_or("cursor") + "=" + cursor_token;
+            } else if (pag.offset_param.has_value()) {
+                path += sep;
+                path += *pag.offset_param + "=" + std::to_string((page - 1) * pag.limit);
+            } else if (pag.page_param.has_value()) {
+                path += sep;
+                path += *pag.page_param + "=" + std::to_string(page);
+            }
+
+            resp_r = http_get(path);
+        }
+
+        // ---- HTTP error handling ----------------------------------------
+        if (!resp_r) {
+            if (pag.optimistic_fetching) break;  // 404/network error → stop silently
+            return std::unexpected(resp_r.error());
+        }
         const HttpResponse& resp = *resp_r;
 
-        // ---- Parse items ------------------------------------------------
+        // ---- Section B: Parse items -------------------------------------
+        std::vector<render::Value> page_values;
         if (ep.response_key.empty()) {
-            // API returns a bare JSON array (no wrapping object).
             auto vals_r = parse_root_array(resp.body);
-            if (!vals_r) return std::unexpected(vals_r.error());
-            auto& vals = *vals_r;
-            all_values.insert(all_values.end(),
-                              std::make_move_iterator(vals.begin()),
-                              std::make_move_iterator(vals.end()));
-            // Root-array responses carry no standard pagination signal.
-            has_more = false;
+            if (!vals_r) {
+                if (pag.optimistic_fetching) break;
+                return std::unexpected(vals_r.error());
+            }
+            page_values = std::move(*vals_r);
         } else {
-            // API returns a JSON object; items are under response_key.
             auto vals_r = parse_keyed_array(resp.body, ep.response_key);
-            if (!vals_r) return std::unexpected(vals_r.error());
-            auto& vals = *vals_r;
-            all_values.insert(all_values.end(),
-                              std::make_move_iterator(vals.begin()),
-                              std::make_move_iterator(vals.end()));
+            if (!vals_r) {
+                if (pag.optimistic_fetching) break;
+                return std::unexpected(vals_r.error());
+            }
+            page_values = std::move(*vals_r);
+        }
 
-            // ---- Pagination strategy (in priority order) -----------------
-            if (!pag.json_next.empty()) {
-                // Strategy 1: dot-path inside the JSON body (Ghost-style).
-                // True while the sentinel field resolves to non-null.
-                has_more = has_next_page(resp.body, pag.json_next);
+        // optimistic_fetching: an empty page signals end-of-data — do not append.
+        if (pag.optimistic_fetching && page_values.empty()) {
+            has_more = false;
+            break;
+        }
 
-            } else if (!pag.total_pages_header.empty()) {
-                // Strategy 2: HTTP response header (WordPress-style).
-                // X-WP-TotalPages (or similar) tells us the total page count.
-                if (total_pages == 0) {
-                    const std::string hval = resp.header(pag.total_pages_header);
-                    if (!hval.empty()) {
-                        try { total_pages = std::stoi(hval); } catch (...) {}
-                    }
-                    if (total_pages <= 0) total_pages = 1;
+        all_values.insert(all_values.end(),
+                          std::make_move_iterator(page_values.begin()),
+                          std::make_move_iterator(page_values.end()));
+
+        // ---- Section C: Pagination strategy (evaluated in priority order)
+        if (pag.total_pages_header.has_value()) {
+            // Strategy 1: total pages declared in a response header (e.g. X-WP-TotalPages).
+            if (total_pages == 0) {
+                const std::string hval = resp.header(*pag.total_pages_header);
+                if (!hval.empty()) {
+                    try { total_pages = std::stoi(hval); } catch (...) {}
                 }
-                has_more = page < total_pages;
-
+                if (total_pages <= 0) total_pages = 1;
+            }
+            has_more = page < total_pages;
+        } else if (pag.total_count_header.has_value()) {
+            // Strategy 2: total item count in a header; derive page count from limit.
+            if (total_pages == 0) {
+                const std::string hval = resp.header(*pag.total_count_header);
+                if (!hval.empty()) {
+                    try {
+                        int total_count = std::stoi(hval);
+                        int lim         = pag.limit > 0 ? pag.limit : 1;
+                        total_pages     = (total_count + lim - 1) / lim;
+                    } catch (...) {}
+                }
+                if (total_pages <= 0) total_pages = 1;
+            }
+            has_more = page < total_pages;
+        } else if (pag.link_header) {
+            // Strategy 3: follow the URL extracted from Link: <url>; rel="next" header.
+            link_next_path = parse_link_next(resp.header("link"));
+            has_more = link_next_path.has_value();
+        } else if (pag.json_cursor.has_value()) {
+            // Strategy 4: body contains the next cursor token at a dot-path.
+            render::Value root       = parse_body_value(resp.body);
+            render::Value cursor_val = resolve_path(root, *pag.json_cursor);
+            cursor_token = cursor_val.is_null() ? std::string{} : cursor_val.to_string();
+            has_more = !cursor_token.empty();
+        } else if (pag.json_next_url.has_value()) {
+            // Strategy 5: body contains the full URL of the next page at a dot-path.
+            render::Value root    = parse_body_value(resp.body);
+            render::Value url_val = resolve_path(root, *pag.json_next_url);
+            std::string next_str  = url_val.is_null() ? std::string{} : url_val.to_string();
+            if (!next_str.empty()) {
+                json_body_next_path = url_to_path(next_str);
+                has_more = true;
             } else {
-                // Strategy 3: no pagination configured — single page.
+                json_body_next_path = std::nullopt;
                 has_more = false;
             }
+        } else if (pag.json_next.has_value()) {
+            // Strategy 6: dot-path non-null sentinel; increment page counter (Ghost-style).
+            has_more = has_next_page(resp.body, *pag.json_next);
+        } else if (pag.optimistic_fetching) {
+            // Strategy 7: blindly fetch page N+1; empty page or error signals end-of-data.
+            has_more = true;
+        } else {
+            // No pagination configured — single page only.
+            has_more = false;
         }
 
         ++page;
@@ -505,8 +628,15 @@ error::VoidResult RestCmsAdapter::ping() {
     std::string path = "/" + ep.path;
     path += build_query(ep.params);
     char sep = path.find('?') == std::string::npos ? '?' : '&';
-    path += sep;
-    path += pag.limit_param + "=1&" + pag.page_param + "=1";
+    if (pag.limit_param.has_value()) {
+        path += sep;
+        path += *pag.limit_param + "=1";
+        sep = '&';
+    }
+    if (pag.page_param.has_value()) {
+        path += sep;
+        path += *pag.page_param + "=1";
+    }
 
     auto res = http_get(path);
     if (!res) return std::unexpected(res.error());

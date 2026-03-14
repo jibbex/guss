@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ post.title }} - {{ site.title }}</title>
     <meta name="description" content="{{ post.excerpt | truncate(160) }}">
-        <!-- Fonts -->
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800&display=swap">
@@ -47,15 +47,24 @@
         [x-cloak] { display: none !important; }
     </style>
     <script>
-        (() => {
+        /**
+         * Applies the stored or system-preferred color scheme before first paint.
+         *
+         * Reads the persisted theme from `localStorage`. If the stored value is
+         * `'dark'`, or if no preference has been stored and the OS reports a dark
+         * color-scheme preference, the `dark` class is added to `<html>` immediately,
+         * preventing a flash of the wrong theme.
+         */
+        (function initTheme() {
             const stored = localStorage.getItem('theme');
-            if (stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches))
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (stored === 'dark' || (!stored && prefersDark)) {
                 document.documentElement.classList.add('dark');
+            }
         })();
     </script>
     <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-
     <!-- highlight.js syntax highlighting -->
     <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
     <link id="hljs-dark"  rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" disabled>
@@ -71,27 +80,47 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
     <script>
-        // Run after DOM ready
-        document.addEventListener('DOMContentLoaded', () => {
-            // Ghost outputs language-clike — register as alias for c
-            hljs.registerAliases(['clike'], { languageName: 'c' });
-            // Apply highlighting to all code blocks
-            document.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
-
-            // Sync theme with dark mode toggle
-            const syncHljs = () => {
-                const dark = document.documentElement.classList.contains('dark');
-                document.getElementById('hljs-light').disabled = dark;
-                document.getElementById('hljs-dark').disabled  = !dark;
-            };
-            syncHljs();
-
-            // Watch for dark class changes on <html>
-            new MutationObserver(syncHljs).observe(
-                document.documentElement,
-                { attributeFilter: ['class'] }
-            );
-        });
+        /**
+         * Initializes syntax highlighting for all `pre code` blocks and keeps the
+         * highlight.js theme stylesheet in sync with the active light/dark mode.
+         *
+         * On `DOMContentLoaded`:
+         * - Registers `clike` as an alias for the `c` language grammar.
+         * - Highlights every `pre code` element found in the document.
+         * - Installs a `MutationObserver` on `<html>` to re-sync the hljs theme
+         *   stylesheet pair whenever the `class` attribute changes (e.g. when the
+         *   user toggles dark mode).
+         * - Performs an immediate theme sync so the correct stylesheet is active
+         *   before the user interacts with the page.
+         *
+         * @param {object} hljsLib - The highlight.js library instance (`hljs`).
+         */
+        (function initSyntaxHighlighting(hljsLib) {
+            /** @param {Event} _e - The DOMContentLoaded event (unused). */
+            function handleDomLoaded(_e) {
+                /**
+                 * Enables the stylesheet that matches the current color scheme and
+                 * disables the other one.
+                 *
+                 * `#hljs-light` is disabled while dark mode is active;
+                 * `#hljs-dark`  is disabled while light mode is active.
+                 */
+                function syncHljsTheme() {
+                    const dark = document.documentElement.classList.contains('dark');
+                    document.getElementById('hljs-light').disabled = dark;
+                    document.getElementById('hljs-dark').disabled  = !dark;
+                }
+                const mutations = new MutationObserver(syncHljsTheme);
+                hljsLib.registerAliases(['clike'], { languageName: 'c' });
+                document.querySelectorAll('pre code').forEach(block => hljsLib.highlightElement(block));
+                mutations.observe(
+                    document.documentElement,
+                    { attributeFilter: ['class'] }
+                );
+                syncHljsTheme();
+            }
+            document.addEventListener('DOMContentLoaded', handleDomLoaded);
+        })(hljs);
     </script>
 </head>
 <body class="bg-surface dark:bg-surface-dark text-on-surface dark:text-on-surface-dark transition-colors duration-300">
@@ -123,14 +152,16 @@
     </div>
 </nav>
 
-<!-- Hero with feature image or gradient -->
+<!-- Hero with feature image or linear -->
 <div class="pt-16">
-    <div class="relative w-full aspect-[21/9] sm:aspect-[21/7] overflow-hidden bg-gradient-to-br from-primary/80 via-primary-light/60 to-accent/60 dark:from-primary-dark/80 dark:via-primary-dark/50 dark:to-accent-dark/50">
+    <div class="relative w-full aspect-[21/9] sm:aspect-[21/7] overflow-hidden bg-linear-to-br from-primary/80 via-primary-light/60 to-accent/60 dark:from-primary-dark/80 dark:via-primary-dark/50 dark:to-accent-dark/50">
         {% if post.feature_image %}
         <img src="{{ post.feature_image }}" alt="{{ post.feature_image_alt }}"
-             class="absolute inset-0 w-full h-full object-cover opacity-50 mix-blend-overlay">
+             class="absolute inset-0 w-full h-full object-cover"
+             style="view-transition-name: post-{{ post.slug }}; view-transition-class: feature-morph">
+        <div class="absolute inset-0 bg-linear-to-br from-primary/80 via-primary-light/60 to-accent/60 dark:from-primary-dark/80 dark:via-primary-dark/50 dark:to-accent-dark/50 mix-blend-overlay opacity-50 pointer-events-none"></div>
         {% endif %}
-        <div class="absolute inset-0 bg-gradient-to-t from-surface dark:from-surface-dark via-transparent to-transparent"></div>
+        <div class="absolute inset-0 bg-linear-to-t from-surface dark:from-surface-dark surface/50 dark:via-surface-dark/50 to-transparent"></div>
         <!-- Decorative blobs -->
         <div class="absolute inset-0 pointer-events-none">
             <div class="absolute top-0 right-0 w-96 h-96 rounded-full bg-accent/20 dark:bg-accent-dark/20 blur-3xl -translate-y-1/2 translate-x-1/4"></div>
@@ -140,7 +171,7 @@
 </div>
 
 <!-- Article -->
-<div class="mx-auto max-w-3xl px-6 -mt-24 relative z-10 pb-16">
+<div class="mx-auto max-w-6xl px-6 -mt-24 relative z-10 pb-16">
     <article>
         <header class="mb-12">
             <time datetime="{{ post.published_at }}"
@@ -152,7 +183,7 @@
             </h1>
             {% if post.author %}
             <div class="flex items-center gap-3 pt-6 border-t border-outline dark:border-outline-dark">
-                <div class="size-9 rounded-full bg-gradient-to-br from-primary to-accent dark:from-primary-dark dark:to-accent-dark flex items-center justify-center text-white font-bold text-sm shrink-0">
+                <div class="size-9 rounded-full bg-linear-to-br from-primary to-accent dark:from-primary-dark dark:to-accent-dark flex items-center justify-center text-white font-bold text-sm shrink-0">
                     {{ post.author.name | truncate(1, false, '') }}
                 </div>
                 <a href="/author/{{ post.author.slug }}/"
@@ -224,22 +255,109 @@
 </footer>
 
 <script>
-    (() => {
+    /**
+     * Initializes the light/dark theme toggle button.
+     *
+     * Wires up the `#themeBtn` button so that clicking it toggles the `dark`
+     * class on the root `<html>` element, persists the chosen theme to
+     * `localStorage`, and keeps the sun/moon icon pair in sync with the
+     * current state.  `syncIcons` is also called once on startup so the
+     * icons reflect whatever theme was applied before this script ran.
+     */
+    (function initThemeSwitch() {
+        /** @type {HTMLButtonElement} - The theme-toggle button element. */
         const btn  = document.getElementById('themeBtn');
+        /** @type {HTMLElement} - The sun icon element, shown in dark mode. */
         const sun  = document.getElementById('iconSun');
+        /** @type {HTMLElement} - The moon icon element, shown in light mode. */
         const moon = document.getElementById('iconMoon');
+        /** @type {HTMLHtmlElement} - The root element whose `dark` class drives the color scheme. */
         const html = document.documentElement;
+        /**
+         * Synchronizes the sun/moon icon visibility with the current theme.
+         * The sun is shown when dark mode is active; the moon when it is not.
+         */
         const syncIcons = () => {
             const dark = html.classList.contains('dark');
             sun.classList.toggle('hidden', !dark);
             moon.classList.toggle('hidden', dark);
         };
-        syncIcons();
-        btn.addEventListener('click', () => {
+        /**
+         * Toggles the `dark` class on `<html>`, persists the preference, and
+         * updates the icon pair.
+         *
+         * @param {Event} _e - The click event (unused).
+         */
+        const clickHandler = (_e) => {
             const dark = html.classList.toggle('dark');
             localStorage.setItem('theme', dark ? 'dark' : 'light');
             syncIcons();
-        });
+        };
+        btn.addEventListener('click', clickHandler);
+        syncIcons();
+    })();
+    /**
+     * Initializes custom scrollbar behavior to show a scrolling indicator when the user scrolls
+     * or hovers near the scrollbar, and hides it after a period of inactivity.
+     */
+    (function initScrollbars() {
+        /** @constant {number} - Milliseconds to wait before hiding the scrollbar after the last scroll or mouse-leave event. */
+        const SCROLLBAR_HIDE_DELAY_MS = 600;
+        /** @type {HTMLHtmlElement} - Reference to the root `<html>` element, used to toggle theme and scrollbar state classes. */
+        const html  = document.documentElement;
+        /** @type {ReturnType<typeof setTimeout> | undefined} - Handle for the active hide timer; `undefined` when no timer is pending. */
+        let timer   = undefined;
+        /** @type {boolean} - Whether the pointer is currently hovering near the native scrollbar. */
+        let nearBar = false;
+        /**
+         * Hides the scrollbar by removing the scrolling indicator class and
+         * resetting the near-scrollbar hover state.
+         */
+        function hide() {
+            html.classList.remove('is-scrolling');
+            nearBar = false;
+        }
+        /**
+         * Handles the window scroll event.
+         *
+         * Adds the scrolling indicator classes to the HTML element and schedules
+         * the scrollbar to be hidden after 800 ms of inactivity, unless the
+         * pointer is currently hovering near the scrollbar.
+         *
+         * @param {Event} _e - The scroll event (unused).
+         */
+        function handleScroll(_e) {
+            html.classList.add('is-scrolling', 'sb-was-active');
+            clearTimeout(timer);
+            if (!nearBar) {
+                timer = setTimeout(hide, 800);
+            }
+        }
+        /**
+         * Handles mouse movement to detect proximity to the scrollbar.
+         *
+         * When the pointer enters the scrollbar area, the scrolling indicator is shown
+         * and any pending hide timer is canceled. When the pointer leaves the scrollbar
+         * area, the hide timer is restarted after {@link SCROLLBAR_HIDE_DELAY_MS} ms.
+         *
+         * @param {MouseEvent} evt - The mousemove event.
+         */
+        function handleMouseMove(evt) {
+            const sbW = window.innerWidth - document.documentElement.clientWidth;
+            const over = sbW > 0 && evt.clientX >= window.innerWidth - sbW - 6;
+            if (over && !nearBar) {
+                nearBar = true;
+                html.classList.add('is-scrolling', 'sb-was-active');
+                clearTimeout(timer);
+            } else if (!over && nearBar) {
+                nearBar = false;
+                clearTimeout(timer);
+                timer = setTimeout(hide, SCROLLBAR_HIDE_DELAY_MS);
+            }
+        }
+        // Event Listeners
+        window.addEventListener('scroll', handleScroll, {passive: true});
+        window.addEventListener('mousemove', handleMouseMove, {passive: true});
     })();
 </script>
 </body>

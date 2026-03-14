@@ -43,14 +43,52 @@ struct AuthConfig {
 // ---------------------------------------------------------------------------
 
 /**
- * \brief Pagination strategy for a REST API endpoint.
+ * \brief Pagination configuration for REST API endpoints.
+ *
+ * \details
+ * Supports multiple pagination strategies (evaluated in priority order):
+ *  1. `total_pages_header` — one header check on first response, total pages known
+ *  2. `total_count_header` — one header check, derive pages via ceil(count / limit)
+ *  3. `link_header`        — follow verbatim `Link: rel="next"` URL each round-trip
+ *  4. `json_cursor`        — extract cursor token from body each round-trip
+ *  5. `json_next_url`      — body field contains full URL to follow verbatim
+ *  6. `json_next`          — dot-path non-null sentinel; increment page counter
+ *  7. `optimistic_fetching`— blind GET N+1 until empty/404
+ *  8. none                 — single page fetch
  */
 struct PaginationConfig {
-    std::string page_param         = "page";
-    std::string limit_param        = "limit";
-    int         limit              = 15;
-    std::string json_next;          ///< dot-path into JSON response; non-null value = has next page
-    std::string total_pages_header; ///< HTTP header for total pages (WordPress style)
+    /**
+     * \brief Page parameter name (e.g. "page"); if not set, pagination is disabled.
+     */
+    std::optional<std::string> page_param;
+    /**
+     * \brief Limit parameter name (e.g. "limit"); if not set, no limit param is sent. Default value is 15.
+     */
+    std::optional<std::string>  limit_param;
+    /**
+     * \brief JSON cursor path (e.g. "meta.next_cursor"); if not set, cursor-based pagination is not used.
+     */
+    std::optional<std::string> json_cursor;
+    /**
+     * \brief Cursor query parameter name (e.g. "cursor"); required if json_cursor is set.
+     */
+    std::optional<std::string> cursor_param;
+    /**
+     * \brief JSON next page path (e.g. "meta.next_page"); if not set, next page URL is not determined from response body.
+     */
+    std::optional<std::string> json_next;
+    /**
+     * \brief Total pages header name (e.g. "X-Total-Pages"); if not set, total pages are not determined from headers.
+     */
+    std::optional<std::string> total_pages_header;
+
+    std::optional<std::string> total_count_header;  ///< HTTP header with total item count; pages = ceil(count / limit)
+    std::optional<std::string> json_next_url;       ///< dot-path whose string value is the full URL of the next page
+    std::optional<std::string> offset_param;        ///< query param name for item offset; offset = (page-1)*limit
+
+    int                        limit                = 15;       ///< Default items per page.
+    bool                       link_header          = false;    ///< Whether to parse Link header for pagination info.
+    bool                       optimistic_fetching  = false;    ///< Whether to blindly fetch page N+1 until empty/404.
 };
 
 // ---------------------------------------------------------------------------

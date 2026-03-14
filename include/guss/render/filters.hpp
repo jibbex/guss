@@ -23,6 +23,18 @@
 
 namespace guss::render::filters {
 
+/**
+ * \brief Assumed average adult reading speed used by the \c reading_minutes filter.
+ *
+ * \details
+ * Words per minute rate applied when no custom rate is supplied via
+ * \c args[0].  Adjust this constant to recalibrate the default estimate
+ * for a different target audience.
+ *
+ * \see reading_minutes
+ */
+constexpr size_t WORDS_PER_MINUTE = 256;
+
 /// Callable type matching Engine::FilterFn, redeclared here to avoid a
 /// circular include between engine.hpp and filters.hpp.
 using FilterFn = std::function<Value(const Value&, std::span<const Value>)>;
@@ -234,5 +246,21 @@ Value striptags(const Value& v, std::span<const Value> args);
  * \retval Value URL-encoded string.
  */
 Value urlencode(const Value& v, std::span<const Value> args);
+
+/**
+ * \brief Estimate the reading time of an HTML or plain-text string in minutes.
+ *
+ * \details
+ * Strips HTML tags from \p v (if any) and counts the resulting words.
+ * The word count is divided by the assumed average adult reading speed to
+ * produce a whole-minute estimate, with a minimum of 1 minute.
+ * \c args[0] may supply a custom words-per-minute rate (integer); defaults
+ * to 265 when absent. \see WORDS_PER_MINUTE
+ *
+ * \param v    Subject value (string — HTML or plain text).
+ * \param args Optional words-per-minute rate argument (integer).
+ * \retval Value Integer number of minutes (≥ 1), or null if \p v is not a string.
+ */
+Value reading_minutes(const Value& v, std::span<const Value> args);
 
 } // namespace guss::render::filters
