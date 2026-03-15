@@ -10,10 +10,10 @@
 
 A pluggable static site generator written in C++23 that:
 
-- **FORGES** pages from Ghost, WordPress, or Markdown at SIMD-accelerated speed
-- **CASTS** them through a custom bytecode template engine with the precision of a German foundry
-- **HARDENS** the output into static HTML that loads before your users even CLICK
-- **WATCHES** your CMS for changes and rebuilds before you finish your coffee
+- **FORGES:** pages from any JSON CMS, Ghost, WordPress, or Markdown at SIMD-accelerated speed
+- **CASTS:** them through a custom bytecode template engine with the precision of a German foundry
+- **HARDENS:** the output into static HTML that loads before your users even CLICK
+- **WATCHES:** your CMS for changes and rebuilds before you finish your coffee
 
 > **GUSS** (German: *der Guss* — "the casting") doesn't build pages.
 >
@@ -35,11 +35,9 @@ A pluggable static site generator written in C++23 that:
 [2026-03-11 02:32:46.713] [console] [info]   posts: 40 items
 [2026-03-11 02:32:46.713] [console] [info] Fetched 4 collections, 76 total items...
 [2026-03-11 02:32:46.713] [console] [info] Phase 2: Preparing content
-[2026-03-11 02:32:46.713] [console] [info] Phase 3: Rendering templateshing content...
+[2026-03-11 02:32:46.713] [console] [info] Phase 3: Rendering templates...
 [2026-03-11 02:32:46.714] [console] [info] Phase 4: Writing 80 files
 [==================================================] 100% [00m:00s] Writing files...
-[2026-03-11 02:32:46.735] [console] [info] Build complete in 506ms (76 items, 4 archives)
-
 [2026-03-11 02:32:46.735] [console] [info] Build complete!
 [2026-03-11 02:32:46.735] [console] [info]   Items:    76
 [2026-03-11 02:32:46.735] [console] [info]   Archives: 4
@@ -51,17 +49,47 @@ A pluggable static site generator written in C++23 that:
 
 ## 🛠 Prerequisites
 
-- C++23 compiler (GCC 14+ or Clang 18+)
-- CMake 3.25+
-- OpenSSL (for HTTPS)
+The recommended way to build Guss is with a container engine. No compiler, no OpenSSL, no CMake on the host. The image provides everything.
+
+### Container build (recommended)
+
+Any OCI-compatible runtime works. The examples use Docker Compose, but Podman Compose and equivalent tools work identically.
 
 ```bash
-# Debian/Ubuntu
-sudo apt install cmake g++-14 libssl-dev
+# Build the builder image (only needed once / when Dockerfile changes)
+docker compose build
 
-# Configure and build (CPM downloads all other dependencies automatically)
+# Release build — artifacts land in ./cmake-build/
+docker compose run --rm release
+
+# Debug build with symbols — artifacts in ./cmake-build-debug/
+docker compose run --rm debug
+
+# Debug build + run all tests
+docker compose run --rm test
+```
+
+Build artifacts are bind-mounted back to the host so binaries are immediately accessible after the container exits. The CPM dependency cache is baked into the image layer. Subsequent builds never hit the network.
+
+### Native build
+
+Requires:
+- C++23 compiler (GCC 14+ or Clang 18+)
+- CMake 3.25+
+- OpenSSL
+
+```bash
+# Configure (CPM downloads all other dependencies automatically)
 cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+# Build
 cmake --build build -j$(nproc)
+
+# Build with tests
+cmake -B build -DGUSS_BUILD_TESTS=ON && cmake --build build -j$(nproc)
+
+# Run tests
+ctest --test-dir build --output-on-failure
 ```
 
 No Conan. No vcpkg. No Python. No Node. Just CMake and a compiler. Like C++ INTENDED.
@@ -71,65 +99,125 @@ No Conan. No vcpkg. No Python. No Node. Just CMake and a compiler. Like C++ INTE
 ## 🚀 Usage
 
 ```bash
-# Initialize a new site
-guss init --adapter ghost
+# Scaffold a new site in the current directory (or a named subdirectory)
+guss init
+guss init my-blog
 
-# Test connectivity to your CMS
-guss ping
-
-# Build the site
+# Build the site (reads guss.yaml by default)
 guss build
+guss build -c path/to/guss.yaml
+guss build --clean      # wipe output directory first
+guss build -v           # verbose / debug logging
 
-# Serve with live rebuild
-guss serve --port 4000
+# Test connectivity to the configured content source
+guss ping
+guss ping -c path/to/guss.yaml
+
+# Wipe the output directory
+guss clean
+
+# Serve the output directory for local preview (wraps python3 -m http.server)
+guss serve
+guss serve -d dist      # explicit output directory
 ```
 
 ---
 
 ## 📐 Architecture
 
+Guss is built around one core idea: **everything is a `Value`**. There are no `Post`, `Page`, `Author`, or `Tag` structs anywhere in the codebase. The moment data crosses the adapter boundary it becomes a `Value`, a C++23 discriminated union of scalars, maps, and arrays. And that is all the pipeline ever sees.
+
+This single decision eliminates an entire class of complexity. The template engine does not know what a "post" is. The pipeline does not know what Ghost is. Everything is driven by configuration.
+
+### The `Value` Type
+
 ```
-guss/
-├── include/guss/
-│   ├── core/        # Value, RenderItem, CollectionMap, Config, permalink
-│   ├── adapters/    # ContentAdapter base class + RestCmsAdapter, MarkdownAdapter
-│   ├── render/      # Custom bytecode template engine (Lexer→Parser→Compiler→VM)
-│   ├── builder/     # Parallel build pipeline (OpenMP)
-│   ├── server/      # HTTP server (cpp-httplib)
-│   └── watch/       # Filesystem watcher (efsw)
-├── src/
-├── themes/          # Jinja2-style HTML templates
-└── tests/           # Google Test suite (369 tests)
+Value = null
+      | std::string_view   (zero-copy view into adapter-owned memory)
+      | std::string         (owned, e.g. from filter output)
+      | bool
+      | int64_t | uint64_t | double
+      | shared_ptr<ValueMap>    (key → Value, O(1) copy)
+      | shared_ptr<ValueArray>  (Value[], O(1) copy)
 ```
+
+Map and Array are heap-allocated through `shared_ptr`, copying a Value that wraps a large object costs exactly one atomic increment. The underlying data is never mutated after construction, making it safe to share across threads without locks.
+
+### Library Structure
+
+```
+guss-core       Value, ValueMap, ValueArray, RenderItem, CollectionMap,
+                Config, PermalinkGenerator
+                └─ No simdjson. No CMS concepts.
+
+guss-adapters   RestCmsAdapter, MarkdownAdapter
+                └─ simdjson lives here and ONLY here.
+                   from_simdjson() converts API responses → Value in one step.
+                   Returns: FetchResult { CollectionMap items; Value site; }
+
+guss-render     Lexer → Parser → Compiler → CompiledTemplate (bytecode) → Runtime
+                └─ Depends on guss-core. Zero simdjson. Zero CMS concepts.
+
+guss-builder    Pipeline: orchestrates Fetch → Prepare → Render → Write
+                └─ Depends on guss-core + guss-adapters + guss-render
+
+guss-server     HTTP server (cpp-httplib) — optional component
+guss-watch      Filesystem watcher (efsw)
+```
+
+The simdjson boundary is a hard architectural rule. It enters with the raw HTTP response body and exits as a `Value` inside `from_simdjson()`. The render layer has never heard of it.
 
 ### Build Pipeline
 
 ```
-┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐
-│  FETCH  │───▶│ PREPARE │───▶│ RENDER  │───▶│  WRITE  │
-└─────────┘    └─────────┘    └─────────┘    └─────────┘
-   REST API      Permalink      OpenMP          Disk
-   Markdown      Archive        parallel        Assets
-   Pagination    pages          rendering
+┌─────────┐    ┌─────────┐    ┌──────────────────┐    ┌─────────┐
+│  FETCH  │───▶│ PREPARE │───▶│  RENDER (OpenMP) │───▶│  WRITE  │
+└─────────┘    └─────────┘    └──────────────────┘    └─────────┘
+  Adapter        Permalinks     All cores, no locks      Disk
+  → Value        Archives       SharedSiteData ptr       Assets
+  → FetchResult  Pagination     per-thread Context
 ```
 
-1. **Fetch** — Pull content from any REST API or local Markdown files. All data is
-   converted to `Value` (variant type) immediately; no domain model structs anywhere.
-2. **Prepare** — Build archive pages, resolve permalink patterns to output paths.
-3. **Render** — Parallel template rendering via OpenMP. Each thread gets its own
-   render `Context`. No locks, no contention.
-4. **Write** — Write HTML to disk, copy theme assets.
+**Phase 1 — Fetch**: The adapter pulls content from the source (HTTP or filesystem) and converts everything to `Value` via `from_simdjson()` (REST) or frontmatter parsing (Markdown). The result is a `CollectionMap`, a flat `unordered_map<string, vector<RenderItem>>`, plus a `Value` carrying site metadata. No structs. No types. Just data.
+
+**Phase 2 — Prepare**: The pipeline expands permalink patterns to output paths (`{slug}`, `{year}`, `{month}`, `{day}`, or any custom field), resolves Markdown to HTML via cmark, generates archive pages and paginated chunks, and serializes shared site data once into a `SharedSiteData` block wrapped in `shared_ptr<const>`.
+
+**Phase 3 — Render**: OpenMP parallel loop. Each thread constructs its own `Context` with a shared pointer to `SharedSiteData` (one atomic increment per page, zero locks) plus per-page `Value` data. The bytecode engine renders to a string. No contention anywhere.
+
+**Phase 4 — Write**: Output HTML to disk mirroring the permalink structure. Copy theme static assets. Optionally write `sitemap.xml` and `rss.xml`.
+
+### Generic REST Adapter
+
+There is no `GhostAdapter`. There is no `WordPressAdapter`. There is one `RestCmsAdapter` that speaks to any HTTP JSON API.
+
+Every detail that differs between CMSes - URL paths, auth style, pagination strategy, field names, embedded relationships; is configuration, not code:
+
+```yaml
+source:
+  type: rest_api
+  base_url: "https://your-cms.example.com/"
+  auth:
+    type: api_key | basic | bearer | none
+  pagination:
+    json_next: "meta.pagination.next"       # Ghost-style: non-null means more pages
+    # total_pages_header: "X-WP-TotalPages" # WordPress-style: header holds page count
+  field_maps:
+    posts:
+      content: "html"         # rename response field "html" → "content"
+      author:  "authors.0"    # promote first array element to scalar
+  cross_references:
+    tags:
+      from: posts
+      via: "tags.slug"        # inject matching posts into each tag page
+```
+
+Field mapping uses dot-path notation: `"content.rendered"` navigates nested objects, `"authors.0"` indexes arrays, `"tags.slug"` projects a field across every element of an array. Templates are fully CMS-agnostic.
 
 ---
 
 ## 🔌 Source Adapters
 
 ### Generic REST Adapter (`type: rest_api`)
-
-Guss uses a single, fully configurable REST adapter that works with any HTTP CMS. 
-No special cases for Ghost, WordPress, Contentful, or any JSON API. There are no
-hardcoded Ghost or WordPress paths anywhere in the code. Everything is driven by 
-`guss.yaml`.
 
 #### Authentication
 
@@ -155,7 +243,7 @@ auth:
 
 #### Pagination
 
-Two strategies — configure whichever your API uses:
+Configure whichever strategy your API uses (evaluated in priority order):
 
 ```yaml
 pagination:
@@ -163,16 +251,33 @@ pagination:
   limit_param: limit   # query param for page size
   limit: 15
 
-  # Strategy 1 — JSON body sentinel (Ghost-style):
-  # A non-null value at this dot-path means there is a next page.
+  # Strategy 1 — total pages from HTTP header (WordPress-style X-WP-TotalPages):
+  total_pages_header: "X-WP-TotalPages"
+
+  # Strategy 2 — total item count from HTTP header; pages = ceil(count / limit):
+  total_count_header: "X-WP-Total"
+
+  # Strategy 3 — follow verbatim Link: rel="next" URL each round-trip:
+  link_header: true
+
+  # Strategy 4 — cursor token extracted from body each round-trip:
+  json_cursor: "meta.next_cursor"   # dot-path to cursor token in body
+  cursor_param: "cursor"            # query param name to send cursor value
+
+  # Strategy 5 — body field contains full URL of next page:
+  json_next_url: "meta.next"
+
+  # Strategy 6 — non-null value at dot-path means there is a next page (Ghost-style):
   json_next: "meta.pagination.next"
 
-  # Strategy 2 — HTTP response header (WordPress-style):
-  # The header value is the total number of pages.
-  # total_pages_header: "X-WP-TotalPages"
+  # Strategy 7 — blind GET page N+1 until empty or 404:
+  optimistic_fetching: true
+
+  # Strategy 8 — offset-based: offset = (page-1) * limit
+  offset_param: "offset"
 ```
 
-If neither is set, the endpoint is assumed to return a single page.
+If no strategy is configured, the endpoint is assumed to return a single page.
 Pagination can be overridden per endpoint.
 
 #### Field Mapping
@@ -286,10 +391,11 @@ Page {{ pagination.current }} of {{ pagination.total }}
 ## 🎨 Template Engine
 
 Guss ships a custom bytecode template engine. No inja, no nlohmann/json,
-no external template library in the render path.
+no external template library in the render path. Source templates are compiled
+once at startup, cached, and executed by a tight bytecode loop on every render.
 
 ```
-Source template
+Source template (.html)
      │
      ▼
   Lexer          → token stream
@@ -298,11 +404,19 @@ Source template
   Parser         → AST
      │
      ▼
-  Compiler       → flat bytecode (OpCode vector)
-     │
+  Compiler       → flat bytecode (Instruction vector + interned tables)
+     │            stack depth verified at compile time — zero overhead at runtime
      ▼
-  Executor       → rendered string
+  Runtime        → rendered string  (parallel, lock-free)
 ```
+
+The compiler performs a single AST pass and emits a flat `Instruction` stream.
+Control-flow instructions carry pre-patched relative offsets so the executor never
+searches for jump targets. String data, variable paths, filter names, and literal
+constants are interned into parallel tables indexed by operand. The hot loop
+touches only integers. After compilation, `Compiler::verify_stack_depths()` simulates
+the value stack and loop stack statically; if either would overflow at runtime,
+load returns an error. No overflow checks are needed during execution.
 
 ### Supported syntax
 
@@ -321,10 +435,40 @@ Source template
 
 {% extends "base.html" %}
 {% block content %}…{% endblock %}
+{% block content %}{{ super() }}…{% endblock %}
 {% include "partial.html" %}
 
 {% set x = value %}
 ```
+
+### Expressions and operators
+
+Templates support full expression syntax inside `{{ }}` and `{% if %}`:
+
+```html
+{{ post.title | upper }}
+{{ post.reading_minutes | default(1) }}
+{% if post.featured and not post.draft %}…{% endif %}
+{% if loop.index == 1 or loop.last %}…{% endif %}
+{{ items | length > 0 }}
+```
+
+Supported binary operators: `==`, `!=`, `<`, `>`, `<=`, `>=`, `+`, `-`, `*`, `/`, `%`, `and`, `or`
+
+Supported unary operators: `not`
+
+### Loop variables
+
+Inside any `{% for %}` block, a `loop` object is automatically available:
+
+| Variable          | Value                                    |
+|-------------------|------------------------------------------|
+| `loop.index`      | 1-based iteration counter                |
+| `loop.index0`     | 0-based iteration counter                |
+| `loop.first`      | `true` on the first iteration            |
+| `loop.last`       | `true` on the last iteration             |
+| `loop.revindex`   | 1-based counter from the end             |
+| `loop.revindex0`  | 0-based counter from the end             |
 
 ### Template context
 
@@ -343,17 +487,38 @@ collection name (e.g. `posts` for the posts archive).
 
 ### Built-in filters
 
-| Filter     | Example                                  | Result                 |
-|------------|------------------------------------------|------------------------|
-| `upper`    | `{{ title \| upper }}`                   | `MY POST`              |
-| `lower`    | `{{ title \| lower }}`                   | `my post`              |
-| `strip`    | `{{ text \| strip }}`                    | trimmed string         |
-| `length`   | `{{ posts \| length }}`                  | item count             |
-| `safe`     | `{{ html \| safe }}`                     | raw HTML (no escaping) |
-| `date`     | `{{ published_at \| date("%d.%m.%Y") }}` | `15.03.2024`           |
-| `truncate` | `{{ excerpt \| truncate(120) }}`         | max 120 chars          |
-| `default`  | `{{ bio \| default("No bio") }}`         | fallback value         |
-| `slugify`  | `{{ title \| slugify }}`                 | `my-post-title`        |
+| Filter            | Example                                       | Result                                      |
+|-------------------|-----------------------------------------------|---------------------------------------------|
+| `upper`           | `{{ title \| upper }}`                        | `MY POST`                                   |
+| `lower`           | `{{ title \| lower }}`                        | `my post`                                   |
+| `capitalize`      | `{{ title \| capitalize }}`                   | first char upper, rest lower                |
+| `escape`          | `{{ text \| escape }}`                        | HTML-escaped string                         |
+| `safe`            | `{{ html \| safe }}`                          | raw HTML (no escaping)                      |
+| `length`          | `{{ posts \| length }}`                       | item count (array/object) or codepoints (string) |
+| `date`            | `{{ published_at \| date("%d.%m.%Y") }}`      | `15.03.2024`                                |
+| `truncate`        | `{{ excerpt \| truncate(120) }}`              | max 120 UTF-8 codepoints + ellipsis         |
+| `default`         | `{{ bio \| default("No bio") }}`              | fallback when null or falsy                 |
+| `slugify`         | `{{ title \| slugify }}`                      | `my-post-title`                             |
+| `join`            | `{{ tags \| join(", ") }}`                    | `tech, go, c++`                             |
+| `first`           | `{{ tags \| first }}`                         | first element                               |
+| `last`            | `{{ tags \| last }}`                          | last element                                |
+| `reverse`         | `{{ items \| reverse }}`                      | reversed string or array                    |
+| `sort`            | `{{ items \| sort }}`                         | array sorted ascending                      |
+| `striptags`       | `{{ html \| striptags }}`                     | plain text, HTML tags removed               |
+| `urlencode`       | `{{ url \| urlencode }}`                      | percent-encoded string (RFC 3986)           |
+| `replace`         | `{{ text \| replace("a", "b") }}`             | all occurrences replaced                    |
+| `trim`            | `{{ text \| trim }}`                          | leading/trailing whitespace removed         |
+| `abs`             | `{{ value \| abs }}`                          | absolute value (int or float)               |
+| `round`           | `{{ value \| round(2) }}`                     | rounded to N decimal places                 |
+| `float`           | `{{ value \| float }}`                        | convert to double                           |
+| `int`             | `{{ value \| int }}`                          | convert to integer (truncates)              |
+| `wordcount`       | `{{ content \| wordcount }}`                  | whitespace-separated word count             |
+| `reading_minutes` | `{{ content \| reading_minutes }}`            | estimated read time in minutes              |
+| `items`           | `{% for pair in obj \| items %}`              | object → array of `[key, value]` pairs      |
+| `dictsort`        | `{% for pair in obj \| dictsort %}`           | object → `[key, value]` pairs sorted by key |
+
+`reading_minutes` strips HTML tags, counts words, and divides by 256 wpm (configurable:
+`{{ content | reading_minutes(300) }}`). Minimum is 1 minute.
 
 ---
 
@@ -372,7 +537,7 @@ collection name (e.g. `posts` for the posts archive).
 | File watch   | efsw           | Cross-platform, lightweight                        |
 | Parallelism  | OpenMP         | One pragma, all cores                              |
 | Build system | CMake + CPM    | Zero external tooling                              |
-| Tests        | Google Test    | 369 tests, zero failures                           |
+| Tests        | Google Test    | 448 tests, zero failures                           |
 
 ---
 
