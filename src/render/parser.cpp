@@ -144,6 +144,31 @@ ast::Node Parser::parse_block_tag() {
         ast::IncludeNode in = parse_include();
         return std::make_unique<ast::IncludeNode>(std::move(in));
     }
+    case TokenType::Keyword_Set: {
+        consume(TokenType::Keyword_Set);
+
+        const Token& var_tok = peek();
+        if (var_tok.type != TokenType::Identifier) {
+            error(std::format("expected variable name after 'set', got '{}'",
+                              std::string(var_tok.value)));
+        }
+        std::string var_name(var_tok.value);
+        consume(TokenType::Identifier);
+
+        const Token& eq_tok = peek();
+        if (eq_tok.type != TokenType::Op_Assign) {
+            error("expected '=' after variable name in {% set %}");
+        }
+        consume(TokenType::Op_Assign);
+
+        ast::Expr val = parse_expr();
+        consume(TokenType::BlockClose);
+
+        ast::SetNode sn;
+        sn.var_name = std::move(var_name);
+        sn.value    = std::move(val);
+        return std::make_unique<ast::SetNode>(std::move(sn));
+    }
     case TokenType::Keyword_EndFor:
         error("unexpected 'endfor' without matching 'for'");
     case TokenType::Keyword_EndIf:
@@ -517,6 +542,13 @@ ast::Expr Parser::parse_primary() {
             std::make_unique<ast::Variable>(ast::Variable{path}));
     }
 
+    case TokenType::Keyword_Super: {
+        consume(TokenType::Keyword_Super);
+        consume(TokenType::LParen);
+        consume(TokenType::RParen);
+        return parse_filter_chain(std::make_unique<ast::SuperNode>());
+    }
+
     case TokenType::LParen: {
         consume(TokenType::LParen);
         ast::Expr inner = parse_expr();
@@ -602,6 +634,9 @@ Token Parser::consume(TokenType expected) {
         case TokenType::Keyword_Or:        return "'or'";
         case TokenType::Keyword_True:      return "'true'";
         case TokenType::Keyword_False:     return "'false'";
+        case TokenType::Keyword_Set:       return "'set'";
+        case TokenType::Keyword_Super:     return "'super'";
+        case TokenType::Op_Assign:         return "'='";
         case TokenType::Op_Eq:             return "'=='";
         case TokenType::Op_Ne:             return "'!='";
         case TokenType::Op_Lt:             return "'<'";

@@ -15,7 +15,7 @@
 #include "guss/core/permalink.hpp"
 #include "guss/core/render_item.hpp"
 #include "guss/render/context.hpp"
-#include "guss/render/engine.hpp"
+#include "guss/render/runtime.hpp"
 #include "guss/render/value.hpp"
 
 #ifdef GUSS_USE_OPENMP
@@ -287,7 +287,7 @@ Pipeline::phase_render(const std::vector<render::RenderItem>& items,
     std::vector<std::pair<std::filesystem::path, std::string>> files;
     files.resize(items.size());
 
-    render::Engine engine(std::filesystem::path("./templates"));
+    render::Runtime engine(std::filesystem::path("./templates"));
 
     static constexpr std::size_t kCtxBufSize = 8192;
     const size_t item_boundary = items.size() - archive_count;

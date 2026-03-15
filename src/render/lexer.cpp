@@ -186,7 +186,8 @@ void Lexer::scan_tag(std::string_view closing, bool& trim_after) {
                 tokens_.push_back(make(TokenType::Op_Eq, source_.substr(pos_, 2)));
                 advance(2);
             } else {
-                error(std::format("unexpected character '{}'", c));
+                tokens_.push_back(make(TokenType::Op_Assign, source_.substr(pos_, 1)));
+                advance();
             }
         } else if (c == '!') {
             if (pos_ + 1 < source_.size() && source_[pos_ + 1] == '=') {
@@ -452,6 +453,8 @@ TokenType Lexer::keyword_or_identifier(std::string_view s) const {
     if (s == "or")       return TokenType::Keyword_Or;
     if (s == "true")     return TokenType::Keyword_True;
     if (s == "false")    return TokenType::Keyword_False;
+    if (s == "set")      return TokenType::Keyword_Set;
+    if (s == "super")    return TokenType::Keyword_Super;
     return TokenType::Identifier;
 }
 

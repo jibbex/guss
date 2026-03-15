@@ -64,6 +64,15 @@ bool Value::is_number() const {
         || std::holds_alternative<double>(data_);
 }
 
+bool Value::is_int() const {
+    return std::holds_alternative<int64_t>(data_)
+        || std::holds_alternative<uint64_t>(data_);
+}
+
+bool Value::is_double() const {
+    return std::holds_alternative<double>(data_);
+}
+
 bool Value::is_bool() const {
     return std::holds_alternative<bool>(data_);
 }
@@ -175,6 +184,19 @@ Value Value::operator[](size_t index) const {
 std::shared_ptr<ValueMap> Value::as_object() {
     if (auto* p = std::get_if<std::shared_ptr<ValueMap>>(&data_)) return *p;
     return nullptr;
+}
+
+std::vector<std::string> Value::object_keys() const {
+    if (!std::holds_alternative<std::shared_ptr<ValueMap>>(data_)) {
+        return {};
+    }
+    const auto& map = *std::get<std::shared_ptr<ValueMap>>(data_);
+    std::vector<std::string> keys;
+    keys.reserve(map.size());
+    for (const auto& [k, v] : map) {
+        keys.push_back(k);
+    }
+    return keys;
 }
 
 void Value::set(std::string key, Value val) {

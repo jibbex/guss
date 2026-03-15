@@ -12,11 +12,16 @@
 #include "guss/render/detail/html.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <cctype>
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <ctime>
+#include <limits>
+#include <stdexcept>
 #include <string>
+#include <vector>
 
 namespace guss::render::filters {
 
@@ -477,6 +482,276 @@ Value reading_minutes(const Value& v, std::span<const Value> args) {
 }
 
 // ---------------------------------------------------------------------------
+// replace
+// ---------------------------------------------------------------------------
+
+Value replace(const Value& v, std::span<const Value> args) {
+    if (!v.is_string()) {
+        return v;
+    }
+    if (args.size() < 2) {
+        return v;
+    }
+    const std::string needle      = std::string(args[0].as_string());
+    const std::string replacement = std::string(args[1].as_string());
+
+    std::string result = std::string(v.as_string());
+    if (needle.empty()) {
+        return Value(std::move(result));
+    }
+
+    std::string out;
+    out.reserve(result.size());
+    size_t pos = 0;
+    while (true) {
+        const size_t found = result.find(needle, pos);
+        if (found == std::string::npos) {
+            out.append(result, pos, std::string::npos);
+            break;
+        }
+        out.append(result, pos, found - pos);
+        out += replacement;
+        pos = found + needle.size();
+    }
+    return Value(std::move(out));
+}
+
+// ---------------------------------------------------------------------------
+// trim
+// ---------------------------------------------------------------------------
+
+Value trim(const Value& v, std::span<const Value> /*args*/) {
+    if (!v.is_string()) {
+        return v;
+    }
+    const std::string_view sv = v.as_string();
+    const auto is_ws = [](unsigned char c) -> bool {
+        return c == ' ' || c == '\t' || c == '\n' || c == '\r'
+            || c == '\f' || c == '\v';
+    };
+
+    size_t start = 0;
+    while (start < sv.size() && is_ws(static_cast<unsigned char>(sv[start]))) {
+        ++start;
+    }
+    size_t end = sv.size();
+    while (end > start && is_ws(static_cast<unsigned char>(sv[end - 1]))) {
+        --end;
+    }
+    return Value(std::string(sv.substr(start, end - start)));
+}
+
+// ---------------------------------------------------------------------------
+// capitalize
+// ---------------------------------------------------------------------------
+
+Value capitalize(const Value& v, std::span<const Value> /*args*/) {
+    if (!v.is_string()) {
+        return v;
+    }
+    const std::string_view sv = v.as_string();
+    if (sv.empty()) return v;
+    std::string s(sv);
+    // Uppercase first ASCII character, lowercase the rest.
+    s[0] = static_cast<char>(std::toupper(static_cast<unsigned char>(s[0])));
+    for (size_t i = 1; i < s.size(); ++i) {
+        s[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(s[i])));
+    }
+    return Value(std::move(s));
+}
+
+// ---------------------------------------------------------------------------
+// abs
+// ---------------------------------------------------------------------------
+
+Value abs(const Value& v, std::span<const Value> /*args*/) {
+    if (v.is_int()) {
+        const int64_t i = v.as_int();
+        // INT64_MIN has no positive int64_t representation; clamp to INT64_MAX.
+        if (i == std::numeric_limits<int64_t>::min()) {
+            return Value(std::numeric_limits<int64_t>::max());
+        }
+        return Value(std::abs(i));
+    }
+    if (v.is_double()) {
+        return Value(std::abs(v.as_double()));
+    }
+    return v;
+}
+
+// ---------------------------------------------------------------------------
+// round
+// ---------------------------------------------------------------------------
+
+Value round(const Value& v, std::span<const Value> args) {
+    const int64_t decimals = args.empty() ? int64_t{0}
+                                          : args[0].as_int();
+    if (v.is_int()) {
+        if (decimals <= 0) {
+            return v;
+        }
+        // Convert to double and apply rounding to requested precision.
+        const double factor = std::pow(10.0, static_cast<double>(decimals));
+        return Value(std::round(static_cast<double>(v.as_int()) * factor) / factor);
+    }
+    if (v.is_double()) {
+        if (decimals <= 0) {
+            return Value(std::round(v.as_double()));
+        }
+        const double factor = std::pow(10.0, static_cast<double>(decimals));
+        return Value(std::round(v.as_double() * factor) / factor);
+    }
+    return v;
+}
+
+// ---------------------------------------------------------------------------
+// float_
+// ---------------------------------------------------------------------------
+
+Value float_(const Value& v, std::span<const Value> /*args*/) {
+    if (v.is_int()) {
+        return Value(static_cast<double>(v.as_int()));
+    }
+    if (v.is_double()) {
+        return v;
+    }
+    if (v.is_string()) {
+        try {
+            const std::string s(v.as_string());
+            return Value(std::stod(s));
+        } catch (const std::exception&) {
+            return v;
+        }
+    }
+    return v;
+}
+
+// ---------------------------------------------------------------------------
+// int_
+// ---------------------------------------------------------------------------
+
+Value int_(const Value& v, std::span<const Value> /*args*/) {
+    if (v.is_double()) {
+        return Value(static_cast<int64_t>(v.as_double()));
+    }
+    if (v.is_int()) {
+        return v;
+    }
+    if (v.is_string()) {
+        try {
+            const std::string s(v.as_string());
+            return Value(static_cast<int64_t>(std::stoll(s)));
+        } catch (const std::exception&) {
+            return v;
+        }
+    }
+    return v;
+}
+
+// ---------------------------------------------------------------------------
+// wordcount
+// ---------------------------------------------------------------------------
+
+Value wordcount(const Value& v, std::span<const Value> /*args*/) {
+    if (!v.is_string()) {
+        return Value(int64_t{0});
+    }
+    const std::string_view sv = v.as_string();
+    int64_t count    = 0;
+    bool    in_word  = false;
+    for (const unsigned char c : sv) {
+        if (std::isspace(c)) {
+            in_word = false;
+        } else if (!in_word) {
+            in_word = true;
+            ++count;
+        }
+    }
+    return Value(count);
+}
+
+// ---------------------------------------------------------------------------
+// items
+// ---------------------------------------------------------------------------
+
+Value items(const Value& v, std::span<const Value> /*args*/) {
+    if (!v.is_object()) {
+        return v;
+    }
+    const std::vector<std::string> keys = v.object_keys();
+    std::vector<Value> result;
+    result.reserve(keys.size());
+    for (const auto& key : keys) {
+        std::vector<Value> pair;
+        pair.reserve(2);
+        pair.push_back(Value(std::string(key)));
+        pair.push_back(v[key]);
+        result.push_back(Value(std::move(pair)));
+    }
+    return Value(std::move(result));
+}
+
+// ---------------------------------------------------------------------------
+// sort
+// ---------------------------------------------------------------------------
+
+Value sort(const Value& v, std::span<const Value> /*args*/) {
+    if (!v.is_array()) {
+        return v;
+    }
+    const size_t n = v.size();
+    std::vector<Value> arr;
+    arr.reserve(n);
+    for (size_t i = 0; i < n; ++i) {
+        arr.push_back(v[i]);
+    }
+
+    std::stable_sort(arr.begin(), arr.end(), [](const Value& a, const Value& b) {
+        // Both strings: lexicographic comparison.
+        if (a.is_string() && b.is_string()) {
+            return a.as_string() < b.as_string();
+        }
+        // Both numbers: numeric comparison.
+        if (a.is_number() && b.is_number()) {
+            const double da = a.is_double() ? a.as_double()
+                                            : static_cast<double>(a.as_int());
+            const double db = b.is_double() ? b.as_double()
+                                            : static_cast<double>(b.as_int());
+            return da < db;
+        }
+        // Mixed types: fall back to string representation.
+        return a.to_string() < b.to_string();
+    });
+
+    return Value(std::move(arr));
+}
+
+// ---------------------------------------------------------------------------
+// dictsort
+// ---------------------------------------------------------------------------
+
+Value dictsort(const Value& v, std::span<const Value> /*args*/) {
+    if (!v.is_object()) {
+        return v;
+    }
+    // Collect and sort keys.
+    std::vector<std::string> keys = v.object_keys();
+    std::sort(keys.begin(), keys.end());
+
+    // Build result array of [key, value] pairs in sorted key order.
+    std::vector<Value> result;
+    result.reserve(keys.size());
+    for (const auto& key : keys) {
+        std::vector<Value> pair;
+        pair.reserve(2);
+        pair.push_back(Value(std::string(key)));
+        pair.push_back(v[key]);
+        result.push_back(Value(std::move(pair)));
+    }
+    return Value(std::move(result));
+}
+
+// ---------------------------------------------------------------------------
 // register_all
 // ---------------------------------------------------------------------------
 
@@ -505,6 +780,17 @@ void register_all(std::vector<FilterFn>&                  registry,
     reg("striptags",        striptags);
     reg("urlencode",        urlencode);
     reg("reading_minutes",  reading_minutes);
+    reg("replace",          replace);
+    reg("trim",             trim);
+    reg("capitalize",       capitalize);
+    reg("abs",              abs);
+    reg("round",            round);
+    reg("float",            float_);
+    reg("int",              int_);
+    reg("wordcount",        wordcount);
+    reg("items",            items);
+    reg("sort",             sort);
+    reg("dictsort",         dictsort);
 }
 
 } // namespace guss::render::filters

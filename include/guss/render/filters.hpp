@@ -4,12 +4,12 @@
  *
  * \details
  * Each filter is a free function that accepts a subject Value and a span of
- * argument Values and returns the transformed Value.  All 15 built-in filters
+ * argument Values and returns the transformed Value.  All 27 built-in filters
  * are declared here so they can be called directly from unit tests without
- * going through the Engine.
+ * going through the Runtime.
  *
- * \c register_all() is the single entry-point called from the Engine
- * constructor.  It populates the engine's filter registry and index map with
+ * \c register_all() is the single entry-point called from the Runtime
+ * constructor.  It populates the runtime's filter registry and index map with
  * all built-in filters.
  */
 #pragma once
@@ -35,8 +35,8 @@ namespace guss::render::filters {
  */
 constexpr size_t WORDS_PER_MINUTE = 256;
 
-/// Callable type matching Engine::FilterFn, redeclared here to avoid a
-/// circular include between engine.hpp and filters.hpp.
+/// Callable type matching Runtime::FilterFn, redeclared here to avoid a
+/// circular include between runtime.hpp and filters.hpp.
 using FilterFn = std::function<Value(const Value&, std::span<const Value>)>;
 
 /**
@@ -44,7 +44,7 @@ using FilterFn = std::function<Value(const Value&, std::span<const Value>)>;
  *
  * \details
  * Appends one entry per filter to \p registry and inserts the corresponding
- * name-to-index mapping into \p index.  Called exactly once from the Engine
+ * name-to-index mapping into \p index.  Called exactly once from the Runtime
  * constructor.
  *
  * \param registry  The engine's flat filter vector (indexed by id).
@@ -255,12 +255,168 @@ Value urlencode(const Value& v, std::span<const Value> args);
  * The word count is divided by the assumed average adult reading speed to
  * produce a whole-minute estimate, with a minimum of 1 minute.
  * \c args[0] may supply a custom words-per-minute rate (integer); defaults
- * to 265 when absent. \see WORDS_PER_MINUTE
+ * to 256 when absent. \see WORDS_PER_MINUTE
  *
  * \param v    Subject value (string — HTML or plain text).
  * \param args Optional words-per-minute rate argument (integer).
  * \retval Value Integer number of minutes (≥ 1), or null if \p v is not a string.
  */
 Value reading_minutes(const Value& v, std::span<const Value> args);
+
+/**
+ * \brief Replace all occurrences of a substring with another string.
+ *
+ * \details
+ * \c args[0] is the needle string; \c args[1] is the replacement string.
+ * If \p v is not a string the value is returned unchanged.
+ *
+ * \param v    Subject value (string).
+ * \param args args[0]=needle, args[1]=replacement.
+ * \retval Value String with substitutions applied, or the original value unchanged.
+ */
+Value replace(const Value& v, std::span<const Value> args);
+
+/**
+ * \brief Strip leading and trailing ASCII whitespace from a string.
+ *
+ * \details
+ * Only ASCII whitespace bytes (space, tab, newline, carriage return,
+ * form feed, vertical tab) are removed.  Multi-byte UTF-8 sequences are
+ * left untouched.  If \p v is not a string the value is returned unchanged.
+ *
+ * \param v    Subject value (string).
+ * \param args Unused.
+ * \retval Value Trimmed string, or the original value unchanged.
+ */
+Value trim(const Value& v, std::span<const Value> args);
+
+/**
+ * \brief Uppercase the first character and lowercase the rest of a string.
+ *
+ * \details
+ * Only ASCII characters (bytes < 0x80) are transformed; multi-byte UTF-8
+ * sequences are passed through unchanged.  If \p v is not a string the
+ * value is returned unchanged.
+ *
+ * \param v    Subject value (string).
+ * \param args Unused.
+ * \retval Value Capitalized string, or the original value unchanged.
+ */
+Value capitalize(const Value& v, std::span<const Value> args);
+
+/**
+ * \brief Return the absolute value of a number.
+ *
+ * \details
+ * Works on \c int64_t and \c double operands.  For all other types the value
+ * is returned unchanged.
+ *
+ * \param v    Subject value (int64_t or double).
+ * \param args Unused.
+ * \retval Value Absolute value with the same numeric type, or the original value.
+ */
+Value abs(const Value& v, std::span<const Value> args);
+
+/**
+ * \brief Round a number to N decimal places.
+ *
+ * \details
+ * \c args[0] is the number of decimal places (default 0).  For integer input
+ * with zero decimal places the value is returned as-is; otherwise the result
+ * is always a \c double.  For all other types the value is returned unchanged.
+ *
+ * \param v    Subject value (int64_t or double).
+ * \param args Optional decimal-places argument (integer).
+ * \retval Value Rounded double, or the original value unchanged.
+ */
+Value round(const Value& v, std::span<const Value> args);
+
+/**
+ * \brief Convert a value to a double (floating-point).
+ *
+ * \details
+ * - \c int64_t input is cast to \c double.
+ * - \c double input is returned unchanged.
+ * - \c string input is parsed with \c std::stod; on failure the original
+ *   value is returned unchanged.
+ * - All other types are returned unchanged.
+ *
+ * \param v    Subject value.
+ * \param args Unused.
+ * \retval Value A double Value, or the original value on failure.
+ */
+Value float_(const Value& v, std::span<const Value> args);
+
+/**
+ * \brief Convert a value to an integer (int64_t), truncating towards zero.
+ *
+ * \details
+ * - \c double input is cast to \c int64_t (truncation).
+ * - \c int64_t input is returned unchanged.
+ * - \c string input is parsed with \c std::stoll; on failure the original
+ *   value is returned unchanged.
+ * - All other types are returned unchanged.
+ *
+ * \param v    Subject value.
+ * \param args Unused.
+ * \retval Value An int64_t Value, or the original value on failure.
+ */
+Value int_(const Value& v, std::span<const Value> args);
+
+/**
+ * \brief Count the number of whitespace-separated words in a string.
+ *
+ * \details
+ * No HTML stripping is performed; tags are counted as words if they contain
+ * non-whitespace characters.  If \p v is not a string, zero is returned.
+ *
+ * \param v    Subject value (string).
+ * \param args Unused.
+ * \retval Value Integer word count.
+ */
+Value wordcount(const Value& v, std::span<const Value> args);
+
+/**
+ * \brief Convert an object (ValueMap) to an array of [key, value] pairs.
+ *
+ * \details
+ * Each element of the returned array is a two-element array: the first
+ * element is the key as a \c string Value, the second is the associated
+ * value.  Iteration order is unspecified (unordered map order).
+ * If \p v is not an object the value is returned unchanged.
+ *
+ * \param v    Subject value (object/ValueMap).
+ * \param args Unused.
+ * \retval Value Array of [key, value] pairs, or the original value unchanged.
+ */
+Value items(const Value& v, std::span<const Value> args);
+
+/**
+ * \brief Sort an array in ascending order.
+ *
+ * \details
+ * Strings are compared lexicographically; numbers are compared numerically.
+ * For mixed-type arrays elements are compared by their \c to_string()
+ * representation.  A new array is returned; the original is not modified.
+ * If \p v is not an array the value is returned unchanged.
+ *
+ * \param v    Subject value (array).
+ * \param args Unused.
+ * \retval Value Sorted array, or the original value unchanged.
+ */
+Value sort(const Value& v, std::span<const Value> args);
+
+/**
+ * \brief Convert an object to an array of [key, value] pairs sorted by key.
+ *
+ * \details
+ * Equivalent to \c items but the resulting pairs are sorted lexicographically
+ * by key.  If \p v is not an object the value is returned unchanged.
+ *
+ * \param v    Subject value (object/ValueMap).
+ * \param args Unused.
+ * \retval Value Sorted array of [key, value] pairs, or the original value unchanged.
+ */
+Value dictsort(const Value& v, std::span<const Value> args);
 
 } // namespace guss::render::filters

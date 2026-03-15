@@ -99,6 +99,8 @@ public:
     [[nodiscard]] bool is_null()   const;
     [[nodiscard]] bool is_string() const;
     [[nodiscard]] bool is_number() const;
+    [[nodiscard]] bool is_int()    const;   ///< True if the stored type is int64_t or uint64_t.
+    [[nodiscard]] bool is_double() const;   ///< True if the stored type is double.
     [[nodiscard]] bool is_bool()   const;
     [[nodiscard]] bool is_array()  const;
     [[nodiscard]] bool is_object() const;
@@ -138,6 +140,18 @@ public:
      * \retval nullptr               If this Value is not an object.
      */
     [[nodiscard]] std::shared_ptr<ValueMap> as_object();
+
+    /**
+     * \brief Return the keys of an object value in unspecified order.
+     *
+     * \details
+     * Provides a way to iterate over object key-value pairs without exposing
+     * the incomplete \c ValueMap type to callers that only include value.hpp.
+     * Returns an empty vector if this Value is not an object.
+     *
+     * \retval std::vector<std::string> Keys of the object, order unspecified.
+     */
+    [[nodiscard]] std::vector<std::string> object_keys() const;
 
     /**
      * \brief Insert or overwrite a key in the underlying object map.
