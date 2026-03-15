@@ -173,7 +173,7 @@ add_library(guss-render
     src/render/context.cpp
     src/render/compiler.cpp
     src/render/filters.cpp
-    src/render/engine.cpp
+    src/render/runtime.cpp
 )
 
 target_include_directories(guss-render PUBLIC include)

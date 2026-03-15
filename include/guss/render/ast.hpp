@@ -53,6 +53,7 @@ struct BoolLit;
 struct Filter;
 struct UnaryOp;
 struct BinaryOp;
+struct SuperNode;
 
 // ---------------------------------------------------------------------------
 // Expression variant
@@ -80,7 +81,8 @@ using Expr = std::variant<
     std::unique_ptr<BoolLit>,
     std::unique_ptr<Filter>,
     std::unique_ptr<UnaryOp>,
-    std::unique_ptr<BinaryOp>
+    std::unique_ptr<BinaryOp>,
+    std::unique_ptr<SuperNode>
 >;
 
 // ---------------------------------------------------------------------------
@@ -166,6 +168,17 @@ struct BinaryOp {
     Expr right;                         ///< Right-hand operand.
 };
 
+/**
+ * \brief A `{{ super() }}` call expression that renders the parent block's content.
+ *
+ * \details
+ * Valid only inside a block override in a child template.  At render time the
+ * executor walks the `super_chain` to find the immediate parent block body and
+ * renders it, then pushes the resulting string onto the value stack so that the
+ * surrounding expression can concatenate or emit it.
+ */
+struct SuperNode {};
+
 // ---------------------------------------------------------------------------
 // Template node forward declarations
 // ---------------------------------------------------------------------------
@@ -177,6 +190,7 @@ struct IfNode;
 struct BlockNode;
 struct ExtendsNode;
 struct IncludeNode;
+struct SetNode;
 
 // ---------------------------------------------------------------------------
 // Node variant
@@ -196,7 +210,8 @@ using Node = std::variant<
     std::unique_ptr<IfNode>,
     std::unique_ptr<BlockNode>,
     std::unique_ptr<ExtendsNode>,
-    std::unique_ptr<IncludeNode>
+    std::unique_ptr<IncludeNode>,
+    std::unique_ptr<SetNode>
 >;
 
 // ---------------------------------------------------------------------------
@@ -293,6 +308,15 @@ struct ExtendsNode {
  */
 struct IncludeNode {
     std::string template_name;          ///< Name/path of the template to include.
+};
+
+/**
+ * \brief A `{% set varname = expr %}` assignment node.
+ * \details Sets a variable in the render context at the point of execution.
+ */
+struct SetNode {
+    std::string var_name;  ///< Variable name to assign.
+    Expr        value;     ///< Expression to evaluate and assign.
 };
 
 // ---------------------------------------------------------------------------

@@ -1,8 +1,8 @@
 /**
- * \file engine.cpp
- * \brief Template engine implementation: bytecode executor, filter registry, and cache.
+ * \file runtime.cpp
+ * \brief Template runtime implementation: bytecode executor, filter registry, and cache.
  */
-#include "guss/render/engine.hpp"
+#include "guss/render/runtime.hpp"
 #include "guss/render/filters.hpp"
 #include "guss/render/lexer.hpp"
 #include "guss/render/parser.hpp"
@@ -142,27 +142,27 @@ static Value eval_unary(int32_t op_id, const Value& v) {
 }
 
 // ---------------------------------------------------------------------------
-// Engine — constructor
+// Runtime — constructor
 // ---------------------------------------------------------------------------
 
-Engine::Engine(std::filesystem::path theme_dir) {
+Runtime::Runtime(std::filesystem::path theme_dir) {
     search_paths_.push_back(std::move(theme_dir));
     register_builtin_filters();
 }
 
 // ---------------------------------------------------------------------------
-// Engine::add_search_path
+// Runtime::add_search_path
 // ---------------------------------------------------------------------------
 
-void Engine::add_search_path(const std::filesystem::path& dir) {
+void Runtime::add_search_path(const std::filesystem::path& dir) {
     search_paths_.push_back(dir);
 }
 
 // ---------------------------------------------------------------------------
-// Engine::resolve_path
+// Runtime::resolve_path
 // ---------------------------------------------------------------------------
 
-std::filesystem::path Engine::resolve_path(std::string_view name) const {
+std::filesystem::path Runtime::resolve_path(std::string_view name) const {
     for (const auto& base : search_paths_) {
         auto candidate = base / name;
         if (std::filesystem::is_regular_file(candidate)) {
@@ -170,28 +170,28 @@ std::filesystem::path Engine::resolve_path(std::string_view name) const {
         }
     }
     throw std::runtime_error(
-        std::format("engine: template not found in any search path: '{}'",
+        std::format("runtime: template not found in any search path: '{}'",
                     std::string(name)));
 }
 
 // ---------------------------------------------------------------------------
-// Engine::resolve_filter_id
+// Runtime::resolve_filter_id
 // ---------------------------------------------------------------------------
 
-size_t Engine::resolve_filter_id(const std::string& name) const {
+size_t Runtime::resolve_filter_id(const std::string& name) const {
     auto it = filter_index_.find(name);
     if (it == filter_index_.end()) {
         throw std::runtime_error(
-            std::format("engine: unknown filter '{}'", name));
+            std::format("runtime: unknown filter '{}'", name));
     }
     return it->second;
 }
 
 // ---------------------------------------------------------------------------
-// Engine::resolve_filter_ids
+// Runtime::resolve_filter_ids
 // ---------------------------------------------------------------------------
 
-void Engine::resolve_filter_ids(CompiledTemplate& tpl) {
+void Runtime::resolve_filter_ids(CompiledTemplate& tpl) {
     for (Instruction& instr : tpl.code) {
         if (instr.op != Op::Filter) {
             continue;
@@ -204,10 +204,10 @@ void Engine::resolve_filter_ids(CompiledTemplate& tpl) {
 }
 
 // ---------------------------------------------------------------------------
-// Engine::load
+// Runtime::load
 // ---------------------------------------------------------------------------
 
-error::Result<const CompiledTemplate*> Engine::load(std::string_view name) {
+error::Result<const CompiledTemplate*> Runtime::load(std::string_view name) {
     const std::string key(name);
 
     // Cache hit; return immediately.
@@ -225,7 +225,7 @@ error::Result<const CompiledTemplate*> Engine::load(std::string_view name) {
         std::ifstream file(path, std::ios::in | std::ios::binary);
         if (!file) {
             throw std::runtime_error(
-                std::format("engine: cannot open template file '{}'", path.string()));
+                std::format("runtime: cannot open template file '{}'", path.string()));
         }
 
         // Read source into the AST immediately so that string_views created by
@@ -251,24 +251,49 @@ error::Result<const CompiledTemplate*> Engine::load(std::string_view name) {
         CompiledTemplate compiled = compiler.compile(parsed_ast);
         resolve_filter_ids(compiled);
 
-        if (parsed_ast.parent) {
-            auto parent_result = load(*parsed_ast.parent);
-            if (!parent_result) return parent_result;
+        // Pre-load all included templates so they are in cache at execute() time.
+        for (const auto& inc_name : compiled.include_names) {
+            auto r = load(inc_name);
+            if (!r) return r;
+        }
 
-            for (const auto& [block_name, block_ptr] : parsed_ast.blocks) {
-                (void)block_ptr;
-                const std::string block_key =
-                    std::string(*parsed_ast.parent) + "::block::" + block_name;
-                if (cache_.find(block_key) == cache_.end()) {
-                    CompiledTemplate stub;
-                    stub.code.push_back(Instruction{Op::Return, 0});
-                    stub.lines.push_back(0);
-                    cache_.emplace(block_key, std::move(stub));
-                }
+        // Extract each block's default body as a standalone template.
+        // Cached as "<template_name>::block::<blockname>::default".
+        // Needed as the base of the super() chain (Task 5).
+        for (const auto& [block_name, block_ptr] : parsed_ast.blocks) {
+            const std::string default_key = key + "::block::" + block_name + "::default";
+            if (cache_.find(default_key) == cache_.end()) {
+                CompiledTemplate def_tpl =
+                    Compiler::compile_standalone(block_ptr->body);
+                resolve_filter_ids(def_tpl);
+                def_tpl.name = default_key;
+                cache_.emplace(default_key, std::move(def_tpl));
             }
         }
 
+        // Store parent_name from parsed AST.
+        compiled.parent_name = parsed_ast.parent.value_or("");
+
+        // If this is a child, compile each block override as a standalone template.
+        // Cached as "<child_name>::block::<blockname>".
+        if (parsed_ast.parent) {
+            for (const auto& [block_name, block_ptr] : parsed_ast.blocks) {
+                const std::string override_key = key + "::block::" + block_name;
+                if (cache_.find(override_key) == cache_.end()) {
+                    CompiledTemplate ovr_tpl =
+                        Compiler::compile_standalone(block_ptr->body);
+                    resolve_filter_ids(ovr_tpl);
+                    ovr_tpl.name = override_key;
+                    cache_.emplace(override_key, std::move(ovr_tpl));
+                }
+            }
+            // Ensure parent is loaded (needed for block defaults and chain traversal).
+            auto parent_result = load(*parsed_ast.parent);
+            if (!parent_result) return parent_result;
+        }
+
         auto inserted = cache_.emplace(key, std::move(compiled));
+        inserted.first->second.name = key;
         return &inserted.first->second;
 
     } catch (const std::runtime_error& e) {
@@ -281,22 +306,80 @@ error::Result<const CompiledTemplate*> Engine::load(std::string_view name) {
 }
 
 // ---------------------------------------------------------------------------
-// Engine::render
+// Runtime::build_override_map
 // ---------------------------------------------------------------------------
 
-error::Result<std::string> Engine::render(std::string_view template_name, Context& ctx) {
+std::pair<const CompiledTemplate*, Runtime::BlockOverrideMap>
+Runtime::build_override_map(const CompiledTemplate& leaf_tpl) {
+    // Walk up the chain to find the root (no parent_name).
+    std::vector<const CompiledTemplate*> chain;
+    const CompiledTemplate* cur = &leaf_tpl;
+    while (!cur->parent_name.empty()) {
+        chain.push_back(cur);
+        auto it = cache_.find(cur->parent_name);
+        assert(it != cache_.end() && "parent not in cache — should have been loaded");
+        // Release-build safety net: if the parent is somehow missing (compiler bug
+        // guard — load() should have prevented this), treat the current node as root.
+        if (it == cache_.end()) break;
+        cur = &it->second;
+    }
+    const CompiledTemplate* root = cur;
+
+    // Walk chain from root-adjacent toward leaf, building override map.
+    // chain is [leaf, ..., root-adjacent]; iterate in reverse (root-first).
+    BlockOverrideMap overrides;
+    for (auto it = chain.rbegin(); it != chain.rend(); ++it) {
+        const CompiledTemplate* child = *it;
+        for (const std::string& block_name : root->blocks) {
+            const std::string ovr_key = child->name + "::block::" + block_name;
+            auto ovr_it = cache_.find(ovr_key);
+            if (ovr_it == cache_.end()) continue;
+
+            auto& vec = overrides[block_name];
+            if (vec.empty()) {
+                // Seed with the base template's default body.
+                const std::string def_key =
+                    root->name + "::block::" + block_name + "::default";
+                auto def_it = cache_.find(def_key);
+                if (def_it != cache_.end()) {
+                    vec.push_back(&def_it->second);
+                }
+            }
+            vec.push_back(&ovr_it->second);
+        }
+    }
+    return {root, std::move(overrides)};
+}
+
+// ---------------------------------------------------------------------------
+// Runtime::render
+// ---------------------------------------------------------------------------
+
+error::Result<std::string> Runtime::render(std::string_view template_name, Context& ctx) {
     GUSS_TRY(const CompiledTemplate* tpl, load(template_name));
     std::string out;
     out.reserve(WRITE_BUFFER_SIZE);
-    execute(*tpl, ctx, out);
+
+    if (!tpl->parent_name.empty()) {
+        auto [root, overrides] = build_override_map(*tpl);
+        execute(*root, ctx, out, &overrides, {});
+    } else {
+        execute(*tpl, ctx, out, nullptr, {});
+    }
     return out;
 }
 
 // ---------------------------------------------------------------------------
-// Engine::execute — hot path, no heap allocation inside the loop
+// Runtime::execute — hot path, no heap allocation inside the loop
 // ---------------------------------------------------------------------------
 
-void Engine::execute(const CompiledTemplate& tpl, Context& ctx, std::string& out) {
+void Runtime::execute(
+    const CompiledTemplate&                    tpl,
+    Context&                                   ctx,
+    std::string&                               out,
+    const BlockOverrideMap*                    overrides,
+    std::span<const CompiledTemplate* const>   super_chain)
+{
     // Fixed-size value stack — 64 slots is sufficient for realistic templates.
     Value  stack[MAX_VALUE_STACK_SIZE];
     size_t sp  = 0;
@@ -323,29 +406,29 @@ void Engine::execute(const CompiledTemplate& tpl, Context& ctx, std::string& out
                 break;
 
             case Op::Resolve:
-                assert(sp < 64 && "engine: value stack overflow");
+                assert(sp < MAX_VALUE_STACK_SIZE && "runtime: value stack overflow");
                 stack[sp++] = ctx.resolve(tpl.paths[static_cast<size_t>(instr.operand)]);
                 break;
 
             case Op::Push:
-                assert(sp < 64 && "engine: value stack overflow");
+                assert(sp < MAX_VALUE_STACK_SIZE && "runtime: value stack overflow");
                 stack[sp++] = tpl.constants[static_cast<size_t>(instr.operand)];
                 break;
 
             case Op::Emit:
-                assert(sp > 0 && "engine: value stack underflow");
+                assert(sp > 0 && "runtime: value stack underflow");
                 detail::html_escape_into(stack[--sp].to_string(), out);
                 break;
 
             case Op::EmitRaw:
-                assert(sp > 0 && "engine: value stack underflow");
+                assert(sp > 0 && "runtime: value stack underflow");
                 out += stack[--sp].to_string();
                 break;
 
             case Op::Filter: {
                 const size_t filter_id = static_cast<size_t>(instr.operand >> 8);
                 const size_t arg_count = static_cast<size_t>(instr.operand & 0xFF);
-                assert(sp >= arg_count + 1 && "engine: value stack underflow");
+                assert(sp >= arg_count + 1 && "runtime: value stack underflow");
                 sp -= arg_count;
                 Value& subject = stack[sp - 1];
                 subject = filters_[filter_id](
@@ -356,18 +439,18 @@ void Engine::execute(const CompiledTemplate& tpl, Context& ctx, std::string& out
             }
 
             case Op::BinaryOp:
-                assert(sp >= 2 && "engine: value stack underflow");
+                assert(sp >= 2 && "runtime: value stack underflow");
                 stack[sp - 2] = eval_binary(instr.operand, stack[sp - 2], stack[sp - 1]);
                 --sp;
                 break;
 
             case Op::UnaryOp:
-                assert(sp > 0 && "engine: value stack underflow");
+                assert(sp > 0 && "runtime: value stack underflow");
                 stack[sp - 1] = eval_unary(instr.operand, stack[sp - 1]);
                 break;
 
             case Op::JumpIfFalse:
-                assert(sp > 0 && "engine: value stack underflow");
+                assert(sp > 0 && "runtime: value stack underflow");
                 if (!stack[--sp].is_truthy()) {
                     pc = static_cast<size_t>(
                         static_cast<int32_t>(pc) + instr.operand - 1);
@@ -380,7 +463,7 @@ void Engine::execute(const CompiledTemplate& tpl, Context& ctx, std::string& out
                 break;
 
             case Op::ForBegin: {
-                assert(lsp < 16 && "engine: loop stack overflow");
+                assert(lsp < MAX_LOOP_STACK_SIZE && "runtime: loop stack overflow");
                 const size_t iterable_idx =
                     static_cast<size_t>((instr.operand >> 16) & 0xFFFF);
                 const size_t var_idx =
@@ -392,7 +475,7 @@ void Engine::execute(const CompiledTemplate& tpl, Context& ctx, std::string& out
             }
 
             case Op::ForNext: {
-                assert(lsp > 0 && "engine: loop stack underflow");
+                assert(lsp > 0 && "runtime: loop stack underflow");
                 LoopFrame& frame = loop_stack[lsp - 1];
                 if (frame.index >= frame.length) {
                     --lsp;
@@ -410,6 +493,10 @@ void Engine::execute(const CompiledTemplate& tpl, Context& ctx, std::string& out
                                   frame.index == frame.length - 1));
                     ctx.set("loop.length",
                             Value(static_cast<int64_t>(frame.length)));
+                    ctx.set("loop.revindex",
+                            Value(static_cast<int64_t>(frame.length - frame.index)));
+                    ctx.set("loop.revindex0",
+                            Value(static_cast<int64_t>(frame.length - frame.index - 1)));
                     ++frame.index;
                 }
                 break;
@@ -419,11 +506,73 @@ void Engine::execute(const CompiledTemplate& tpl, Context& ctx, std::string& out
                 // No-op marker — signals end of for-loop region to analysis tools.
                 break;
 
-            case Op::BlockCall:
-                // TODO: Full template inheritance — look up block override in cache
-                // using the key "<template_name>::block::<block_name>" and execute it.
-                // For this phase BlockCall is a no-op; the inheritance test covers this.
+            case Op::BlockCall: {
+                const size_t idx  = static_cast<size_t>(instr.operand & 0xFFFF);
+                const int    skip = static_cast<int>(
+                    (static_cast<uint32_t>(instr.operand) >> 16) & 0xFFFF);
+                const std::string& block_name = tpl.blocks[idx];
+
+                if (overrides) {
+                    auto ov_it = overrides->find(block_name);
+                    if (ov_it != overrides->end() && !ov_it->second.empty()) {
+                        const auto& chain = ov_it->second;
+                        // Execute deepest override; chain[0..n-2] is its super chain.
+                        execute(*chain.back(), ctx, out, overrides,
+                                std::span<const CompiledTemplate* const>(
+                                    chain.data(), chain.size() - 1));
+                        // Jump past the inline default body.
+                        pc = static_cast<size_t>(static_cast<int>(pc) + skip - 1);
+                        break;
+                    }
+                }
+                // No override: fall through to the inline default body.
                 break;
+            }
+
+            case Op::BlockEnd:
+                // No-op — marks end of a block's default body region.
+                break;
+
+            case Op::Include: {
+                const std::string& inc_name =
+                    tpl.include_names[static_cast<size_t>(instr.operand)];
+                auto it = cache_.find(inc_name);
+                // Unreachable in correct operation: Runtime::load() pre-loads all includes
+                // and returns an error if any are missing, so execute() is never called
+                // with an un-cached include target.
+                assert(it != cache_.end() && "runtime: include target not in cache — pre-load failed silently");
+                if (it == cache_.end()) break;  // Release-build safety net; pre-load should have caught this.
+                execute(it->second, ctx, out, overrides, {});
+                break;
+            }
+
+            case Op::Set: {
+                // Unreachable in correct operation: verify_stack_depths() in the compiler
+                // ensures sp > 0 before any Set instruction is reachable.
+                assert(sp > 0 && "runtime: value stack underflow in Op::Set — compiler bug");
+                if (sp == 0) break;  // Release-build safety net; verifier should have caught this.
+                ctx.set(tpl.paths[static_cast<size_t>(instr.operand)], stack[--sp]);
+                break;
+            }
+
+            case Op::Super: {
+                assert(sp < MAX_VALUE_STACK_SIZE && "runtime: value stack overflow");
+                if (sp >= MAX_VALUE_STACK_SIZE) break;  // release safety net
+
+                if (!super_chain.empty()) {
+                    // Render the immediate parent block body into a temporary string,
+                    // passing its own ancestor chain for nested super() calls.
+                    std::string super_out;
+                    execute(*super_chain.back(), ctx, super_out,
+                            overrides,
+                            super_chain.subspan(0, super_chain.size() - 1));
+                    stack[sp++] = Value(std::move(super_out));
+                } else {
+                    // No parent block available — push empty string.
+                    stack[sp++] = Value(std::string{});
+                }
+                break;
+            }
 
             case Op::Return:
                 return;
@@ -432,10 +581,10 @@ void Engine::execute(const CompiledTemplate& tpl, Context& ctx, std::string& out
 }
 
 // ---------------------------------------------------------------------------
-// Engine::register_builtin_filters
+// Runtime::register_builtin_filters
 // ---------------------------------------------------------------------------
 
-void Engine::register_builtin_filters() {
+void Runtime::register_builtin_filters() {
     filters::register_all(filters_, filter_index_);
 }
 

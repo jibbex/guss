@@ -416,9 +416,15 @@ TEST(Compiler, BlockNode_EmitsBlockCall) {
     ASSERT_EQ(ct.blocks.size(), 1u);
     EXPECT_EQ(ct.blocks[0], "content");
 
+    // Operand is now packed: (skip_dist << 16) | (block_idx & 0xFFFF).
+    // block_idx == 0; skip_dist is the distance from BlockCall to after BlockEnd.
     for (const auto& instr : ct.code) {
         if (instr.op == Op::BlockCall) {
-            EXPECT_EQ(instr.operand, 0);
+            const size_t idx  = static_cast<size_t>(instr.operand & 0xFFFF);
+            const int    skip = static_cast<int>(
+                (static_cast<uint32_t>(instr.operand) >> 16) & 0xFFFF);
+            EXPECT_EQ(idx, 0u);    // block index 0 = "content"
+            EXPECT_GT(skip, 0);    // skip_dist must be positive
         }
     }
 }

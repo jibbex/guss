@@ -4,6 +4,7 @@
  */
 #include "guss/render/compiler.hpp"
 
+#include <cassert>
 #include <format>
 #include <stdexcept>
 
@@ -59,7 +60,20 @@ CompiledTemplate Compiler::compile(const ast::Template& tpl) {
     out_ = CompiledTemplate{};
     compile_nodes(tpl.nodes);
     emit(Op::Return);
+    verify_stack_depths();
     return std::move(out_);
+}
+
+// ---------------------------------------------------------------------------
+// Compiler::compile_standalone — compile a node list into a complete template
+// ---------------------------------------------------------------------------
+
+CompiledTemplate Compiler::compile_standalone(const std::vector<ast::Node>& nodes) {
+    Compiler c;
+    c.compile_nodes(nodes);
+    c.emit(Op::Return);
+    c.verify_stack_depths();
+    return std::move(c.out_);
 }
 
 // ---------------------------------------------------------------------------
@@ -81,7 +95,9 @@ void Compiler::compile_node(const ast::Node& node) {
 
         } else if constexpr (std::is_same_v<T, ExprNode>) {
             compile_expr(ptr->expr);
-            if (ends_with_safe_filter(ptr->expr)) {
+            // bare super() output is already rendered HTML — do not re-escape
+            bool is_super = std::holds_alternative<std::unique_ptr<ast::SuperNode>>(ptr->expr);
+            if (ends_with_safe_filter(ptr->expr) || is_super) {
                 emit(Op::EmitRaw);
             } else {
                 emit(Op::Emit);
@@ -96,17 +112,39 @@ void Compiler::compile_node(const ast::Node& node) {
         } else if constexpr (std::is_same_v<T, BlockNode>) {
             size_t idx = out_.blocks.size();
             out_.blocks.push_back(ptr->name);
-            emit(Op::BlockCall, static_cast<int32_t>(idx));
+
+            // Emit BlockCall with placeholder; will be back-patched with
+            // (skip_dist << 16) | (block_idx & 0xFFFF) once BlockEnd is known.
+            size_t call_site = emit(Op::BlockCall, static_cast<int32_t>(idx));
+
             compile_nodes(ptr->body);
+
+            size_t end_site = emit(Op::BlockEnd, 0);
+
+            // Back-patch BlockCall: pack skip_dist (from BlockCall to after BlockEnd)
+            // into high 16 bits, block index into low 16 bits.
+            int32_t skip = static_cast<int32_t>(end_site + 1 - call_site);
+            // skip_dist is capped at 15 bits (max 32767); block_idx at 16 bits.
+            assert(skip > 0 && skip <= 0x7FFF &&
+                   "compiler: skip_dist overflows 15-bit field — template body too large");
+            // Use uint32_t arithmetic for the shift to avoid signed-integer UB,
+            // then cast back to int32_t for storage in the operand field.
+            out_.code[call_site].operand =
+                static_cast<int32_t>((static_cast<uint32_t>(skip) << 16) |
+                                     (static_cast<uint32_t>(idx) & 0xFFFFu));
 
         } else if constexpr (std::is_same_v<T, ExtendsNode>) {
             // extends directives are handled by the engine at load time;
             // no bytecode is emitted for them.
 
         } else if constexpr (std::is_same_v<T, IncludeNode>) {
-            // IncludeNode is resolved by the engine before compile() is called;
-            // no bytecode is emitted for it here.
-            (void)ptr;
+            size_t idx = out_.include_names.size();
+            out_.include_names.emplace_back(ptr->template_name);
+            emit(Op::Include, static_cast<int32_t>(idx));
+
+        } else if constexpr (std::is_same_v<T, SetNode>) {
+            compile_expr(ptr->value);
+            emit(Op::Set, static_cast<int32_t>(intern_path(ptr->var_name)));
         }
     }, node);
 }
@@ -147,6 +185,9 @@ void Compiler::compile_expr(const ast::Expr& expr) {
         } else if constexpr (std::is_same_v<T, UnaryOp>) {
             compile_expr(ptr->operand);
             emit(Op::UnaryOp, op_id(ptr->op));
+
+        } else if constexpr (std::is_same_v<T, SuperNode>) {
+            emit(Op::Super, 0);
 
         } else if constexpr (std::is_same_v<T, BinaryOp>) {
             if (ptr->op == TokenType::Pipe) {
@@ -286,6 +327,93 @@ size_t Compiler::intern_constant(Value v) {
     size_t idx = out_.constants.size();
     out_.constants.push_back(std::move(v));
     return idx;
+}
+
+// ---------------------------------------------------------------------------
+// Compiler::verify_stack_depths — post-compile linear simulation
+// ---------------------------------------------------------------------------
+
+void Compiler::verify_stack_depths() {
+    int sp  = 0;  // simulated value stack pointer
+    int lsp = 0;  // simulated loop stack pointer
+
+    for (const Instruction& instr : out_.code) {
+        switch (instr.op) {
+            // Push 1 value onto the value stack.
+            case Op::Resolve:
+            case Op::Push:
+            case Op::Super:
+                ++sp;
+                break;
+
+            // Pop 1 value from the value stack.
+            case Op::Emit:
+            case Op::EmitRaw:
+            case Op::JumpIfFalse:
+                --sp;
+                break;
+
+            // BinaryOp: pops 2, pushes 1 — net -1.
+            case Op::BinaryOp:
+                sp -= 1;
+                break;
+
+            // UnaryOp: pops 1, pushes 1 — net 0.
+            case Op::UnaryOp:
+                break;
+
+            // Filter: pops (arg_count + 1), pushes 1 — net -(arg_count).
+            case Op::Filter: {
+                const int arg_count = static_cast<int>(instr.operand & 0xFF);
+                sp -= arg_count;
+                break;
+            }
+
+            // ForBegin: net 0 on value stack; pushes 1 loop frame.
+            case Op::ForBegin:
+                ++lsp;
+                break;
+
+            // ForEnd: net 0 on value stack; pops 1 loop frame.
+            case Op::ForEnd:
+                --lsp;
+                break;
+
+            // Set: pops 1 value from stack and stores it in context — net -1.
+            case Op::Set:
+                --sp;
+                break;
+
+            // BlockEnd: no-op marker, net 0.
+            case Op::BlockEnd:
+                break;
+
+            // EmitText, Jump, ForNext, BlockCall, Return, Include, and other
+            // net-zero opcodes: net 0.
+            default:
+                break;
+        }
+
+        if (sp > static_cast<int>(MAX_VALUE_STACK_SIZE)) {
+            throw std::runtime_error(std::format(
+                "compiler: value stack would overflow (depth {} exceeds limit {})",
+                sp, MAX_VALUE_STACK_SIZE));
+        }
+        if (sp < 0) {
+            throw std::runtime_error(std::format(
+                "compiler: value stack underflow at instruction {} (sp={})",
+                static_cast<int>(&instr - out_.code.data()), sp));
+        }
+        if (lsp > static_cast<int>(MAX_LOOP_STACK_SIZE)) {
+            throw std::runtime_error(std::format(
+                "compiler: loop stack would overflow (depth {} exceeds limit {})",
+                lsp, MAX_LOOP_STACK_SIZE));
+        }
+        if (lsp < 0) {
+            throw std::runtime_error(std::format(
+                "compiler: loop stack underflow (lsp={})", lsp));
+        }
+    }
 }
 
 } // namespace guss::render

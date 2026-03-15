@@ -84,7 +84,15 @@ enum class Op : uint8_t {
      */
     ForNext,
     ForEnd,      ///< No-op marker — signals the end of a for-loop region to analysis tools.
-    BlockCall,   ///< \c operand: index into \c CompiledTemplate::blocks. Calls the named block (template inheritance).
+    BlockCall,   /**< \c operand: \c (skip_dist<<16)|(block_idx&0xFFFF).
+                  *   \c skip_dist is capped at 15 bits (max 32767); \c block_idx at 16 bits.
+                  *   If an override is found: execute it and jump \c skip_dist instructions
+                  *   past the \c BlockCall to skip the inline default body.
+                  *   Otherwise: fall through to execute the inline default body. */
+    BlockEnd,    ///< No-op marker — end of a block's default body region.
+    Include,     ///< \c operand: index into \c CompiledTemplate::include_names. Renders the named template inline.
+    Set,         ///< \c operand: index into \c CompiledTemplate::paths. Pops one value from stack and sets it in the context.
+    Super,       ///< Renders the parent block body (from \c super_chain) into a string and pushes it onto the value stack (net +1).
     Return,      ///< Terminates execution of the current template.
 };
 
@@ -101,6 +109,29 @@ struct Instruction {
 };
 
 // ---------------------------------------------------------------------------
+// Execute-stack limits (shared between Compiler verifier and Runtime executor)
+// ---------------------------------------------------------------------------
+
+/**
+ * \brief Maximum depth of the value stack used by the bytecode executor.
+ *
+ * \details
+ * The value stack in \c execute() is a fixed C array of this size.
+ * \c Compiler::verify_stack_depths() enforces this limit at compile time so
+ * that no overflow checks are needed on the hot render path.
+ */
+constexpr size_t MAX_VALUE_STACK_SIZE = 64;
+
+/**
+ * \brief Maximum nesting depth of the loop stack used by the bytecode executor.
+ *
+ * \details
+ * The loop stack in \c execute() is a fixed C array of this size.
+ * \c Compiler::verify_stack_depths() enforces this limit at compile time.
+ */
+constexpr size_t MAX_LOOP_STACK_SIZE = 16;
+
+// ---------------------------------------------------------------------------
 // CompiledTemplate
 // ---------------------------------------------------------------------------
 
@@ -114,12 +145,15 @@ struct Instruction {
  * population status.
  */
 struct CompiledTemplate {
+    std::string              name;          ///< Template name/key (set by Runtime::load).
+    std::string              parent_name;   ///< Non-empty when this template extends another.
     std::vector<Instruction> code;          ///< Flat instruction sequence.
     std::vector<std::string> strings;       ///< Interned raw text segments (for \c EmitText).
     std::vector<std::string> paths;         ///< Interned dotted resolve paths (for \c Resolve / \c ForBegin).
     std::vector<Value>       constants;     ///< Interned literal constants (for \c Push).
     std::vector<std::string> blocks;        ///< Block names referenced by \c BlockCall instructions.
     std::vector<std::string> filter_names;  ///< Interned filter names (for \c Filter instructions).
+    std::vector<std::string> include_names; ///< Template names referenced by \c Op::Include.
 
     /** Debug info: source line per instruction (parallel to \c code).
      *  Currently populated as 0 for every instruction; requires the parser
@@ -154,6 +188,19 @@ public:
      */
     CompiledTemplate compile(const ast::Template& tpl);
 
+    /**
+     * \brief Compile a node list as a complete standalone \c CompiledTemplate (with Return).
+     *
+     * \details
+     * Used by \c Runtime::load() to extract block default bodies and child block
+     * overrides as independently executable templates.
+     *
+     * \param nodes  The AST node list to compile.  All \c string_view fields
+     *               inside the nodes must remain valid for the duration of this call.
+     * \retval CompiledTemplate The compiled bytecode and interned tables.
+     */
+    static CompiledTemplate compile_standalone(const std::vector<ast::Node>& nodes);
+
 private:
     CompiledTemplate out_;
 
@@ -162,6 +209,22 @@ private:
     void   compile_expr(const ast::Expr& expr);
     void   compile_for(const ast::ForNode& node);
     void   compile_if(const ast::IfNode& node);
+
+    /**
+     * \brief Post-compile verifier: simulates sp and lsp over the emitted bytecode.
+     *
+     * \details
+     * Performs a single linear pass over \c out_.code after compilation, tracking
+     * the integer value-stack pointer (\c sp) and loop-stack pointer (\c lsp).
+     * Throws \c std::runtime_error if either counter would exceed the runtime
+     * array bounds declared in \c execute() (\c MAX_VALUE_STACK_SIZE and
+     * \c MAX_LOOP_STACK_SIZE).  The exception is caught by \c Runtime::load()'s
+     * single \c try/catch boundary and returned as \c TemplateParseError.
+     *
+     * This eliminates the need for any overflow/underflow checks inside the hot
+     * render path.
+     */
+    void   verify_stack_depths();
 
     /** \brief Emit an instruction and return its index for back-patching. */
     size_t emit(Op op, int32_t operand = 0);

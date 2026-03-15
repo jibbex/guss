@@ -48,6 +48,9 @@ enum class TokenType {
     Keyword_Or,         ///< or
     Keyword_True,       ///< true
     Keyword_False,      ///< false
+    Keyword_Set,        ///< set
+    Keyword_Super,      ///< super
+    Op_Assign,          ///< =
     Op_Eq,              ///< ==
     Op_Ne,              ///< !=
     Op_Lt,              ///< <
