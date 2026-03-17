@@ -125,6 +125,11 @@
 </head>
 <body class="bg-surface dark:bg-surface-dark text-on-surface dark:text-on-surface-dark transition-colors duration-300">
 
+<!-- Reading progress bar -->
+<div id="progress-bar"
+     class="fixed top-0 left-0 z-[60] h-[3px] bg-gradient-to-r from-primary via-primary-light to-accent dark:from-primary-dark dark:to-accent-dark"
+     style="width: 0%; transition: width 0.1s linear; pointer-events: none;"></div>
+
 <!-- Navbar -->
 <nav x-data="{ open: false }" x-on:click.away="open = false"
      class="fixed top-0 inset-x-0 z-50 border-b border-outline/50 dark:border-outline-dark/50 bg-surface/80 dark:bg-surface-dark/80 backdrop-blur-xl">
@@ -171,14 +176,14 @@
 </div>
 
 <!-- Article -->
-<div class="mx-auto max-w-6xl px-6 -mt-24 relative z-10 pb-16">
+<div class="mx-auto max-w-7xl px-6 -mt-24 relative z-10 pb-16">
     <article>
         <header class="mb-12">
             <time datetime="{{ post.published_at }}"
                   class="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-primary dark:text-primary-dark mb-4 block">
                 {{ post.published_at | date("%d.%m.%Y") }}
             </time>
-            <h1 class="font-thin tracking-tight text-4xl sm:text-6xl text-on-surface-strong dark:text-on-surface-dark-strong leading-none tracking-tight mb-6">
+            <h1 class="font-thin tracking-tight text-4xl sm:text-6xl leading-none mb-6 bg-gradient-to-br from-primary via-primary-light to-accent dark:from-primary-dark dark:to-accent-dark bg-clip-text text-transparent">
                 {{ post.title }}
             </h1>
             {% if post.author %}
@@ -194,27 +199,40 @@
             {% endif %}
         </header>
 
-        <!-- Post body — | safe required for rendered HTML -->
-        <div class="prose text-on-surface dark:text-on-surface-dark">
-            {{ post.content | safe }}
-        </div>
+        <!-- Content + TOC two-column layout on large screens -->
+        <div class="lg:grid lg:grid-cols-[1fr_240px] lg:gap-14 lg:items-start">
+            <div class="min-w-0">
+                <!-- Post body — | safe required for rendered HTML -->
+                <div class="prose text-on-surface dark:text-on-surface-dark">
+                    {{ post.content | safe }}
+                </div>
 
-        <!-- Tags -->
-        {% if post.tags %}
-        <footer class="mt-14 pt-8 border-t border-outline dark:border-outline-dark">
-            <p class="text-[0.65rem] font-bold uppercase tracking-[0.18em] text-on-surface-muted dark:text-on-surface-dark-muted mb-3">Tagged</p>
-            <ul class="flex flex-wrap gap-2">
-                {% for tag in post.tags %}
-                <li>
-                    <a href="/tag/{{ tag.slug }}/"
-                       class="px-4 py-1.5 rounded-full border border-outline dark:border-outline-dark bg-surface-alt dark:bg-surface-dark-alt text-xs font-medium text-on-surface dark:text-on-surface-dark hover:bg-primary hover:text-on-primary hover:border-primary dark:hover:bg-primary-dark dark:hover:text-on-primary-dark dark:hover:border-primary-dark transition-all no-underline">
-                        {{ tag.name }}
-                    </a>
-                </li>
-                {% endfor %}
-            </ul>
-        </footer>
-        {% endif %}
+                <!-- Tags -->
+                {% if post.tags %}
+                <footer class="mt-14 pt-8 border-t border-outline dark:border-outline-dark">
+                    <p class="text-[0.65rem] font-bold uppercase tracking-[0.18em] text-on-surface-muted dark:text-on-surface-dark-muted mb-3">Tagged</p>
+                    <ul class="flex flex-wrap gap-2">
+                        {% for tag in post.tags %}
+                        <li>
+                            <a href="/tag/{{ tag.slug }}/"
+                               class="px-4 py-1.5 rounded-full border border-outline dark:border-outline-dark bg-surface-alt dark:bg-surface-dark-alt text-xs font-medium text-on-surface dark:text-on-surface-dark hover:bg-primary hover:text-on-primary hover:border-primary dark:hover:bg-primary-dark dark:hover:text-on-primary-dark dark:hover:border-primary-dark transition-all no-underline">
+                                {{ tag.name }}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </footer>
+                {% endif %}
+            </div>
+
+            <!-- TOC sidebar — hidden on mobile, sticky on desktop -->
+            <aside class="hidden lg:block min-h-full" id="toc-aside">
+                <div class="sticky top-28">
+                    <p class="text-[0.65rem] font-bold uppercase tracking-[0.18em] text-on-surface-muted dark:text-on-surface-dark-muted mb-4">Contents</p>
+                    <nav id="toc-nav" aria-label="Table of contents"></nav>
+                </div>
+            </aside>
+        </div>
     </article>
 
     <!-- Prev / Next -->
@@ -253,6 +271,24 @@
         </nav>
     </div>
 </footer>
+
+<!-- Scroll-to-top button -->
+<button x-data="{ visible: false }"
+        x-on:scroll.window="visible = window.scrollY > 300"
+        x-show="visible"
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 translate-y-4"
+        x-transition:enter-end="opacity-100 translate-y-0"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-end="opacity-0 translate-y-4"
+        x-on:click="window.scrollTo({ top: 0, behavior: 'smooth' })"
+        type="button" aria-label="Scroll to top"
+        class="fixed bottom-8 right-8 z-50 size-11 rounded-full border border-outline dark:border-outline-dark bg-surface-elevated dark:bg-surface-dark-elevated shadow-lg shadow-primary/10 dark:shadow-black/30 grid place-items-center text-on-surface dark:text-on-surface-dark hover:border-primary dark:hover:border-primary-dark hover:text-primary dark:hover:text-primary-dark hover:scale-110 transition-all"
+        x-cloak>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="size-4">
+        <path fill-rule="evenodd" d="M8 14a.75.75 0 0 1-.75-.75V4.56L4.03 7.78a.75.75 0 0 1-1.06-1.06l4.5-4.5a.75.75 0 0 1 1.06 0l4.5 4.5a.75.75 0 0 1-1.06 1.06L8.75 4.56v8.69A.75.75 0 0 1 8 14Z" clip-rule="evenodd" />
+    </svg>
+</button>
 
 <script>
     /**
@@ -358,6 +394,112 @@
         // Event Listeners
         window.addEventListener('scroll', handleScroll, {passive: true});
         window.addEventListener('mousemove', handleMouseMove, {passive: true});
+    })();
+    /**
+     * Initializes the reading progress bar at the top of the page.
+     *
+     * The width of the `#progress-bar` element is updated on scroll to reflect
+     * the user's progress through the article. The progress is calculated as
+     * the ratio of `window.scrollY` to the total scrollable height of the
+     * document, and is expressed as a percentage width for the progress bar.
+     */
+    (function initReadingProgress() {
+        const bar = document.getElementById('progress-bar');
+        if (!bar) {
+            return;
+        }
+        function update() {
+            const scrollTop = window.scrollY;
+            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            bar.style.width = docHeight > 0 ? (scrollTop / docHeight * 100) + '%' : '0%';
+        }
+        window.addEventListener('scroll', update, { passive: true });
+        update();
+    })();
+    /**
+     * Initializes the table of contents (TOC) in the sidebar.
+     *
+     * Scans the article content for `h2` and `h3` headings, generates a nested
+     * list of links to these headings, and appends it to the `#toc-nav` element.
+     * Also sets up an `IntersectionObserver` to highlight the active section in the
+     * TOC as the user scrolls through the article.
+     */
+    (function initTOC() {
+        const nav = document.getElementById('toc-nav');
+        if (!nav) { 
+            return;
+        }
+        const headings = Array.from(document.querySelectorAll('.prose h2, .prose h3'));
+        if (!headings.length) { 
+            document.getElementById('toc-aside').style.display = 'none';
+            return;
+        }
+        headings.forEach((h, i) => { 
+            if (!h.id) {
+                h.id = 'heading-' + i; 
+            }
+        });
+        const ul = document.createElement('ul');
+        ul.className = 'space-y-1';
+        headings.forEach(h => {
+            const li = document.createElement('li');
+            const a = document.createElement('a');
+            a.href = '#' + h.id;
+            a.textContent = h.textContent;
+            a.dataset.headingId = h.id;
+            a.className = [
+                'toc-link',
+                h.tagName === 'H3' ? 'pl-6 text-[0.72rem]' : 'text-[0.8rem]',
+                'py-0.5 text-on-surface-muted dark:text-on-surface-dark-muted',
+                'hover:text-on-surface-strong dark:hover:text-on-surface-dark-strong'
+            ].join(' ');
+            li.appendChild(a);
+            ul.appendChild(li);
+        });
+        nav.appendChild(ul);
+        const links = nav.querySelectorAll('.toc-link');
+
+        const OFFSET = 100;
+        let activeId = null;
+        let scrolling = false;
+        let scrollTimer = null;
+
+        function setActive(id) {
+            if (id === activeId) { return; }
+            activeId = id;
+            links.forEach(a => a.classList.toggle('active', a.dataset.headingId === id));
+        }
+
+        function updateTOC() {
+            if (scrolling) { return; }
+            let newId = null;
+            for (let i = headings.length - 1; i >= 0; i--) {
+                if (headings[i].getBoundingClientRect().top <= OFFSET) {
+                    newId = headings[i].id;
+                    break;
+                }
+            }
+            setActive(newId);
+        }
+
+        // Prevent @view-transition from intercepting anchor clicks.
+        // Use scrollIntoView so smooth-scroll works, then suppress the listener
+        // for the duration of the animation.
+        links.forEach(a => {
+            a.addEventListener('click', e => {
+                e.preventDefault();
+                const target = document.getElementById(a.dataset.headingId);
+                if (!target) { return; }
+                setActive(a.dataset.headingId);
+                scrolling = true;
+                clearTimeout(scrollTimer);
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                scrollTimer = setTimeout(() => { scrolling = false; updateTOC(); }, 800);
+            });
+        });
+
+        window.addEventListener('scroll', updateTOC, { passive: true });
+        updateTOC();
     })();
 </script>
 </body>

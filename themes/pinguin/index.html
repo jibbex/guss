@@ -140,9 +140,8 @@
         <div class="absolute -bottom-20 -right-20 w-[50%] h-[500px] rounded-full bg-accent/10 dark:bg-accent-dark/10 blur-3xl"></div>
     </div>
     <div class="mx-auto max-w-7xl">
-        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-primary dark:text-primary-dark mb-4">Journal</p>
-        <h1 class="font-thin tracking-tight text-6xl sm:text-8xl text-on-surface-strong dark:text-on-surface-dark-strong leading-none tracking-tight max-w-2xl mb-6">
-            {{ site.title }}
+        <h1 class="font-thin tracking-tight text-6xl sm:text-8xl leading-none max-w-2xl mb-6 bg-gradient-to-br from-primary via-primary-light to-accent dark:from-primary-dark dark:via-primary-dark-light dark:to-accent-dark bg-clip-text text-transparent">
+            Blog
         </h1>
         <p class="text-lg text-on-surface-muted dark:text-on-surface-dark-muted max-w-lg">{{ site.description }}</p>
     </div>
@@ -214,7 +213,7 @@
             <div class="relative rounded-2xl overflow-hidden aspect-[21/8] bg-gradient-to-br from-primary/80 via-primary-light/60 to-accent/50 dark:from-primary-dark/70 dark:via-primary-dark/50 dark:to-accent-dark/40">
                 {% if post.feature_image %}
                 <img src="{{ post.feature_image }}" alt="{{ post.title }}"
-                     class="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-60"
+                     class="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-60 group-hover:scale-110 transition-transform duration-700"
                      style="view-transition-name: post-{{ post.slug }}; view-transition-class: feature-morph">
                 {% endif %}
                 <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
@@ -226,18 +225,27 @@
                     {% if post.excerpt %}
                     <p class="text-white/70 text-sm max-w-xl line-clamp-2">{{ post.excerpt | truncate(160) }}</p>
                     {% endif %}
-                    <time datetime="{{ post.published_at }}" class="mt-4 block text-white/60 text-xs font-medium">{{ post.published_at | date("%d.%m.%Y") }}</time>
+                    <div class="flex mt-4">
+                        <time datetime="{{ post.published_at }}" class="flex-1 text-white/60 text-xs font-medium">{{ post.published_at | date("%d.%m.%Y") }}</time>
+                        <span class="text-xs font-medium text-white/60">
+                            {{ post.content | reading_minutes }}m Lesezeit
+                        </span>
+                    </div>
                 </div>
             </div>
         </a>
 
         {% else %}
+        {% set pos = loop.index - 2 %}
+        {% set regCount = (posts | length) - 1 %}
+        {% set isLonelyLast = loop.last and (regCount % 4 == 1 or regCount % 4 == 3) %}
+        {% set isWide = isLonelyLast or pos % 4 == 0 or pos % 4 == 3 %}
         <!-- Regular card -->
-        <a href="{{ post.permalink }}" class="group flex flex-col rounded-2xl overflow-hidden border border-outline dark:border-outline-dark bg-surface-elevated dark:bg-surface-dark-elevated hover:border-primary/50 dark:hover:border-primary-dark/50 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 no-underline">
-            <div class="relative aspect-video overflow-hidden">
+        <a href="{{ post.permalink }}" class="group reveal flex flex-col rounded-2xl overflow-hidden border border-outline dark:border-outline-dark bg-surface-elevated dark:bg-surface-dark-elevated hover:border-primary/50 dark:hover:border-primary-dark/50 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 no-underline{% if isLonelyLast %} sm:col-span-2 lg:col-span-3{% elif isWide %} sm:col-span-2 lg:col-span-2{% endif %}">
+            <div class="relative {% if isWide %}aspect-[16/5]{% else %}aspect-video{% endif %} overflow-hidden">
                 {% if post.feature_image %}
                 <img src="{{ post.feature_image }}" alt="{{ post.title }}"
-                     class="w-full h-full object-cover"
+                     class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                      style="view-transition-name: post-{{ post.slug }}; view-transition-class: feature-morph">
                 {% else %}
                 <div class="w-full h-full bg-gradient-to-br from-primary/25 to-accent/35 dark:from-primary-dark/25 dark:to-accent-dark/25 flex items-center justify-center">
@@ -246,7 +254,12 @@
                 {% endif %}
             </div>
             <div class="flex flex-col flex-1 p-5">
-                <time datetime="{{ post.published_at }}" class="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-on-surface-muted dark:text-on-surface-dark-muted mb-2">{{ post.published_at | date("%d.%m.%Y") }}</time>
+                <div class="flex mb-2">
+                    <time datetime="{{ post.published_at }}" class="flex-1 text-[0.65rem] font-bold uppercase tracking-[0.14em] text-on-surface-muted dark:text-on-surface-dark-muted">{{ post.published_at | date("%d.%m.%Y") }}</time>
+                    <span class="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-on-surface-muted dark:text-on-surface-dark-muted">
+                        {{ post.content | reading_minutes }}m Lesezeit
+                    </span>
+                </div>
                 <h3 class="font-thin tracking-tight text-lg text-on-surface-strong dark:text-on-surface-dark-strong leading-snug mb-2 group-hover:text-primary dark:group-hover:text-primary-dark transition-colors flex-1">
                     {{ post.title }}
                 </h3>
@@ -254,7 +267,7 @@
                 <p class="text-xs text-on-surface dark:text-on-surface-dark leading-relaxed line-clamp-2 mt-1">{{ post.excerpt | truncate(120) }}</p>
                 {% endif %}
                 <div class="mt-4 flex items-center gap-1 text-xs font-semibold text-primary dark:text-primary-dark">
-                    Read
+                    Weiterlesen
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="size-3 group-hover:translate-x-1 transition-transform">
                         <path fill-rule="evenodd" d="M6.22 4.22a.75.75 0 0 1 1.06 0l3.25 3.25a.75.75 0 0 1 0 1.06l-3.25 3.25a.75.75 0 0 1-1.06-1.06L8.94 8 6.22 5.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd"/>
                     </svg>
@@ -264,29 +277,28 @@
         {% endif %}
 
         {% endfor %}
+    </div><!-- end grid -->
 
-        <!-- Pagination -->
-        {% if pagination.total > 1 %}
-        <nav class="mt-16 flex items-center justify-center gap-3" aria-label="pagination">
-            {% if pagination.has_prev %}
-            <a href="{{ pagination.prev_url }}"
-               class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-outline dark:border-outline-dark bg-surface-elevated dark:bg-surface-dark-elevated text-sm font-medium text-on-surface dark:text-on-surface-dark hover:border-primary dark:hover:border-primary-dark hover:text-primary dark:hover:text-primary-dark transition-all no-underline">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="size-4"><path fill-rule="evenodd" d="M9.78 4.22a.75.75 0 0 1 0 1.06L7.06 8l2.72 2.72a.75.75 0 1 1-1.06 1.06L5.47 8.53a.75.75 0 0 1 0-1.06l3.25-3.25a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd"/></svg>
-                Newer
-            </a>
-            {% endif %}
-            <span class="px-4 py-2 text-sm text-on-surface-muted dark:text-on-surface-dark-muted tabular-nums">
-            {{ pagination.current }} / {{ pagination.total }}
-        </span>
-            {% if pagination.has_next %}
-            <a href="{{ pagination.next_url }}"
-               class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-outline dark:border-outline-dark bg-surface-elevated dark:bg-surface-dark-elevated text-sm font-medium text-on-surface dark:text-on-surface-dark hover:border-primary dark:hover:border-primary-dark hover:text-primary dark:hover:text-primary-dark transition-all no-underline">
-                Older
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="size-4"><path fill-rule="evenodd" d="M6.22 4.22a.75.75 0 0 1 1.06 0l3.25 3.25a.75.75 0 0 1 0 1.06l-3.25 3.25a.75.75 0 0 1-1.06-1.06L8.94 8 6.22 5.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd"/></svg>
-            </a>
-            {% endif %}
-        </nav>
+    <!-- Pagination -->
+    {% if pagination.total > 1 %}
+    <nav class="mt-16 flex items-center justify-center gap-3" aria-label="pagination">
+        {% if pagination.has_prev %}
+        <a href="{{ pagination.prev_url }}"
+           class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-outline dark:border-outline-dark bg-surface-elevated dark:bg-surface-dark-elevated text-sm font-medium text-on-surface dark:text-on-surface-dark hover:border-primary dark:hover:border-primary-dark hover:text-primary dark:hover:text-primary-dark transition-all no-underline">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="size-4"><path fill-rule="evenodd" d="M9.78 4.22a.75.75 0 0 1 0 1.06L7.06 8l2.72 2.72a.75.75 0 1 1-1.06 1.06L5.47 8.53a.75.75 0 0 1 0-1.06l3.25-3.25a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd"/></svg>
+            Neuere
+        </a>
         {% endif %}
+        <span class="px-4 py-2 text-sm text-on-surface-muted dark:text-on-surface-dark-muted tabular-nums">{{ pagination.current }} / {{ pagination.total }}</span>
+        {% if pagination.has_next %}
+        <a href="{{ pagination.next_url }}"
+           class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-outline dark:border-outline-dark bg-surface-elevated dark:bg-surface-dark-elevated text-sm font-medium text-on-surface dark:text-on-surface-dark hover:border-primary dark:hover:border-primary-dark hover:text-primary dark:hover:text-primary-dark transition-all no-underline">
+            Ältere
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="size-4"><path fill-rule="evenodd" d="M6.22 4.22a.75.75 0 0 1 1.06 0l3.25 3.25a.75.75 0 0 1 0 1.06l-3.25 3.25a.75.75 0 0 1-1.06-1.06L8.94 8 6.22 5.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd"/></svg>
+        </a>
+        {% endif %}
+    </nav>
+    {% endif %}
 </main>
 
 <footer class="border-t border-outline dark:border-outline-dark mt-8">
@@ -299,6 +311,24 @@
         </nav>
     </div>
 </footer>
+
+<!-- Scroll-to-top button -->
+<button x-data="{ visible: false }"
+        x-on:scroll.window="visible = window.scrollY > 300"
+        x-show="visible"
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 translate-y-4"
+        x-transition:enter-end="opacity-100 translate-y-0"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-end="opacity-0 translate-y-4"
+        x-on:click="window.scrollTo({ top: 0, behavior: 'smooth' })"
+        type="button" aria-label="Scroll to top"
+        class="fixed bottom-8 right-8 z-50 size-11 rounded-full border border-outline dark:border-outline-dark bg-surface-elevated dark:bg-surface-dark-elevated shadow-lg shadow-primary/10 dark:shadow-black/30 grid place-items-center text-on-surface dark:text-on-surface-dark hover:border-primary dark:hover:border-primary-dark hover:text-primary dark:hover:text-primary-dark hover:scale-110 transition-all"
+        x-cloak>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="size-4">
+        <path fill-rule="evenodd" d="M8 14a.75.75 0 0 1-.75-.75V4.56L4.03 7.78a.75.75 0 0 1-1.06-1.06l4.5-4.5a.75.75 0 0 1 1.06 0l4.5 4.5a.75.75 0 0 1-1.06 1.06L8.75 4.56v8.69A.75.75 0 0 1 8 14Z" clip-rule="evenodd" />
+    </svg>
+</button>
 
 <script>
     /**
@@ -404,6 +434,20 @@
         // Event Listeners
         window.addEventListener('scroll', handleScroll, {passive: true});
         window.addEventListener('mousemove', handleMouseMove, {passive: true});
+    })();
+    (function initScrollReveal() {
+        const reveals = document.querySelectorAll('.reveal');
+        if (!reveals.length) return;
+        reveals.forEach((el, i) => { el.style.transitionDelay = (i % 3) * 80 + 'ms'; });
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+        reveals.forEach(el => observer.observe(el));
     })();
 </script>
 </body>
