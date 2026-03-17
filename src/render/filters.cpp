@@ -26,6 +26,42 @@
 namespace guss::render::filters {
 
 // ---------------------------------------------------------------------------
+// count_words — file-local helper
+// ---------------------------------------------------------------------------
+
+/**
+ * \brief Count whitespace-delimited words in \p sv, ignoring HTML markup.
+ *
+ * \details
+ * Single pass over the input: characters inside \c <…> tags are skipped
+ * entirely; transitions from whitespace (or start-of-input) to a non-
+ * whitespace, non-tag character increment the word counter.
+ *
+ * \param sv Input string view — HTML or plain text.
+ * \retval   Number of words found.
+ */
+static size_t count_words(const std::string_view sv) {
+    size_t count      = 0;
+    bool   inside_tag = false;
+    bool   in_word    = false;
+    for (const unsigned char c : sv) {
+        if (c == '<') {
+            inside_tag = true;
+        } else if (c == '>') {
+            inside_tag = false;
+        } else if (!inside_tag) {
+            if (std::isspace(c)) {
+                in_word = false;
+            } else if (!in_word) {
+                in_word = true;
+                ++count;
+            }
+        }
+    }
+    return count;
+}
+
+// ---------------------------------------------------------------------------
 // utf8_codepoint_count — file-local helper
 // ---------------------------------------------------------------------------
 
@@ -449,35 +485,14 @@ Value reading_minutes(const Value& v, std::span<const Value> args) {
         return {};
     }
 
-    const std::string_view sv = v.as_string();
-    size_t word_count = 0;
-    bool   inside_tag = false;
-    bool   in_word    = false;
-    for (const unsigned char c : sv) {
-        if (c == '<') {
-            inside_tag = true;
-            in_word    = false;
-        } else if (c == '>') {
-            inside_tag = false;
-        } else if (!inside_tag) {
-            if (std::isspace(c)) {
-                in_word = false;
-            } else if (!in_word) {
-                in_word = true;
-                ++word_count;
-            }
-        }
-    }
-
-    const size_t wpm = (!args.empty() && args[0].is_number())
-        ? static_cast<size_t>(args[0].as_int())
+    const size_t wpm = (!args.empty() && args[0].is_number() && args[0].as_uint() > 0)
+        ? static_cast<size_t>(args[0].as_uint())
         : WORDS_PER_MINUTE;
 
-    const int64_t minutes = std::max(
-        int64_t{1},
-        static_cast<int64_t>((word_count + wpm - 1) / wpm)
+    const uint64_t minutes = std::max(
+        uint64_t{1},
+        static_cast<uint64_t>((count_words(v.as_string()) + wpm - 1) / wpm)
     );
-
     return Value(minutes);
 }
 
@@ -654,20 +669,9 @@ Value int_(const Value& v, std::span<const Value> /*args*/) {
 
 Value wordcount(const Value& v, std::span<const Value> /*args*/) {
     if (!v.is_string()) {
-        return Value(int64_t{0});
+        return Value(uint64_t{0});
     }
-    const std::string_view sv = v.as_string();
-    int64_t count    = 0;
-    bool    in_word  = false;
-    for (const unsigned char c : sv) {
-        if (std::isspace(c)) {
-            in_word = false;
-        } else if (!in_word) {
-            in_word = true;
-            ++count;
-        }
-    }
-    return Value(count);
+    return Value(static_cast<uint64_t>(count_words(v.as_string())));
 }
 
 // ---------------------------------------------------------------------------
