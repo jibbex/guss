@@ -163,6 +163,11 @@ html, body {
     @apply font-lg;
     scroll-behavior: smooth;
 }
+
+h1 {
+    line-height: 1.2;
+}
+
 .prose {
     font-size: 1.0625rem;
     line-height: 1.8;

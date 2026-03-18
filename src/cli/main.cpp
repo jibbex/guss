@@ -53,11 +53,11 @@ int cmd_init(const std::string& directory) {
 
     // Create directories
     for (const auto& dir : {
-            project_dir,
-            project_dir / "templates",
-            project_dir / "templates" / "assets",
-            project_dir / "content",
-            project_dir / "dist"}) {
+        project_dir,
+        project_dir / "templates",
+        project_dir / "templates" / "assets",
+        project_dir / "content"
+    }) {
         std::error_code ec;
         fs::create_directories(dir, ec);
         if (ec) {
@@ -75,7 +75,7 @@ int cmd_init(const std::string& directory) {
     }
 
     // Write templates
-    auto write_template = [&](const std::string& name, std::string_view content) {
+    auto write_template = [&project_dir](const std::string& name, std::string_view content) {
         auto path = project_dir / "templates" / name;
         if (!fs::exists(path)) {
             std::ofstream file(path);
@@ -90,13 +90,21 @@ int cmd_init(const std::string& directory) {
     write_template("tag.html", guss::cli::DEFAULT_TAG_TEMPLATE);
     write_template("author.html", guss::cli::DEFAULT_AUTHOR_TEMPLATE);
 
-    // Write CSS
-    auto css_path = project_dir / "templates" / "assets" / "style.css";
-    if (!fs::exists(css_path)) {
-        std::ofstream css_file(css_path);
-        css_file << guss::cli::DEFAULT_STYLE_CSS;
-        spdlog::info("Created templates/assets/style.css");
-    }
+    // Write Assets
+    auto write_asset = [&project_dir](const std::string& name, std::string_view content) {
+        auto path = project_dir / "assets" / name;
+        if (!fs::exists(path)) {
+            std::ofstream file(path);
+            file << content;
+            spdlog::info("Created assets/" + name);
+        }
+    };
+
+    write_asset("style.css", guss::cli::DEFAULT_STYLE_CSS);
+    write_asset("main.js", guss::cli::DEFAULT_MAIN_JS);
+    write_asset("reveal.js", guss::cli::DEFAULT_REVEAL_JS);
+    write_asset("reading-progress.js", guss::cli::DEFAULT_READING_PROGRESS_JS);
+    write_asset("toc.js", guss::cli::DEFAULT_TOC_JS);
 
     spdlog::info("Project initialized successfully!");
     spdlog::info("Next steps:");

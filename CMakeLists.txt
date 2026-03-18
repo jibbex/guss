@@ -252,6 +252,10 @@ file(READ "${CMAKE_SOURCE_DIR}/themes/pinguin/page.html"    _tpl_page)
 file(READ "${CMAKE_SOURCE_DIR}/themes/pinguin/tag.html"     _tpl_tag)
 file(READ "${CMAKE_SOURCE_DIR}/themes/pinguin/author.html"  _tpl_author)
 file(READ "${CMAKE_SOURCE_DIR}/themes/pinguin/assets/style.css" _tpl_style)
+file(READ "${CMAKE_SOURCE_DIR}/themes/pinguin/assets/main.js" _tpl_main_js)
+file(READ "${CMAKE_SOURCE_DIR}/themes/pinguin/assets/reveal.js" _tpl_reveal_js)
+file(READ "${CMAKE_SOURCE_DIR}/themes/pinguin/assets/reading-progress.js" _tpl_reading_progress_js)
+file(READ "${CMAKE_SOURCE_DIR}/themes/pinguin/assets/toc.js" _tpl_toc_js)
 
 file(WRITE "${_constants_out}" "\
 #pragma once
@@ -265,27 +269,53 @@ namespace guss::cli {
 
 /// \\brief Embedded content of themes/pinguin/index.html
 constexpr std::string_view DEFAULT_INDEX_TEMPLATE = R\"(
-${_tpl_index})\";
+${_tpl_index}
+)\";
 
 /// \\brief Embedded content of themes/pinguin/post.html
 constexpr std::string_view DEFAULT_POST_TEMPLATE = R\"(
-${_tpl_post})\";
+${_tpl_post}
+)\";
 
 /// \\brief Embedded content of themes/pinguin/page.html
 constexpr std::string_view DEFAULT_PAGE_TEMPLATE = R\"(
-${_tpl_page})\";
+${_tpl_page}
+)\";
 
 /// \\brief Embedded content of themes/pinguin/tag.html
 constexpr std::string_view DEFAULT_TAG_TEMPLATE = R\"(
-${_tpl_tag})\";
+${_tpl_tag}
+)\";
 
 /// \\brief Embedded content of themes/pinguin/author.html
 constexpr std::string_view DEFAULT_AUTHOR_TEMPLATE = R\"(
-${_tpl_author})\";
+${_tpl_author}
+)\";
 
 /// \\brief Embedded content of themes/pinguin/assets/style.css
 constexpr std::string_view DEFAULT_STYLE_CSS = R\"(
-${_tpl_style})\";
+${_tpl_style}
+)\";
+
+/// \\brief Embedded content of themes/pinguin/assets/main.js
+constexpr std::string_view DEFAULT_MAIN_JS = R\"(
+${_tpl_main_js}
+)\";
+
+/// \\brief Embedded content of themes/pinguin/assets/reveal.js
+constexpr std::string_view DEFAULT_REVEAL_JS = R\"(
+${_tpl_reveal_js}
+)\";
+
+/// \\brief Embedded content of themes/pinguin/assets/reading-progress.js
+constexpr std::string_view DEFAULT_READING_PROGRESS_JS = R\"(
+${_tpl_reading_progress_js}
+)\";
+
+/// \\brief Embedded content of themes/pinguin/assets/toc.js
+constexpr std::string_view DEFAULT_TOC_JS = R\"(
+${_tpl_toc_js}
+)\";
 
 /// \\brief Default guss.yaml written by guss init
 constexpr std::string_view DEFAULT_CONFIG = R\"(
