@@ -554,36 +554,30 @@ error::Result<FetchResult> RestCmsAdapter::fetch_all(FetchCallback progress) {
         auto source_it = result.items.find(cr.from);
         if (source_it == result.items.end()) continue;
 
-        // For each target item, find all source items whose via-path contains this item's slug.
         for (auto& target_item : target_it->second) {
-            const std::string target_slug = target_item.data["slug"].to_string();
-            if (target_slug.empty() || target_slug == "null") continue;
+            const std::string target_val = target_item.data[cr.match_key].to_string();
+            if (target_val.empty() || target_val == "null") continue;
 
             std::vector<render::Value> related;
             for (const auto& src : source_it->second) {
                 render::Value via_val = resolve_path(src.data, cr.via);
                 if (via_val.is_array()) {
-                    // Each element may be an object (e.g. a tag with id/name/slug)
-                    // or a plain scalar. Use match_key to extract the comparison
-                    // value from objects; compare scalars directly.
                     for (size_t k = 0; k < via_val.size(); ++k) {
                         const render::Value& elem = via_val[k];
                         const std::string cmp = elem.is_object()
                             ? elem[cr.match_key].to_string()
                             : elem.to_string();
-                        if (cmp == target_slug) {
+                        if (cmp == target_val) {
                             related.push_back(src.data);
                             break;
                         }
                     }
                 } else {
-                    if (via_val.to_string() == target_slug)
+                    if (via_val.to_string() == target_val)
                         related.push_back(src.data);
                 }
             }
 
-            // Store under extra_context so phase_render exposes it at root level
-            // (templates use `{% for post in posts %}`, not `tag.posts`).
             target_item.extra_context.emplace_back(cr.from,
                                                    render::Value(std::move(related)));
         }
