@@ -74,37 +74,30 @@ int cmd_init(const std::string& directory) {
         spdlog::info("Created guss.yaml");
     }
 
-    // Write templates
-    auto write_template = [&project_dir](const std::string& name, std::string_view content) {
-        auto path = project_dir / "templates" / name;
+    // ---
+
+    auto write_file = [&project_dir](std::string_view dir, std::string_view name, std::string_view content) {
+        auto path = project_dir / dir / name;
         if (!fs::exists(path)) {
             std::ofstream file(path);
             file << content;
-            spdlog::info("Created templates/" + name);
+            spdlog::info("Created {}/{}", dir, name);
         }
     };
 
-    write_template("post.html", guss::cli::DEFAULT_POST_TEMPLATE);
-    write_template("page.html", guss::cli::DEFAULT_PAGE_TEMPLATE);
-    write_template("index.html", guss::cli::DEFAULT_INDEX_TEMPLATE);
-    write_template("tag.html", guss::cli::DEFAULT_TAG_TEMPLATE);
-    write_template("author.html", guss::cli::DEFAULT_AUTHOR_TEMPLATE);
+    // Write templates
+    write_file("templates", "post.html", guss::cli::DEFAULT_POST_TEMPLATE);
+    write_file("templates", "page.html", guss::cli::DEFAULT_PAGE_TEMPLATE);
+    write_file("templates", "index.html", guss::cli::DEFAULT_INDEX_TEMPLATE);
+    write_file("templates", "tag.html", guss::cli::DEFAULT_TAG_TEMPLATE);
+    write_file("templates", "author.html", guss::cli::DEFAULT_AUTHOR_TEMPLATE);
 
     // Write Assets
-    auto write_asset = [&project_dir](const std::string& name, std::string_view content) {
-        auto path = project_dir / "assets" / name;
-        if (!fs::exists(path)) {
-            std::ofstream file(path);
-            file << content;
-            spdlog::info("Created assets/" + name);
-        }
-    };
-
-    write_asset("style.css", guss::cli::DEFAULT_STYLE_CSS);
-    write_asset("main.js", guss::cli::DEFAULT_MAIN_JS);
-    write_asset("reveal.js", guss::cli::DEFAULT_REVEAL_JS);
-    write_asset("reading-progress.js", guss::cli::DEFAULT_READING_PROGRESS_JS);
-    write_asset("toc.js", guss::cli::DEFAULT_TOC_JS);
+    write_file("assets", "style.css", guss::cli::DEFAULT_STYLE_CSS);
+    write_file("assets", "main.js", guss::cli::DEFAULT_MAIN_JS);
+    write_file("assets", "reveal.js", guss::cli::DEFAULT_REVEAL_JS);
+    write_file("assets", "reading-progress.js", guss::cli::DEFAULT_READING_PROGRESS_JS);
+    write_file("assets", "toc.js", guss::cli::DEFAULT_TOC_JS);
 
     spdlog::info("Project initialized successfully!");
     spdlog::info("Next steps:");
@@ -119,7 +112,7 @@ int cmd_build(const std::string& config_path, bool verbose, bool clean_first) {
     setup_logging(verbose ? "debug" : "info");
 
     spdlog::info("🔥 GUSS BUILD, WITNESS PERFECTION");
-    spdlog::info("Loading configuration from " + config_path);
+    spdlog::info("Loading configuration from {}", config_path);
 
     // Load config
     guss::config::Config config(config_path);
@@ -182,7 +175,7 @@ int cmd_build(const std::string& config_path, bool verbose, bool clean_first) {
     std::cout << std::endl;
 
     if (!result) {
-        spdlog::error("Build failed: " + result.error().format());
+        spdlog::error("Build failed: {}", result.error().format());
         return 1;
     }
 
