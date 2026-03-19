@@ -17,6 +17,7 @@
 #include <string>
 
 using namespace guss::render;
+using namespace guss::core;
 namespace fs = std::filesystem;
 
 // ---------------------------------------------------------------------------
@@ -293,7 +294,7 @@ TEST_F(InheritanceTest, Load_MissingParent_ReturnsError) {
     Runtime eng = make_runtime();
     auto r = eng.load("orphan.html");
     EXPECT_FALSE(r.has_value());
-    EXPECT_EQ(r.error().code, guss::error::ErrorCode::TemplateParseError);
+    EXPECT_EQ(r.error().code, guss::core::error::ErrorCode::TemplateParseError);
 }
 
 TEST_F(InheritanceTest, Super_WithHtmlContent_NotDoubleEscaped) {

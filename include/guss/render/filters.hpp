@@ -13,7 +13,7 @@
  * all built-in filters.
  */
 #pragma once
-#include "guss/render/value.hpp"
+#include "guss/core/value.hpp"
 
 #include <functional>
 #include <span>
@@ -37,7 +37,7 @@ constexpr size_t WORDS_PER_MINUTE = 256;
 
 /// Callable type matching Runtime::FilterFn, redeclared here to avoid a
 /// circular include between runtime.hpp and filters.hpp.
-using FilterFn = std::function<Value(const Value&, std::span<const Value>)>;
+using FilterFn = std::function<core::Value(const core::Value&, std::span<const core::Value>)>;
 
 /**
  * \brief Register all built-in filters.
@@ -66,7 +66,7 @@ void register_all(std::vector<FilterFn>&                  registry,
  * \param args Optional format string argument.
  * \retval Value Formatted date string, or the original value on parse failure.
  */
-Value date(const Value& v, std::span<const Value> args);
+core::Value date(const core::Value& v, std::span<const core::Value> args);
 
 /**
  * \brief Truncate a string to at most N UTF-8 code points.
@@ -80,7 +80,7 @@ Value date(const Value& v, std::span<const Value> args);
  * \param args Optional length argument (integer).
  * \retval Value Truncated string, or the original string if it fits within the limit.
  */
-Value truncate(const Value& v, std::span<const Value> args);
+core::Value truncate(const core::Value& v, std::span<const core::Value> args);
 
 /**
  * \brief HTML-escape a string value.
@@ -93,7 +93,7 @@ Value truncate(const Value& v, std::span<const Value> args);
  * \param args Unused.
  * \retval Value HTML-escaped string.
  */
-Value escape(const Value& v, std::span<const Value> args);
+core::Value escape(const core::Value& v, std::span<const core::Value> args);
 
 /**
  * \brief Identity filter; marks content as safe for raw output.
@@ -108,7 +108,7 @@ Value escape(const Value& v, std::span<const Value> args);
  * \param args Unused.
  * \retval Value The subject value unchanged.
  */
-Value safe(const Value& v, std::span<const Value> args);
+core::Value safe(const core::Value& v, std::span<const core::Value> args);
 
 /**
  * \brief Return a default value when the subject is null or falsy.
@@ -121,7 +121,7 @@ Value safe(const Value& v, std::span<const Value> args);
  * \param args Optional default value argument.
  * \retval Value The original value, \c args[0], or null.
  */
-Value default_(const Value& v, std::span<const Value> args);
+core::Value default_(const core::Value& v, std::span<const core::Value> args);
 
 /**
  * \brief Return the number of elements or code points in a value.
@@ -135,7 +135,7 @@ Value default_(const Value& v, std::span<const Value> args);
  * \param args Unused.
  * \retval Value Integer count.
  */
-Value length(const Value& v, std::span<const Value> args);
+core::Value length(const core::Value& v, std::span<const core::Value> args);
 
 /**
  * \brief Convert a string to ASCII lowercase.
@@ -144,7 +144,7 @@ Value length(const Value& v, std::span<const Value> args);
  * \param args Unused.
  * \retval Value Lowercased string.
  */
-Value lower(const Value& v, std::span<const Value> args);
+core::Value lower(const core::Value& v, std::span<const core::Value> args);
 
 /**
  * \brief Convert a string to ASCII uppercase.
@@ -153,7 +153,7 @@ Value lower(const Value& v, std::span<const Value> args);
  * \param args Unused.
  * \retval Value Uppercased string.
  */
-Value upper(const Value& v, std::span<const Value> args);
+core::Value upper(const core::Value& v, std::span<const core::Value> args);
 
 /**
  * \brief Convert a string to a URL-safe slug.
@@ -170,7 +170,7 @@ Value upper(const Value& v, std::span<const Value> args);
  * \param args Unused.
  * \retval Value URL slug string.
  */
-Value slugify(const Value& v, std::span<const Value> args);
+core::Value slugify(const core::Value& v, std::span<const core::Value> args);
 
 /**
  * \brief Join an array of values with a separator string.
@@ -184,7 +184,7 @@ Value slugify(const Value& v, std::span<const Value> args);
  * \param args Optional separator argument.
  * \retval Value Joined string, or null if \p v is not an array.
  */
-Value join(const Value& v, std::span<const Value> args);
+core::Value join(const core::Value& v, std::span<const core::Value> args);
 
 /**
  * \brief Return the first element of an array.
@@ -193,7 +193,7 @@ Value join(const Value& v, std::span<const Value> args);
  * \param args Unused.
  * \retval Value First element, or null if the array is empty or \p v is not an array.
  */
-Value first(const Value& v, std::span<const Value> args);
+core::Value first(const core::Value& v, std::span<const core::Value> args);
 
 /**
  * \brief Return the last element of an array.
@@ -202,7 +202,7 @@ Value first(const Value& v, std::span<const Value> args);
  * \param args Unused.
  * \retval Value Last element, or null if the array is empty or \p v is not an array.
  */
-Value last(const Value& v, std::span<const Value> args);
+core::Value last(const core::Value& v, std::span<const core::Value> args);
 
 /**
  * \brief Reverse a string or array.
@@ -217,7 +217,7 @@ Value last(const Value& v, std::span<const Value> args);
  * \param args Unused.
  * \retval Value Reversed string or array; null for other types.
  */
-Value reverse(const Value& v, std::span<const Value> args);
+core::Value reverse(const core::Value& v, std::span<const core::Value> args);
 
 /**
  * \brief Strip HTML tags from a string.
@@ -231,7 +231,7 @@ Value reverse(const Value& v, std::span<const Value> args);
  * \param args Unused.
  * \retval Value String with HTML tags removed.
  */
-Value striptags(const Value& v, std::span<const Value> args);
+core::Value striptags(const core::Value& v, std::span<const core::Value> args);
 
 /**
  * \brief URL-encode a string.
@@ -245,7 +245,7 @@ Value striptags(const Value& v, std::span<const Value> args);
  * \param args Unused.
  * \retval Value URL-encoded string.
  */
-Value urlencode(const Value& v, std::span<const Value> args);
+core::Value urlencode(const core::Value& v, std::span<const core::Value> args);
 
 /**
  * \brief Estimate the reading time of an HTML or plain-text string in minutes.
@@ -261,7 +261,7 @@ Value urlencode(const Value& v, std::span<const Value> args);
  * \param args Optional words-per-minute rate argument (integer).
  * \retval Value Integer number of minutes (≥ 1), or null if \p v is not a string.
  */
-Value reading_minutes(const Value& v, std::span<const Value> args);
+core::Value reading_minutes(const core::Value& v, std::span<const core::Value> args);
 
 /**
  * \brief Replace all occurrences of a substring with another string.
@@ -274,7 +274,7 @@ Value reading_minutes(const Value& v, std::span<const Value> args);
  * \param args args[0]=needle, args[1]=replacement.
  * \retval Value String with substitutions applied, or the original value unchanged.
  */
-Value replace(const Value& v, std::span<const Value> args);
+core::Value replace(const core::Value& v, std::span<const core::Value> args);
 
 /**
  * \brief Strip leading and trailing ASCII whitespace from a string.
@@ -288,7 +288,7 @@ Value replace(const Value& v, std::span<const Value> args);
  * \param args Unused.
  * \retval Value Trimmed string, or the original value unchanged.
  */
-Value trim(const Value& v, std::span<const Value> args);
+core::Value trim(const core::Value& v, std::span<const core::Value> args);
 
 /**
  * \brief Uppercase the first character and lowercase the rest of a string.
@@ -302,7 +302,7 @@ Value trim(const Value& v, std::span<const Value> args);
  * \param args Unused.
  * \retval Value Capitalized string, or the original value unchanged.
  */
-Value capitalize(const Value& v, std::span<const Value> args);
+core::Value capitalize(const core::Value& v, std::span<const core::Value> args);
 
 /**
  * \brief Return the absolute value of a number.
@@ -315,7 +315,7 @@ Value capitalize(const Value& v, std::span<const Value> args);
  * \param args Unused.
  * \retval Value Absolute value with the same numeric type, or the original value.
  */
-Value abs(const Value& v, std::span<const Value> args);
+core::Value abs(const core::Value& v, std::span<const core::Value> args);
 
 /**
  * \brief Round a number to N decimal places.
@@ -329,7 +329,7 @@ Value abs(const Value& v, std::span<const Value> args);
  * \param args Optional decimal-places argument (integer).
  * \retval Value Rounded double, or the original value unchanged.
  */
-Value round(const Value& v, std::span<const Value> args);
+core::Value round(const core::Value& v, std::span<const core::Value> args);
 
 /**
  * \brief Convert a value to a double (floating-point).
@@ -345,7 +345,7 @@ Value round(const Value& v, std::span<const Value> args);
  * \param args Unused.
  * \retval Value A double Value, or the original value on failure.
  */
-Value float_(const Value& v, std::span<const Value> args);
+core::Value float_(const core::Value& v, std::span<const core::Value> args);
 
 /**
  * \brief Convert a value to an integer (int64_t), truncating towards zero.
@@ -361,7 +361,7 @@ Value float_(const Value& v, std::span<const Value> args);
  * \param args Unused.
  * \retval Value An int64_t Value, or the original value on failure.
  */
-Value int_(const Value& v, std::span<const Value> args);
+core::Value int_(const core::Value& v, std::span<const core::Value> args);
 
 /**
  * \brief Count the number of whitespace-separated words in a string.
@@ -374,7 +374,7 @@ Value int_(const Value& v, std::span<const Value> args);
  * \param args Unused.
  * \retval Value Integer word count.
  */
-Value wordcount(const Value& v, std::span<const Value> args);
+core::Value wordcount(const core::Value& v, std::span<const core::Value> args);
 
 /**
  * \brief Convert an object (ValueMap) to an array of [key, value] pairs.
@@ -389,7 +389,7 @@ Value wordcount(const Value& v, std::span<const Value> args);
  * \param args Unused.
  * \retval Value Array of [key, value] pairs, or the original value unchanged.
  */
-Value items(const Value& v, std::span<const Value> args);
+core::Value items(const core::Value& v, std::span<const core::Value> args);
 
 /**
  * \brief Sort an array in ascending order.
@@ -404,7 +404,7 @@ Value items(const Value& v, std::span<const Value> args);
  * \param args Unused.
  * \retval Value Sorted array, or the original value unchanged.
  */
-Value sort(const Value& v, std::span<const Value> args);
+core::Value sort(const core::Value& v, std::span<const core::Value> args);
 
 /**
  * \brief Convert an object to an array of [key, value] pairs sorted by key.
@@ -417,6 +417,6 @@ Value sort(const Value& v, std::span<const Value> args);
  * \param args Unused.
  * \retval Value Sorted array of [key, value] pairs, or the original value unchanged.
  */
-Value dictsort(const Value& v, std::span<const Value> args);
+core::Value dictsort(const core::Value& v, std::span<const core::Value> args);
 
 } // namespace guss::render::filters

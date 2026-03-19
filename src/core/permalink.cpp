@@ -3,7 +3,7 @@
 namespace guss::core {
 
 std::string PermalinkGenerator::expand(std::string_view pattern,
-                                        const render::Value& data) {
+                                        const Value& data) {
     std::string result;
     result.reserve(pattern.size() + 32);
 

@@ -16,7 +16,7 @@
 #include "guss/core/render_item.hpp"
 #include "guss/render/context.hpp"
 #include "guss/render/runtime.hpp"
-#include "guss/render/value.hpp"
+#include "guss/core/value.hpp"
 
 #ifdef GUSS_USE_OPENMP
 #include <omp.h>
@@ -25,16 +25,16 @@
 namespace guss::builder {
 
 Pipeline::Pipeline(adapters::AdapterPtr adapter,
-                   const config::SiteConfig& site_config,
-                   const config::CollectionCfgMap& collections,
-                   const config::OutputConfig& output_config)
+                   const core::config::SiteConfig& site_config,
+                   const core::config::CollectionCfgMap& collections,
+                   const core::config::OutputConfig& output_config)
     : adapter_(std::move(adapter))
     , site_config_(site_config)
     , collections_(collections)
     , output_config_(output_config)
 {}
 
-std::expected<BuildStats, error::Error> Pipeline::build(const ProgressCallback& progress) const {
+std::expected<BuildStats, core::error::Error> Pipeline::build(const ProgressCallback& progress) const {
     BuildStats stats;
     auto total_start = std::chrono::steady_clock::now();
 
@@ -112,12 +112,12 @@ std::expected<BuildStats, error::Error> Pipeline::build(const ProgressCallback& 
     return stats;
 }
 
-error::VoidResult Pipeline::clean() const {
+core::error::VoidResult Pipeline::clean() const {
     std::error_code ec;
     if (std::filesystem::exists(output_config_.output_dir, ec) && !ec) {
         std::filesystem::remove_all(output_config_.output_dir, ec);
-        if (ec) return error::make_error(
-            error::ErrorCode::DirectoryCreateError,
+        if (ec) return core::error::make_error(
+            core::error::ErrorCode::DirectoryCreateError,
             "Failed to clean output directory: " + ec.message(),
             output_config_.output_dir.string()
         );
@@ -126,12 +126,12 @@ error::VoidResult Pipeline::clean() const {
     return {};
 }
 
-error::VoidResult Pipeline::ping() const {
+core::error::VoidResult Pipeline::ping() const {
     spdlog::info("Testing connection to {}...", adapter_->adapter_name());
     auto result = adapter_->ping();
     if (!result) {
-        return error::make_error(
-            error::ErrorCode::AdapterAuthFailed,
+        return core::error::make_error(
+            core::error::ErrorCode::AdapterAuthFailed,
             "Could not connect to server",
             result.error().context
         );
@@ -140,7 +140,7 @@ error::VoidResult Pipeline::ping() const {
     return {};
 }
 
-std::expected<adapters::FetchResult, error::Error> Pipeline::phase_fetch(ProgressCallback progress) const {
+std::expected<adapters::FetchResult, core::error::Error> Pipeline::phase_fetch(ProgressCallback progress) const {
     return adapter_->fetch_all([&progress](size_t current, size_t total) {
         if (progress && total > 0) {
             float p = 0.25f * static_cast<float>(current) / static_cast<float>(total);
@@ -166,9 +166,9 @@ std::string archive_url_prefix(const std::string& permalink) {
 
 } // anonymous namespace
 
-std::pair<std::vector<render::RenderItem>, size_t> Pipeline::phase_prepare(adapters::FetchResult& result) const {
-    std::vector<render::RenderItem> item_pages;
-    std::vector<render::RenderItem> archive_pages;
+std::pair<std::vector<core::RenderItem>, size_t> Pipeline::phase_prepare(adapters::FetchResult& result) const {
+    std::vector<core::RenderItem> item_pages;
+    std::vector<core::RenderItem> archive_pages;
 
     for (auto& [collection_name, items] : result.items) {
         // Add item pages (pre-built by adapter: non-empty output_path + template_name)
@@ -188,12 +188,12 @@ std::pair<std::vector<render::RenderItem>, size_t> Pipeline::phase_prepare(adapt
         if (coll_cfg.archive_template.empty() || coll_cfg.item_template.empty()) continue;
 
         // Build value array of all items for archive templates
-        std::vector<render::Value> item_data_vec;
+        std::vector<core::Value> item_data_vec;
         item_data_vec.reserve(items.size());
         for (const auto& item : items) item_data_vec.push_back(item.data);
 
         // Collect all tags for use in archive pages
-        std::vector<render::Value> all_tags;
+        std::vector<core::Value> all_tags;
         if (auto tag_it = result.items.find("tags"); tag_it != result.items.end()) {
             all_tags.reserve(tag_it->second.size());
             for (const auto& ti : tag_it->second) all_tags.push_back(ti.data);
@@ -211,7 +211,7 @@ std::pair<std::vector<render::RenderItem>, size_t> Pipeline::phase_prepare(adapt
             for (int page = 1; page <= total_pages; ++page) {
                 int start = (page - 1) * per_page;
                 int end   = std::min(start + per_page, total_items);
-                std::vector<render::Value> page_slice(
+                std::vector<core::Value> page_slice(
                     item_data_vec.begin() + start,
                     item_data_vec.begin() + end);
 
@@ -228,26 +228,26 @@ std::pair<std::vector<render::RenderItem>, size_t> Pipeline::phase_prepare(adapt
                 }
 
                 // Build pagination map
-                std::unordered_map<std::string, render::Value> pag;
-                pag["current"]  = render::Value(static_cast<int64_t>(page));
-                pag["total"]    = render::Value(static_cast<int64_t>(total_pages));
-                pag["has_prev"] = render::Value(page > 1);
-                pag["has_next"] = render::Value(page < total_pages);
-                pag["prev_url"] = render::Value(page <= 1 ? std::string("")
+                std::unordered_map<std::string, core::Value> pag;
+                pag["current"]  = core::Value(static_cast<int64_t>(page));
+                pag["total"]    = core::Value(static_cast<int64_t>(total_pages));
+                pag["has_prev"] = core::Value(page > 1);
+                pag["has_next"] = core::Value(page < total_pages);
+                pag["prev_url"] = core::Value(page <= 1 ? std::string("")
                     : page == 2 ? base_url
                     : base_url + "page/" + std::to_string(page - 1) + "/");
-                pag["next_url"] = render::Value(page < total_pages
+                pag["next_url"] = core::Value(page < total_pages
                     ? base_url + "page/" + std::to_string(page + 1) + "/"
                     : std::string(""));
 
-                render::RenderItem ri;
+                core::RenderItem ri;
                 ri.output_path   = std::move(out);
                 ri.template_name = coll_cfg.archive_template;
                 ri.context_key   = "";  // no single item; data is null
                 ri.extra_context = {
-                    {collection_name, render::Value(std::move(page_slice))},
-                    {"tags",          render::Value(all_tags)},
-                    {"pagination",    render::Value(std::move(pag))},
+                    {collection_name, core::Value(std::move(page_slice))},
+                    {"tags",          core::Value(all_tags)},
+                    {"pagination",    core::Value(std::move(pag))},
                 };
                 archive_pages.push_back(std::move(ri));
             }
@@ -257,13 +257,13 @@ std::pair<std::vector<render::RenderItem>, size_t> Pipeline::phase_prepare(adapt
             std::filesystem::path out =
                 core::PermalinkGenerator::permalink_to_path(base_url);
 
-            render::RenderItem ri;
+            core::RenderItem ri;
             ri.output_path   = std::move(out);
             ri.template_name = coll_cfg.archive_template;
             ri.context_key   = "";
             ri.extra_context = {
-                {collection_name, render::Value(std::move(item_data_vec))},
-                {"collection",    render::Value(std::string(collection_name))},
+                {collection_name, core::Value(std::move(item_data_vec))},
+                {"collection",    core::Value(std::string(collection_name))},
             };
             archive_pages.push_back(std::move(ri));
         }
@@ -271,17 +271,17 @@ std::pair<std::vector<render::RenderItem>, size_t> Pipeline::phase_prepare(adapt
 
     // Item pages first, archive pages last — phase_render uses the index boundary
     // only for stats counting (items vs archives).
-    std::vector<render::RenderItem> all_items;
+    std::vector<core::RenderItem> all_items;
     all_items.reserve(item_pages.size() + archive_pages.size());
     all_items.insert(all_items.end(), item_pages.begin(), item_pages.end());
     all_items.insert(all_items.end(), archive_pages.begin(), archive_pages.end());
     return {std::move(all_items), archive_pages.size()};
 }
 
-error::Result<std::vector<std::pair<std::filesystem::path, std::string>>>
-Pipeline::phase_render(const std::vector<render::RenderItem>& items,
+core::error::Result<std::vector<std::pair<std::filesystem::path, std::string>>>
+Pipeline::phase_render(const std::vector<core::RenderItem>& items,
                        size_t archive_count,
-                       const render::Value& site,
+                       const core::Value& site,
                        BuildStats& stats,
                        ProgressCallback progress) const {
     std::vector<std::pair<std::filesystem::path, std::string>> files;
@@ -344,7 +344,7 @@ Pipeline::phase_render(const std::vector<render::RenderItem>& items,
     return files;
 }
 
-error::VoidResult Pipeline::phase_write(
+core::error::VoidResult Pipeline::phase_write(
     const std::vector<std::pair<std::filesystem::path, std::string>>& files,
     BuildStats& stats,
     ProgressCallback progress
@@ -353,8 +353,8 @@ error::VoidResult Pipeline::phase_write(
     {
         std::error_code ec;
         std::filesystem::create_directories(output_config_.output_dir, ec);
-        if (ec) return error::make_error(
-            error::ErrorCode::DirectoryCreateError,
+        if (ec) return core::error::make_error(
+            core::error::ErrorCode::DirectoryCreateError,
             "Failed to create output directory: " + ec.message(),
             output_config_.output_dir.string()
         );
@@ -393,7 +393,7 @@ error::VoidResult Pipeline::phase_write(
     return {};
 }
 
-error::VoidResult Pipeline::copy_assets(BuildStats& stats) const {
+core::error::VoidResult Pipeline::copy_assets(BuildStats& stats) const {
     if (!output_config_.copy_assets) {
         return {};
     }
@@ -410,8 +410,8 @@ error::VoidResult Pipeline::copy_assets(BuildStats& stats) const {
     {
         std::error_code ec;
         std::filesystem::create_directories(output_assets, ec);
-        if (ec) return error::make_error(
-            error::ErrorCode::FileWriteError,
+        if (ec) return core::error::make_error(
+            core::error::ErrorCode::FileWriteError,
             "Failed to create assets directory: " + ec.message(),
             output_assets.string()
         );
@@ -425,16 +425,16 @@ error::VoidResult Pipeline::copy_assets(BuildStats& stats) const {
 
         std::error_code ec;
         std::filesystem::create_directories(dest.parent_path(), ec);
-        if (ec) return error::make_error(
-            error::ErrorCode::FileWriteError,
+        if (ec) return core::error::make_error(
+            core::error::ErrorCode::FileWriteError,
             "Failed to create asset subdirectory: " + ec.message(),
             dest.parent_path().string()
         );
 
         std::filesystem::copy_file(entry.path(), dest,
             std::filesystem::copy_options::overwrite_existing, ec);
-        if (ec) return error::make_error(
-            error::ErrorCode::FileWriteError,
+        if (ec) return core::error::make_error(
+            core::error::ErrorCode::FileWriteError,
             "Failed to copy asset: " + ec.message(),
             dest.string()
         );

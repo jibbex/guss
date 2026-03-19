@@ -17,15 +17,15 @@ namespace {
 
 /// Build a minimal RestApiConfig pointing at a local server.
 /// response_key="" → bare JSON array; otherwise wrapped under that key.
-guss::config::RestApiConfig make_cfg(int port,
-                                     const guss::config::PaginationConfig& pag,
+guss::core::config::RestApiConfig make_cfg(int port,
+                                     const guss::core::config::PaginationConfig& pag,
                                      const std::string& response_key = "items")
 {
-    guss::config::RestApiConfig cfg;
+    guss::core::config::RestApiConfig cfg;
     cfg.base_url   = "http://127.0.0.1:" + std::to_string(port);
     cfg.timeout_ms = 5000;
 
-    guss::config::EndpointConfig ep;
+    guss::core::config::EndpointConfig ep;
     ep.path         = "items";
     ep.response_key = response_key;
     ep.pagination   = pag;
@@ -34,10 +34,10 @@ guss::config::RestApiConfig make_cfg(int port,
 }
 
 /// Build a minimal CollectionCfgMap that accepts any slug-based item.
-guss::config::CollectionCfgMap make_collections()
+guss::core::config::CollectionCfgMap make_collections()
 {
-    guss::config::CollectionCfgMap m;
-    guss::config::CollectionConfig cc;
+    guss::core::config::CollectionCfgMap m;
+    guss::core::config::CollectionConfig cc;
     cc.item_template = "item.html";
     cc.permalink     = "/{slug}/";
     cc.context_key   = "item";
@@ -77,7 +77,7 @@ TEST(RestAdapterPagination, TotalPagesHeader_SinglePage) {
     });
     ts.start();
 
-    guss::config::PaginationConfig pag;
+    guss::core::config::PaginationConfig pag;
     pag.total_pages_header = "X-WP-TotalPages";
     pag.page_param         = "page";
     pag.limit_param        = "limit";
@@ -103,7 +103,7 @@ TEST(RestAdapterPagination, TotalPagesHeader_TwoPages) {
     });
     ts.start();
 
-    guss::config::PaginationConfig pag;
+    guss::core::config::PaginationConfig pag;
     pag.total_pages_header = "X-WP-TotalPages";
     pag.page_param         = "page";
     pag.limit_param        = "limit";

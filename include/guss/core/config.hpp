@@ -20,7 +20,7 @@
 #include <variant>
 #include "guss/core/error.hpp"
 
-namespace guss::config {
+namespace guss::core::config {
 
 // ---------------------------------------------------------------------------
 // Auth configuration
@@ -300,4 +300,4 @@ error::Result<Config> load_config(const std::filesystem::path& path);
  */
 error::VoidResult validate_yaml(const std::string& yaml_content);
 
-} // namespace guss::config
+} // namespace guss::core::config

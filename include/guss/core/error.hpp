@@ -12,19 +12,19 @@
  * \code
  * #include "guss/core/error.hpp"
  *
- * guss::error::Result<int> parse_number(const std::string& str) {
+ * guss::core::error::Result<int> parse_number(const std::string& str) {
  *     try {
  *         return std::stoi(str);
  *     } catch (...) {
- *         return guss::error::make_error(
- *             guss::error::ErrorCode::ContentParseError,
+ *         return guss::core::error::make_error(
+ *             guss::core::error::ErrorCode::ContentParseError,
  *             "Invalid number format",
  *             str
  *         );
  *     }
  * }
  *
- * guss::error::Result<int> double_number(const std::string& str) {
+ * guss::core::error::Result<int> double_number(const std::string& str) {
  *     GUSS_TRY(int value, parse_number(str));
  *     return value * 2;
  * }
@@ -39,7 +39,7 @@
 #include <string>
 #include <string_view>
 
-namespace guss::error {
+namespace guss::core::error {
 
 /**
  * \brief Error codes categorized by subsystem.
@@ -152,4 +152,4 @@ inline std::unexpected<Error> make_error(ErrorCode code, std::string message, st
 #define GUSS_TRY_VOID(expr) \
     if (auto _guss_result = (expr); !_guss_result) return std::unexpected(_guss_result.error())
 
-} // namespace guss::error
+} // namespace guss::core::error

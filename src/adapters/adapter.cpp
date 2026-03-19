@@ -19,10 +19,10 @@ namespace guss::adapters {
 // get_error
 // ---------------------------------------------------------------------------
 
-std::optional<std::unexpected<error::Error>> get_error(const httplib::Result& res) {
+std::optional<std::unexpected<core::error::Error>> get_error(const httplib::Result& res) {
     if (!res) {
-        return error::make_error(
-            error::ErrorCode::AdapterConnectionFailed,
+        return core::error::make_error(
+            core::error::ErrorCode::AdapterConnectionFailed,
             "HTTP request failed",
             httplib::to_string(res.error())
         );
@@ -30,27 +30,27 @@ std::optional<std::unexpected<error::Error>> get_error(const httplib::Result& re
 
     switch (res->status) {
         case 400:
-            return error::make_error(
-                error::ErrorCode::AdapterBadRequest, "Bad request", "HTTP 400");
+            return core::error::make_error(
+                core::error::ErrorCode::AdapterBadRequest, "Bad request", "HTTP 400");
         case 401: [[fallthrough]]
         case 403:
-            return error::make_error(
-                error::ErrorCode::AdapterAuthFailed,
+            return core::error::make_error(
+                core::error::ErrorCode::AdapterAuthFailed,
                 "Authentication failed",
                 "HTTP " + std::to_string(res->status));
         case 404:
-            return error::make_error(
-                error::ErrorCode::AdapterNotFound, "Not found", "HTTP 404");
+            return core::error::make_error(
+                core::error::ErrorCode::AdapterNotFound, "Not found", "HTTP 404");
         case 429:
-            return error::make_error(
-                error::ErrorCode::AdapterRateLimited, "Rate limited", "HTTP 429");
+            return core::error::make_error(
+                core::error::ErrorCode::AdapterRateLimited, "Rate limited", "HTTP 429");
         case 500:
-            return error::make_error(
-                error::ErrorCode::AdapterServerError, "Server error", "HTTP 500");
+            return core::error::make_error(
+                core::error::ErrorCode::AdapterServerError, "Server error", "HTTP 500");
         default:
             if (res->status >= 400) {
-                return error::make_error(
-                    error::ErrorCode::AdapterFetchFailed,
+                return core::error::make_error(
+                    core::error::ErrorCode::AdapterFetchFailed,
                     "HTTP error",
                     "HTTP " + std::to_string(res->status));
             }
@@ -63,26 +63,26 @@ std::optional<std::unexpected<error::Error>> get_error(const httplib::Result& re
 // build_site_value
 // ---------------------------------------------------------------------------
 
-render::Value ContentAdapter::build_site_value() const {
-    std::unordered_map<std::string, render::Value> m;
-    m["title"]       = render::Value(site_cfg_.title);
-    m["description"] = render::Value(site_cfg_.description);
-    m["url"]         = render::Value(site_cfg_.url);
-    m["language"]    = render::Value(site_cfg_.language);
-    if (site_cfg_.logo)        m["logo"]        = render::Value(*site_cfg_.logo);
-    if (site_cfg_.icon)        m["icon"]        = render::Value(*site_cfg_.icon);
-    if (site_cfg_.cover_image) m["cover_image"] = render::Value(*site_cfg_.cover_image);
-    if (site_cfg_.twitter)     m["twitter"]     = render::Value(*site_cfg_.twitter);
-    if (site_cfg_.facebook)    m["facebook"]    = render::Value(*site_cfg_.facebook);
-    return render::Value(std::move(m));
+core::Value ContentAdapter::build_site_value() const {
+    std::unordered_map<std::string, core::Value> m;
+    m["title"]       = core::Value(site_cfg_.title);
+    m["description"] = core::Value(site_cfg_.description);
+    m["url"]         = core::Value(site_cfg_.url);
+    m["language"]    = core::Value(site_cfg_.language);
+    if (site_cfg_.logo)        m["logo"]        = core::Value(*site_cfg_.logo);
+    if (site_cfg_.icon)        m["icon"]        = core::Value(*site_cfg_.icon);
+    if (site_cfg_.cover_image) m["cover_image"] = core::Value(*site_cfg_.cover_image);
+    if (site_cfg_.twitter)     m["twitter"]     = core::Value(*site_cfg_.twitter);
+    if (site_cfg_.facebook)    m["facebook"]    = core::Value(*site_cfg_.facebook);
+    return core::Value(std::move(m));
 }
 
 // ---------------------------------------------------------------------------
 // resolve_path
 // ---------------------------------------------------------------------------
 
-render::Value ContentAdapter::resolve_path(const render::Value& v, std::string_view path) {
-    render::Value current = v;
+core::Value ContentAdapter::resolve_path(const core::Value& v, std::string_view path) {
+    core::Value current = v;
     std::string_view remaining = path;
 
     while (!remaining.empty()) {
@@ -102,12 +102,12 @@ render::Value ContentAdapter::resolve_path(const render::Value& v, std::string_v
         } else if (current.is_array()) {
             // Array field projection: collect `segment` from every element that
             // has it. Supports paths like "tags.slug" → ["tech","news"].
-            std::vector<render::Value> projected;
+            std::vector<core::Value> projected;
             for (size_t i = 0; i < current.size(); ++i) {
-                render::Value f = current[i][segment];
+                core::Value f = current[i][segment];
                 if (!f.is_null()) projected.push_back(std::move(f));
             }
-            current = render::Value(std::move(projected));
+            current = core::Value(std::move(projected));
         } else {
             current = current[segment];
         }
@@ -123,7 +123,7 @@ render::Value ContentAdapter::resolve_path(const render::Value& v, std::string_v
 // ---------------------------------------------------------------------------
 
 void ContentAdapter::apply_field_map(
-    render::Value& item,
+    core::Value& item,
     const std::unordered_map<std::string, std::string>& field_map) {
     for (const auto& [target, source_path] : field_map) {
         item.set(target, resolve_path(item, source_path));
@@ -134,15 +134,15 @@ void ContentAdapter::apply_field_map(
 // enrich_item
 // ---------------------------------------------------------------------------
 
-void ContentAdapter::enrich_item(render::Value& item, const std::string& collection_name) const {
+void ContentAdapter::enrich_item(core::Value& item, const std::string& collection_name) const {
     if (!item.is_object()) return;
 
     // Extract year/month/day from published_at if present and long enough
     std::string published_at = item["published_at"].to_string();
     if (published_at != "null" && published_at.size() >= 10) {
-        item.set("year",  render::Value(std::string(published_at.substr(0, 4))));
-        item.set("month", render::Value(std::string(published_at.substr(5, 2))));
-        item.set("day",   render::Value(std::string(published_at.substr(8, 2))));
+        item.set("year",  core::Value(std::string(published_at.substr(0, 4))));
+        item.set("month", core::Value(std::string(published_at.substr(5, 2))));
+        item.set("day",   core::Value(std::string(published_at.substr(8, 2))));
     }
 
     // Compute permalink and output_path from collection config
@@ -154,8 +154,8 @@ void ContentAdapter::enrich_item(render::Value& item, const std::string& collect
     const std::filesystem::path output_path =
         core::PermalinkGenerator::permalink_to_path(permalink);
 
-    item.set("permalink",   render::Value(std::string(permalink)));
-    item.set("output_path", render::Value(output_path.generic_string()));
+    item.set("permalink",   core::Value(std::string(permalink)));
+    item.set("output_path", core::Value(output_path.generic_string()));
 }
 
 } // namespace guss::adapters

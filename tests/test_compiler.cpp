@@ -12,6 +12,7 @@
 #include <string_view>
 
 using namespace guss::render;
+using namespace guss::core;
 using namespace guss::render::lexer;
 using namespace guss::render::ast;
 

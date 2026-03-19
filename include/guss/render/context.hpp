@@ -12,7 +12,7 @@
  * common case where the number of template variables fits in the buffer.
  */
 #pragma once
-#include <guss/render/value.hpp>
+#include <guss/core/value.hpp>
 #include <memory_resource>
 #include <string>
 
@@ -42,14 +42,14 @@ public:
     Context child() const;
 
     /// Set or overwrite a local variable in this context.
-    void set(std::string key, Value val);
+    void set(std::string key, core::Value val);
 
     /// Resolve a dotted path against locals (nearest scope first).
-    Value resolve(std::string_view dotted_path, int depth = 0) const;
+    core::Value resolve(std::string_view dotted_path, int depth = 0) const;
 
 private:
     const Context* parent_ = nullptr;                        ///< nullptr if root context.
-    std::pmr::unordered_map<std::string, Value> locals_;    ///< Per-scope variables.
+    std::pmr::unordered_map<std::string, core::Value> locals_;    ///< Per-scope variables.
 };
 
 } // namespace guss::render

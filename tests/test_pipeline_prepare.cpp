@@ -21,14 +21,14 @@ using namespace guss;
 // ---------- CollectionMap grouping ----------
 
 TEST(CollectionMapGroupingTest, GroupsByCollectionName) {
-    render::CollectionMap m;
+    core::CollectionMap m;
     for (int i = 0; i < 3; ++i) {
-        std::unordered_map<std::string, render::Value> d;
-        d["slug"] = render::Value(std::string("post-") + std::to_string(i));
-        m["posts"].push_back(render::RenderItem{
+        std::unordered_map<std::string, core::Value> d;
+        d["slug"] = core::Value(std::string("post-") + std::to_string(i));
+        m["posts"].push_back(core::RenderItem{
             std::filesystem::path("post-" + std::to_string(i) + "/index.html"),
             "post.html",
-            render::Value(std::move(d))
+            core::Value(std::move(d))
         });
     }
     EXPECT_EQ(m["posts"].size(), 3u);
@@ -37,19 +37,19 @@ TEST(CollectionMapGroupingTest, GroupsByCollectionName) {
 }
 
 TEST(CollectionMapGroupingTest, MissingCollectionKeyReturnsEmptyVector) {
-    render::CollectionMap m;
+    core::CollectionMap m;
     // Accessing a non-existent key via [] creates an empty entry.
     EXPECT_TRUE(m["nonexistent"].empty());
 }
 
 TEST(CollectionMapGroupingTest, MultipleCollectionTypes) {
-    render::CollectionMap m;
-    m["posts"].push_back(render::RenderItem{
+    core::CollectionMap m;
+    m["posts"].push_back(core::RenderItem{
         std::filesystem::path("p/index.html"), "post.html",
-        render::Value(std::unordered_map<std::string, render::Value>{})});
-    m["tags"].push_back(render::RenderItem{
+        core::Value(std::unordered_map<std::string, core::Value>{})});
+    m["tags"].push_back(core::RenderItem{
         std::filesystem::path("t/index.html"), "tag.html",
-        render::Value(std::unordered_map<std::string, render::Value>{})});
+        core::Value(std::unordered_map<std::string, core::Value>{})});
     EXPECT_EQ(m.size(), 2u);
     EXPECT_EQ(m["posts"].size(), 1u);
     EXPECT_EQ(m["tags"].size(), 1u);
@@ -58,7 +58,7 @@ TEST(CollectionMapGroupingTest, MultipleCollectionTypes) {
 // ---------- CollectionConfig pagination logic ----------
 
 TEST(CollectionConfigPaginationTest, PaginateZeroMeansSinglePage) {
-    config::CollectionConfig cfg;
+    core::config::CollectionConfig cfg;
     cfg.paginate = 0;
     // paginate == 0 means single archive page (no pagination).
     EXPECT_EQ(cfg.paginate, 0);
@@ -69,7 +69,7 @@ TEST(CollectionConfigPaginationTest, PaginateZeroMeansSinglePage) {
 }
 
 TEST(CollectionConfigPaginationTest, PaginateComputesCorrectPageCount) {
-    config::CollectionConfig cfg;
+    core::config::CollectionConfig cfg;
     cfg.paginate = 10;
     int total_items = 25;
     int total_pages = (total_items + cfg.paginate - 1) / cfg.paginate;
@@ -77,7 +77,7 @@ TEST(CollectionConfigPaginationTest, PaginateComputesCorrectPageCount) {
 }
 
 TEST(CollectionConfigPaginationTest, PaginateExactDivisionNoExtraPage) {
-    config::CollectionConfig cfg;
+    core::config::CollectionConfig cfg;
     cfg.paginate = 10;
     int total_items = 20;
     int total_pages = (total_items + cfg.paginate - 1) / cfg.paginate;
@@ -94,22 +94,22 @@ TEST(FetchResultTest, DefaultConstruction) {
 
 TEST(FetchResultTest, SiteValueAccessible) {
     adapters::FetchResult fr;
-    std::unordered_map<std::string, render::Value> m;
-    m["title"] = render::Value(std::string("My Site"));
-    fr.site = render::Value(std::move(m));
+    std::unordered_map<std::string, core::Value> m;
+    m["title"] = core::Value(std::string("My Site"));
+    fr.site = core::Value(std::move(m));
     EXPECT_EQ(fr.site["title"].to_string(), "My Site");
 }
 
 TEST(FetchResultTest, MissingCollectionKeySkipped) {
     adapters::FetchResult fr;
-    fr.items["posts"].push_back(render::RenderItem{
+    fr.items["posts"].push_back(core::RenderItem{
         std::filesystem::path("p/index.html"), "post.html",
-        render::Value(std::unordered_map<std::string, render::Value>{})});
+        core::Value(std::unordered_map<std::string, core::Value>{})});
 
     // A collection key present in items but absent from collections config
     // should be silently skipped by the pipeline.
     // Verify the key exists in items but not in an empty config map.
-    config::CollectionCfgMap cfg;
+    core::config::CollectionCfgMap cfg;
     EXPECT_EQ(fr.items.count("posts"), 1u);
     EXPECT_EQ(cfg.count("posts"), 0u);
     // Pipeline would skip "posts" since it is not in cfg -- no crash, no output.

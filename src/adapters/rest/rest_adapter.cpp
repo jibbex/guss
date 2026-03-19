@@ -27,20 +27,20 @@ namespace guss::adapters::rest {
 namespace {
 
 /**
- * \brief Convert a simdjson::ondemand::value to a render::Value recursively.
+ * \brief Convert a simdjson::ondemand::value to a core::Value recursively.
  *
  * \details
  * This function handles all JSON types (object, array, string, number, boolean, null and missing) and converts
- * them into the corresponding render::Value representation. Objects are converted to render::Value maps, arrays
- * to render::Value arrays, strings to render::Value strings, numbers to render::Value numbers (int64, uint64,
- * or double depending on the type), booleans to render::Value booleans, and null/missing values to
- * render::Value null.
+ * them into the corresponding core::Value representation. Objects are converted to core::Value maps, arrays
+ * to core::Value arrays, strings to core::Value strings, numbers to core::Value numbers (int64, uint64,
+ * or double depending on the type), booleans to core::Value booleans, and null/missing values to
+ * core::Value null.
  *
  * \param[in] val The simdjson::ondemand::value to convert.
- * \retval The corresponding render::Value representation of the input simdjson value.
+ * \retval The corresponding core::Value representation of the input simdjson value.
  */
-render::Value from_simdjson(simdjson::ondemand::value val) {
-    using namespace render;
+core::Value from_simdjson(simdjson::ondemand::value val) {
+    using namespace core;
     switch (val.type()) {
         case simdjson::ondemand::json_type::object: {
             std::unordered_map<std::string, Value> m;
@@ -105,7 +105,7 @@ UrlParts parse_url(const std::string& url) {
 }
 
 // Build query string from an EndpointParams map.
-std::string build_query(const config::EndpointParams& params) {
+std::string build_query(const core::config::EndpointParams& params) {
     std::string q;
     for (const auto& [k, v] : params) {
         q += (q.empty() ? "?" : "&");
@@ -116,32 +116,32 @@ std::string build_query(const config::EndpointParams& params) {
 
 /// Extract items from a JSON object under response_key.
 /// No assumption about pagination structure — purely generic.
-error::Result<std::vector<render::Value>>
+core::error::Result<std::vector<core::Value>>
 parse_keyed_array(std::string_view body, std::string_view response_key) {
     simdjson::ondemand::parser parser;
     auto padded = simdjson::padded_string(body.data(), body.size());
     auto doc = parser.iterate(padded);
     if (doc.error())
-        return error::make_error(error::ErrorCode::ContentParseError,
+        return core::error::make_error(core::error::ErrorCode::ContentParseError,
                                  "simdjson parse error",
                                  std::string(body.substr(0, 120)));
 
     simdjson::ondemand::object root;
     if (doc.get_object().get(root))
-        return error::make_error(error::ErrorCode::ContentParseError,
+        return core::error::make_error(core::error::ErrorCode::ContentParseError,
                                  "expected JSON object at root", "");
 
     simdjson::ondemand::value arr_val;
     if (root[response_key].get(arr_val))
-        return error::make_error(error::ErrorCode::ContentParseError,
+        return core::error::make_error(core::error::ErrorCode::ContentParseError,
                                  "missing array key", std::string(response_key));
 
     simdjson::ondemand::array arr;
     if (arr_val.get_array().get(arr))
-        return error::make_error(error::ErrorCode::ContentParseError,
+        return core::error::make_error(core::error::ErrorCode::ContentParseError,
                                  "expected array under key", std::string(response_key));
 
-    std::vector<render::Value> values;
+    std::vector<core::Value> values;
     for (auto elem : arr) {
         simdjson::ondemand::value v;
         if (!elem.get(v))
@@ -151,22 +151,22 @@ parse_keyed_array(std::string_view body, std::string_view response_key) {
 }
 
 /// Parse a root-array JSON response (no wrapping object).
-error::Result<std::vector<render::Value>>
+core::error::Result<std::vector<core::Value>>
 parse_root_array(std::string_view body) {
     simdjson::ondemand::parser parser;
     auto padded = simdjson::padded_string(body.data(), body.size());
     auto doc = parser.iterate(padded);
     if (doc.error())
-        return error::make_error(error::ErrorCode::ContentParseError,
+        return core::error::make_error(core::error::ErrorCode::ContentParseError,
                                  "simdjson parse error",
                                  std::string(body.substr(0, 120)));
 
     simdjson::ondemand::array arr;
     if (doc.get_array().get(arr))
-        return error::make_error(error::ErrorCode::ContentParseError,
+        return core::error::make_error(core::error::ErrorCode::ContentParseError,
                                  "expected root JSON array", "");
 
-    std::vector<render::Value> values;
+    std::vector<core::Value> values;
     for (auto elem : arr) {
         simdjson::ondemand::value v;
         if (!elem.get(v))
@@ -180,14 +180,14 @@ std::string lowercase(std::string s) {
     return s;
 }
 
-/// Parse the full JSON body into a render::Value (used for body-inspection strategies).
-render::Value parse_body_value(std::string_view body) {
+/// Parse the full JSON body into a core::Value (used for body-inspection strategies).
+core::Value parse_body_value(std::string_view body) {
     simdjson::ondemand::parser sj_parser;
     auto padded = simdjson::padded_string(body.data(), body.size());
     auto doc    = sj_parser.iterate(padded);
-    if (doc.error()) return render::Value{};
+    if (doc.error()) return core::Value{};
     simdjson::ondemand::value rv;
-    if (doc.get_value().get(rv)) return render::Value{};
+    if (doc.get_value().get(rv)) return core::Value{};
     return from_simdjson(rv);
 }
 
@@ -218,9 +218,9 @@ std::optional<std::string> parse_link_next(const std::string& link_header) {
 // Constructor
 // ---------------------------------------------------------------------------
 
-RestCmsAdapter::RestCmsAdapter(const config::RestApiConfig&    cfg,
-                               const config::SiteConfig&       site_cfg,
-                               const config::CollectionCfgMap& collections)
+RestCmsAdapter::RestCmsAdapter(const core::config::RestApiConfig&    cfg,
+                               const core::config::SiteConfig&       site_cfg,
+                               const core::config::CollectionCfgMap& collections)
     : ContentAdapter(site_cfg, collections)
     , cfg_(cfg)
 {
@@ -245,11 +245,11 @@ std::string RestCmsAdapter::HttpResponse::header(std::string_view name) const {
 // do_get (shared core)
 // ---------------------------------------------------------------------------
 
-error::Result<RestCmsAdapter::HttpResponse>
+core::error::Result<RestCmsAdapter::HttpResponse>
 RestCmsAdapter::do_get(const std::string& full_path_with_auth) const {
     // Auth injection
     std::string full_path = full_path_with_auth;
-    if (cfg_.auth.type == config::AuthConfig::Type::ApiKey &&
+    if (cfg_.auth.type == core::config::AuthConfig::Type::ApiKey &&
         !cfg_.auth.param.empty() && !cfg_.auth.value.empty())
     {
         full_path += (full_path.find('?') == std::string::npos ? "?" : "&");
@@ -261,9 +261,9 @@ RestCmsAdapter::do_get(const std::string& full_path_with_auth) const {
     auto configure = [&](auto& client) {
         client.set_connection_timeout(std::chrono::milliseconds(cfg_.timeout_ms));
         client.set_read_timeout(std::chrono::milliseconds(cfg_.timeout_ms));
-        if (cfg_.auth.type == config::AuthConfig::Type::Basic)
+        if (cfg_.auth.type == core::config::AuthConfig::Type::Basic)
             client.set_basic_auth(cfg_.auth.username, cfg_.auth.password);
-        if (cfg_.auth.type == config::AuthConfig::Type::Bearer)
+        if (cfg_.auth.type == core::config::AuthConfig::Type::Bearer)
             client.set_bearer_token_auth(cfg_.auth.value);
     };
 
@@ -291,7 +291,7 @@ RestCmsAdapter::do_get(const std::string& full_path_with_auth) const {
 // http_get
 // ---------------------------------------------------------------------------
 
-error::Result<RestCmsAdapter::HttpResponse>
+core::error::Result<RestCmsAdapter::HttpResponse>
 RestCmsAdapter::http_get(const std::string& path) const {
     return do_get(base_path_ + path);
 }
@@ -300,7 +300,7 @@ RestCmsAdapter::http_get(const std::string& path) const {
 // http_get_raw_path
 // ---------------------------------------------------------------------------
 
-error::Result<RestCmsAdapter::HttpResponse>
+core::error::Result<RestCmsAdapter::HttpResponse>
 RestCmsAdapter::http_get_raw_path(const std::string& path) const {
     return do_get(path);
 }
@@ -318,8 +318,8 @@ bool RestCmsAdapter::has_next_page(std::string_view body, std::string_view json_
     simdjson::ondemand::value root_val;
     if (doc.get_value().get(root_val)) return false;
 
-    render::Value root     = from_simdjson(root_val);
-    render::Value sentinel = resolve_path(root, json_next);
+    core::Value root     = from_simdjson(root_val);
+    core::Value sentinel = resolve_path(root, json_next);
     return !sentinel.is_null();
 }
 
@@ -327,14 +327,14 @@ bool RestCmsAdapter::has_next_page(std::string_view body, std::string_view json_
 // fetch_endpoint
 // ---------------------------------------------------------------------------
 
-error::Result<std::vector<render::Value>>
-RestCmsAdapter::fetch_endpoint(const std::string&            collection_name,
-                               const config::EndpointConfig& ep) const
+core::error::Result<std::vector<core::Value>>
+RestCmsAdapter::fetch_endpoint(const std::string&                collection_name,
+                               const core::config::EndpointConfig& ep) const
 {
-    const config::PaginationConfig& pag =
+    const core::config::PaginationConfig& pag =
         ep.pagination ? *ep.pagination : cfg_.pagination;
 
-    std::vector<render::Value> all_values;
+    std::vector<core::Value> all_values;
 
     // Pagination state variables — only the active strategy uses its variables.
     int         page              = 1;
@@ -346,7 +346,7 @@ RestCmsAdapter::fetch_endpoint(const std::string&            collection_name,
 
     while (has_more) {
         // ---- Section A: Build request -----------------------------------
-        error::Result<HttpResponse> resp_r;
+        core::error::Result<HttpResponse> resp_r;
 
         if (pag.link_header && link_next_path.has_value()) {
             resp_r = http_get_raw_path(*link_next_path);
@@ -385,7 +385,7 @@ RestCmsAdapter::fetch_endpoint(const std::string&            collection_name,
         const HttpResponse& resp = *resp_r;
 
         // ---- Section B: Parse items -------------------------------------
-        std::vector<render::Value> page_values;
+        std::vector<core::Value> page_values;
         if (ep.response_key.empty()) {
             auto vals_r = parse_root_array(resp.body);
             if (!vals_r) {
@@ -443,14 +443,14 @@ RestCmsAdapter::fetch_endpoint(const std::string&            collection_name,
             has_more = link_next_path.has_value();
         } else if (pag.json_cursor.has_value()) {
             // Strategy 4: body contains the next cursor token at a dot-path.
-            render::Value root       = parse_body_value(resp.body);
-            render::Value cursor_val = resolve_path(root, *pag.json_cursor);
+            core::Value root       = parse_body_value(resp.body);
+            core::Value cursor_val = resolve_path(root, *pag.json_cursor);
             cursor_token = cursor_val.is_null() ? std::string{} : cursor_val.to_string();
             has_more = !cursor_token.empty();
         } else if (pag.json_next_url.has_value()) {
             // Strategy 5: body contains the full URL of the next page at a dot-path.
-            render::Value root    = parse_body_value(resp.body);
-            render::Value url_val = resolve_path(root, *pag.json_next_url);
+            core::Value root    = parse_body_value(resp.body);
+            core::Value url_val = resolve_path(root, *pag.json_next_url);
             std::string next_str  = url_val.is_null() ? std::string{} : url_val.to_string();
             if (!next_str.empty()) {
                 json_body_next_path = url_to_path(next_str);
@@ -480,7 +480,7 @@ RestCmsAdapter::fetch_endpoint(const std::string&            collection_name,
 // fetch_all
 // ---------------------------------------------------------------------------
 
-error::Result<FetchResult> RestCmsAdapter::fetch_all(FetchCallback progress) {
+core::error::Result<FetchResult> RestCmsAdapter::fetch_all(FetchCallback progress) {
     // Collect collections that have both an endpoint and a collection config.
     std::vector<std::string> active_collections;
     for (const auto& [name, ep] : cfg_.endpoints) {
@@ -489,7 +489,7 @@ error::Result<FetchResult> RestCmsAdapter::fetch_all(FetchCallback progress) {
     }
 
     // Fetch each collection (parallelise if OpenMP is available).
-    std::vector<error::Result<std::vector<render::Value>>> fetched(active_collections.size());
+    std::vector<core::error::Result<std::vector<core::Value>>> fetched(active_collections.size());
 
 #ifdef GUSS_USE_OPENMP
     #pragma omp parallel for schedule(dynamic)
@@ -533,7 +533,7 @@ error::Result<FetchResult> RestCmsAdapter::fetch_all(FetchCallback progress) {
             if (!custom.is_null() && !custom.to_string().empty())
                 tpl = custom.to_string();
 
-            render::RenderItem ri;
+            core::RenderItem ri;
             ri.data        = v;
             ri.context_key = coll_cfg.context_key;
 
@@ -558,12 +558,12 @@ error::Result<FetchResult> RestCmsAdapter::fetch_all(FetchCallback progress) {
             const std::string target_val = target_item.data[cr.match_key].to_string();
             if (target_val.empty() || target_val == "null") continue;
 
-            std::vector<render::Value> related;
+            std::vector<core::Value> related;
             for (const auto& src : source_it->second) {
-                render::Value via_val = resolve_path(src.data, cr.via);
+                core::Value via_val = resolve_path(src.data, cr.via);
                 if (via_val.is_array()) {
                     for (size_t k = 0; k < via_val.size(); ++k) {
-                        const render::Value& elem = via_val[k];
+                        const core::Value& elem = via_val[k];
                         const std::string cmp = elem.is_object()
                             ? elem[cr.match_key].to_string()
                             : elem.to_string();
@@ -579,7 +579,7 @@ error::Result<FetchResult> RestCmsAdapter::fetch_all(FetchCallback progress) {
             }
 
             target_item.extra_context.emplace_back(cr.from,
-                                                   render::Value(std::move(related)));
+                                                   core::Value(std::move(related)));
         }
     }
 
@@ -609,15 +609,15 @@ error::Result<FetchResult> RestCmsAdapter::fetch_all(FetchCallback progress) {
 // ping
 // ---------------------------------------------------------------------------
 
-error::VoidResult RestCmsAdapter::ping() {
+core::error::VoidResult RestCmsAdapter::ping() {
     // Hit the first configured endpoint with limit=1 as a connectivity check.
     if (cfg_.endpoints.empty()) {
-        return error::make_error(error::ErrorCode::AdapterNotFound,
+        return core::error::make_error(core::error::ErrorCode::AdapterNotFound,
                                  "No endpoints configured", cfg_.base_url);
     }
 
     const auto& [name, ep] = *cfg_.endpoints.begin();
-    const config::PaginationConfig& pag = ep.pagination ? *ep.pagination : cfg_.pagination;
+    const core::config::PaginationConfig& pag = ep.pagination ? *ep.pagination : cfg_.pagination;
 
     std::string path = "/" + ep.path;
     path += build_query(ep.params);

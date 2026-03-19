@@ -39,12 +39,12 @@ public:
      * \param site_cfg    Site metadata passed to build_site_value().
      * \param collections Per-collection rendering configuration.
      */
-    RestCmsAdapter(const config::RestApiConfig&    cfg,
-                   const config::SiteConfig&       site_cfg,
-                   const config::CollectionCfgMap& collections);
+    RestCmsAdapter(const core::config::RestApiConfig&    cfg,
+                   const core::config::SiteConfig&       site_cfg,
+                   const core::config::CollectionCfgMap& collections);
 
-    error::Result<FetchResult> fetch_all(FetchCallback progress = nullptr) override;
-    error::VoidResult          ping() override;
+    core::error::Result<FetchResult> fetch_all(FetchCallback progress = nullptr) override;
+    core::error::VoidResult          ping() override;
     std::string                adapter_name() const override { return "rest_api"; }
 
 private:
@@ -64,14 +64,14 @@ private:
      * \param path  URL path including any query string.
      * \return Response body and headers or error.
      */
-    error::Result<HttpResponse> http_get(const std::string& path) const;
+    core::error::Result<HttpResponse> http_get(const std::string& path) const;
 
     /// Like http_get() but sends \p path verbatim without prepending base_path_.
     /// Used by link_header and json_next_url strategies to follow extracted URLs.
-    error::Result<HttpResponse> http_get_raw_path(const std::string& path) const;
+    core::error::Result<HttpResponse> http_get_raw_path(const std::string& path) const;
 
     /// Core HTTP GET implementation. \p full_path is sent verbatim (no modifications).
-    error::Result<HttpResponse> do_get(const std::string& full_path) const;
+    core::error::Result<HttpResponse> do_get(const std::string& full_path) const;
 
     /**
      * \brief Fetch all pages of a single endpoint, returning raw Values.
@@ -84,9 +84,9 @@ private:
      * \param ep               Endpoint configuration.
      * \return Vector of Values (one per item across all pages) or error.
      */
-    error::Result<std::vector<render::Value>> fetch_endpoint(
-        const std::string&          collection_name,
-        const config::EndpointConfig& ep) const;
+    core::error::Result<std::vector<core::Value>> fetch_endpoint(
+        const std::string&                collection_name,
+        const core::config::EndpointConfig& ep) const;
 
     /**
      * \brief Check whether the JSON response body indicates a next page exists.
@@ -101,7 +101,7 @@ private:
      */
     static bool has_next_page(std::string_view body, std::string_view json_next);
 
-    config::RestApiConfig cfg_;
+    core::config::RestApiConfig cfg_;
     std::string           host_;
     int                   port_      = 443;
     std::string           scheme_;

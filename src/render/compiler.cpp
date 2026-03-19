@@ -9,6 +9,7 @@
 #include <stdexcept>
 
 namespace guss::render {
+using guss::core::Value;
 
 using namespace lexer;
 using namespace ast;

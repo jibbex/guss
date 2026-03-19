@@ -10,7 +10,7 @@
 #include <gtest/gtest.h>
 #include "guss/render/runtime.hpp"
 #include "guss/render/context.hpp"
-#include "guss/render/value.hpp"
+#include "guss/core/value.hpp"
 #include "guss/core/error.hpp"
 
 #include <filesystem>
@@ -19,8 +19,9 @@
 #include <string_view>
 
 using namespace guss::render;
+using namespace guss::core;
 namespace fs = std::filesystem;
-namespace error = guss::error;
+namespace error = guss::core::error;
 
 // ---------------------------------------------------------------------------
 // Test fixture — creates and tears down a temporary template directory

@@ -63,16 +63,16 @@ source:
 
     auto path = test_dir_ / "guss.yaml";
     const std::string path_str = path.string();
-    guss::config::Config config(path_str);
+    guss::core::config::Config config(path_str);
 
     EXPECT_EQ(config.site().title, "Test Site");
     EXPECT_EQ(config.site().url, "https://example.com");
 
-    ASSERT_TRUE(std::holds_alternative<guss::config::RestApiConfig>(config.adapter()));
-    const auto& rest = std::get<guss::config::RestApiConfig>(config.adapter());
+    ASSERT_TRUE(std::holds_alternative<guss::core::config::RestApiConfig>(config.adapter()));
+    const auto& rest = std::get<guss::core::config::RestApiConfig>(config.adapter());
     EXPECT_EQ(rest.base_url, "https://demo.ghost.io");
     EXPECT_EQ(rest.timeout_ms, 5000);
-    EXPECT_EQ(rest.auth.type, guss::config::AuthConfig::Type::ApiKey);
+    EXPECT_EQ(rest.auth.type, guss::core::config::AuthConfig::Type::ApiKey);
     EXPECT_EQ(rest.auth.param, "key");
     EXPECT_EQ(rest.auth.value, "abc123");
     ASSERT_TRUE(rest.pagination.json_next.has_value());
@@ -102,7 +102,7 @@ collections:
 
     auto path = test_dir_ / "guss.yaml";
     const std::string path_str = path.string();
-    guss::config::Config config(path_str);
+    guss::core::config::Config config(path_str);
 
     ASSERT_TRUE(config.collections().count("posts"));
     EXPECT_EQ(config.collections().at("posts").permalink, "/blog/{slug}/");
@@ -127,7 +127,7 @@ output:
 
     auto path = test_dir_ / "guss.yaml";
     const std::string path_str = path.string();
-    guss::config::Config config(path_str);
+    guss::core::config::Config config(path_str);
 
     EXPECT_EQ(config.output().output_dir, "./public");
     EXPECT_FALSE(config.output().generate_sitemap);
@@ -144,14 +144,14 @@ site:
 
     auto path = test_dir_ / "guss.yaml";
     const std::string path_str = path.string();
-    guss::config::Config config(path_str);
+    guss::core::config::Config config(path_str);
 
     // Check defaults
     EXPECT_EQ(config.site().language, "en");
     EXPECT_EQ(config.output().output_dir, "./dist");
     EXPECT_TRUE(config.output().generate_sitemap);
     // No source section defaults to MarkdownAdapterConfig
-    ASSERT_TRUE(std::holds_alternative<guss::config::MarkdownAdapterConfig>(config.adapter()));
+    ASSERT_TRUE(std::holds_alternative<guss::core::config::MarkdownAdapterConfig>(config.adapter()));
 }
 
 TEST_F(ConfigTest, ParsesMarkdownAdapter) {
@@ -169,10 +169,10 @@ source:
 
     auto path = test_dir_ / "guss.yaml";
     const std::string path_str = path.string();
-    guss::config::Config config(path_str);
+    guss::core::config::Config config(path_str);
 
-    ASSERT_TRUE(std::holds_alternative<guss::config::MarkdownAdapterConfig>(config.adapter()));
-    const auto& md = std::get<guss::config::MarkdownAdapterConfig>(config.adapter());
+    ASSERT_TRUE(std::holds_alternative<guss::core::config::MarkdownAdapterConfig>(config.adapter()));
+    const auto& md = std::get<guss::core::config::MarkdownAdapterConfig>(config.adapter());
     EXPECT_EQ(md.content_path, "./posts");
     EXPECT_EQ(md.pages_path, "./pages");
     EXPECT_FALSE(md.recursive);
@@ -197,7 +197,7 @@ collections:
 
     auto path = test_dir_ / "guss.yaml";
     const std::string path_str = path.string();
-    guss::config::Config config(path_str);
+    guss::core::config::Config config(path_str);
 
     ASSERT_TRUE(config.collections().count("posts"));
     EXPECT_EQ(config.collections().at("posts").context_key, "post");
@@ -220,7 +220,7 @@ collections:
 )";
     auto tmp = std::filesystem::temp_directory_path() / "guss_test_collections.yaml";
     std::ofstream(tmp) << yaml;
-    guss::config::Config cfg(tmp.string());
+    guss::core::config::Config cfg(tmp.string());
     ASSERT_TRUE(cfg.collections().contains("posts"));
     const auto& posts = cfg.collections().at("posts");
     EXPECT_EQ(posts.item_template, "post.html");
@@ -242,7 +242,7 @@ collections:
 )";
     auto tmp = std::filesystem::temp_directory_path() / "guss_test_coll2.yaml";
     std::ofstream(tmp) << yaml;
-    guss::config::Config cfg(tmp.string());
+    guss::core::config::Config cfg(tmp.string());
     EXPECT_FALSE(cfg.collections().contains("posts"));
     EXPECT_TRUE(cfg.collections().contains("tags"));
     std::filesystem::remove(tmp);
@@ -260,7 +260,7 @@ collections:
 )";
     auto tmp = std::filesystem::temp_directory_path() / "guss_test_coll3.yaml";
     std::ofstream(tmp) << yaml;
-    guss::config::Config cfg(tmp.string());
+    guss::core::config::Config cfg(tmp.string());
     EXPECT_EQ(cfg.collections().at("tags").paginate, 0);
     std::filesystem::remove(tmp);
 }
@@ -277,8 +277,8 @@ source:
     limit: 10
     link_header: true
 )");
-    guss::config::Config config((test_dir_ / "guss.yaml").string());
-    const auto& pag = std::get<guss::config::RestApiConfig>(config.adapter()).pagination;
+    guss::core::config::Config config((test_dir_ / "guss.yaml").string());
+    const auto& pag = std::get<guss::core::config::RestApiConfig>(config.adapter()).pagination;
     EXPECT_TRUE(pag.link_header);
     EXPECT_EQ(pag.limit, 10);
     EXPECT_FALSE(pag.page_param.has_value());
@@ -297,8 +297,8 @@ source:
     cursor_param: "cursor"
     limit_param: "per_page"
 )");
-    guss::config::Config config((test_dir_ / "guss.yaml").string());
-    const auto& pag = std::get<guss::config::RestApiConfig>(config.adapter()).pagination;
+    guss::core::config::Config config((test_dir_ / "guss.yaml").string());
+    const auto& pag = std::get<guss::core::config::RestApiConfig>(config.adapter()).pagination;
     ASSERT_TRUE(pag.json_cursor.has_value());
     EXPECT_EQ(*pag.json_cursor, "meta.next_cursor");
     ASSERT_TRUE(pag.cursor_param.has_value());
@@ -316,8 +316,8 @@ source:
   pagination:
     optimistic_fetching: true
 )");
-    guss::config::Config config((test_dir_ / "guss.yaml").string());
-    const auto& pag = std::get<guss::config::RestApiConfig>(config.adapter()).pagination;
+    guss::core::config::Config config((test_dir_ / "guss.yaml").string());
+    const auto& pag = std::get<guss::core::config::RestApiConfig>(config.adapter()).pagination;
     EXPECT_TRUE(pag.optimistic_fetching);
 }
 
@@ -334,8 +334,8 @@ source:
     limit_param: "limit"
     limit: 20
 )");
-    guss::config::Config config((test_dir_ / "guss.yaml").string());
-    const auto& pag = std::get<guss::config::RestApiConfig>(config.adapter()).pagination;
+    guss::core::config::Config config((test_dir_ / "guss.yaml").string());
+    const auto& pag = std::get<guss::core::config::RestApiConfig>(config.adapter()).pagination;
     ASSERT_TRUE(pag.offset_param.has_value());
     EXPECT_EQ(*pag.offset_param, "offset");
     EXPECT_EQ(pag.limit, 20);
@@ -353,8 +353,8 @@ source:
     total_count_header: "X-Total-Count"
     limit: 10
 )");
-    guss::config::Config config((test_dir_ / "guss.yaml").string());
-    const auto& pag = std::get<guss::config::RestApiConfig>(config.adapter()).pagination;
+    guss::core::config::Config config((test_dir_ / "guss.yaml").string());
+    const auto& pag = std::get<guss::core::config::RestApiConfig>(config.adapter()).pagination;
     ASSERT_TRUE(pag.total_count_header.has_value());
     EXPECT_EQ(*pag.total_count_header, "X-Total-Count");
 }
@@ -370,8 +370,8 @@ source:
   pagination:
     json_next_url: "links.next"
 )");
-    guss::config::Config config((test_dir_ / "guss.yaml").string());
-    const auto& pag = std::get<guss::config::RestApiConfig>(config.adapter()).pagination;
+    guss::core::config::Config config((test_dir_ / "guss.yaml").string());
+    const auto& pag = std::get<guss::core::config::RestApiConfig>(config.adapter()).pagination;
     ASSERT_TRUE(pag.json_next_url.has_value());
     EXPECT_EQ(*pag.json_next_url, "links.next");
 }

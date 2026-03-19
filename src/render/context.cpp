@@ -5,6 +5,7 @@
 #endif
 
 namespace guss::render {
+using guss::core::Value;
 
 Context Context::child() const {
     Context ctx(locals_.get_allocator().resource());

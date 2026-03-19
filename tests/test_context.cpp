@@ -5,7 +5,7 @@
  */
 #include <gtest/gtest.h>
 #include "guss/render/context.hpp"
-#include "guss/render/value.hpp"
+#include "guss/core/value.hpp"
 
 #include <array>
 #include <memory_resource>
@@ -13,7 +13,8 @@
 #include <unordered_map>
 #include <vector>
 
-using namespace guss::render;
+using namespace guss::core;
+using guss::render::Context;
 
 // ---------------------------------------------------------------------------
 // Helpers

@@ -4,13 +4,13 @@
  *        added during the template engine migration.
  */
 #include <gtest/gtest.h>
-#include "guss/render/value.hpp"
+#include "guss/core/value.hpp"
 
 #include <string>
 #include <unordered_map>
 #include <vector>
 
-using namespace guss::render;
+using namespace guss::core;
 
 // ---------------------------------------------------------------------------
 // Null
