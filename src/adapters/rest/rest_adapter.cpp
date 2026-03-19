@@ -1,6 +1,6 @@
 /**
- * @file rest_adapter.cpp
- * @brief Generic REST CMS adapter implementation.
+ * \file rest_adapter.cpp
+ * \brief Generic REST CMS adapter implementation.
  */
 #include "guss/adapters/rest/rest_adapter.hpp"
 #include "guss/adapters/adapter.hpp"
