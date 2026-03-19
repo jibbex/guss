@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include "guss/core/render_item.hpp"
 
-using namespace guss::render;
+using namespace guss::core;
 
 TEST(RenderItemTest, DefaultConstruction) {
     RenderItem item;

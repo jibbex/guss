@@ -49,8 +49,8 @@ using FetchCallback = std::function<void(size_t current, size_t total)>;
  *        arrays here — those live in items.
  */
 struct FetchResult {
-    render::CollectionMap items;
-    render::Value         site;
+    core::CollectionMap items;
+    core::Value         site;
 };
 
 /**
@@ -63,7 +63,7 @@ struct FetchResult {
  */
 class ContentAdapter {
 public:
-    ContentAdapter(config::SiteConfig site_cfg, config::CollectionCfgMap collections)
+    ContentAdapter(core::config::SiteConfig site_cfg, core::config::CollectionCfgMap collections)
         : site_cfg_(std::move(site_cfg))
         , collections_(std::move(collections)) {}
 
@@ -74,13 +74,13 @@ public:
      * \param progress Optional progress callback.
      * \return FetchResult on success, Error on failure.
      */
-    virtual error::Result<FetchResult> fetch_all(FetchCallback progress = nullptr) = 0;
+    virtual core::error::Result<FetchResult> fetch_all(FetchCallback progress = nullptr) = 0;
 
     /**
      * \brief Test connectivity without a full fetch.
      * \return VoidResult indicating success or Error.
      */
-    virtual error::VoidResult ping() = 0;
+    virtual core::error::VoidResult ping() = 0;
 
     /**
      * \brief Get the adapter name for logging.
@@ -89,13 +89,13 @@ public:
     virtual std::string adapter_name() const = 0;
 
 protected:
-    config::SiteConfig       site_cfg_;
-    config::CollectionCfgMap collections_;
+    core::config::SiteConfig       site_cfg_;
+    core::config::CollectionCfgMap collections_;
 
     /**
      * \brief Convert site_cfg_ to a Value suitable for FetchResult::site.
      */
-    render::Value build_site_value() const;
+    core::Value build_site_value() const;
 
     /**
      * \brief Navigate a dot-path through a Value.
@@ -110,9 +110,9 @@ protected:
      *
      * \param v    Root Value to traverse.
      * \param path Dot-separated path string.
-     * \retval render::Value  The resolved value, or null if the path cannot be resolved.
+     * \retval core::Value  The resolved value, or null if the path cannot be resolved.
      */
-    static render::Value resolve_path(const render::Value& v, std::string_view path);
+    static core::Value resolve_path(const core::Value& v, std::string_view path);
 
     /**
      * \brief Apply a field map to an item Value.
@@ -125,7 +125,7 @@ protected:
      * \param field_map Map of target field name to source dot-path.
      */
     static void apply_field_map(
-        render::Value& item,
+        core::Value& item,
         const std::unordered_map<std::string, std::string>& field_map);
 
     /**
@@ -143,7 +143,7 @@ protected:
      * \param item            Object Value to enrich (must be an object).
      * \param collection_name Collection name to look up permalink pattern.
      */
-    void enrich_item(render::Value& item, const std::string& collection_name) const;
+    void enrich_item(core::Value& item, const std::string& collection_name) const;
 };
 
 /** \brief Unique pointer type alias for adapters. */
@@ -152,8 +152,8 @@ using AdapterPtr = std::unique_ptr<ContentAdapter>;
 /**
  * \brief Extract error information from an HTTP response.
  * \retval std::nullopt                   Response is successful (no error).
- * \retval std::unexpected<error::Error>  HTTP error with appropriate ErrorCode.
+ * \retval std::unexpected<core::error::Error>  HTTP error with appropriate ErrorCode.
  */
-std::optional<std::unexpected<error::Error>> get_error(const httplib::Result& res);
+std::optional<std::unexpected<core::error::Error>> get_error(const httplib::Result& res);
 
 } // namespace guss::adapters

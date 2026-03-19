@@ -19,6 +19,7 @@
 #include <stdexcept>
 
 namespace guss::render {
+using guss::core::Value;
 
 // ---------------------------------------------------------------------------
 // eval_binary — file-local helper
@@ -207,7 +208,7 @@ void Runtime::resolve_filter_ids(CompiledTemplate& tpl) {
 // Runtime::load
 // ---------------------------------------------------------------------------
 
-error::Result<const CompiledTemplate*> Runtime::load(std::string_view name) {
+core::error::Result<const CompiledTemplate*> Runtime::load(std::string_view name) {
     const std::string key(name);
 
     // Cache hit; return immediately.
@@ -297,8 +298,8 @@ error::Result<const CompiledTemplate*> Runtime::load(std::string_view name) {
         return &inserted.first->second;
 
     } catch (const std::runtime_error& e) {
-        return error::make_error(
-            error::ErrorCode::TemplateParseError,
+        return core::error::make_error(
+            core::error::ErrorCode::TemplateParseError,
             e.what(),
             std::string(name)
         );
@@ -355,7 +356,7 @@ Runtime::build_override_map(const CompiledTemplate& leaf_tpl) {
 // Runtime::render
 // ---------------------------------------------------------------------------
 
-error::Result<std::string> Runtime::render(std::string_view template_name, Context& ctx) {
+core::error::Result<std::string> Runtime::render(std::string_view template_name, Context& ctx) {
     GUSS_TRY(const CompiledTemplate* tpl, load(template_name));
     std::string out;
     out.reserve(WRITE_BUFFER_SIZE);

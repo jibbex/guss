@@ -10,7 +10,7 @@
  */
 #include <gtest/gtest.h>
 #include "guss/render/filters.hpp"
-#include "guss/render/value.hpp"
+#include "guss/core/value.hpp"
 
 #include <cstdint>
 #include <limits>
@@ -19,6 +19,7 @@
 #include <vector>
 
 using namespace guss::render;
+using namespace guss::core;
 using namespace guss::render::filters;
 
 // ---------------------------------------------------------------------------

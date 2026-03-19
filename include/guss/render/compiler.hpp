@@ -18,7 +18,7 @@
  */
 #pragma once
 #include "guss/render/ast.hpp"
-#include "guss/render/value.hpp"
+#include "guss/core/value.hpp"
 #include <cstdint>
 #include <string>
 #include <string_view>
@@ -150,7 +150,7 @@ struct CompiledTemplate {
     std::vector<Instruction> code;          ///< Flat instruction sequence.
     std::vector<std::string> strings;       ///< Interned raw text segments (for \c EmitText).
     std::vector<std::string> paths;         ///< Interned dotted resolve paths (for \c Resolve / \c ForBegin).
-    std::vector<Value>       constants;     ///< Interned literal constants (for \c Push).
+    std::vector<core::Value> constants;     ///< Interned literal constants (for \c Push).
     std::vector<std::string> blocks;        ///< Block names referenced by \c BlockCall instructions.
     std::vector<std::string> filter_names;  ///< Interned filter names (for \c Filter instructions).
     std::vector<std::string> include_names; ///< Template names referenced by \c Op::Include.
@@ -253,7 +253,7 @@ private:
     /**
      * \brief Intern a constant \c Value; return its index in \c out_.constants.
      */
-    size_t intern_constant(Value v);
+    size_t intern_constant(core::Value v);
 };
 
 } // namespace guss::render

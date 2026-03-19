@@ -6,7 +6,7 @@
 // is defined below) can complete the shared_ptr<ValueMap/ValueArray> types.
 // ---------------------------------------------------------------------------
 
-namespace guss::render {
+namespace guss::core {
 
 struct ValueMap   : std::unordered_map<std::string, Value> {
     using unordered_map::unordered_map;
@@ -20,13 +20,13 @@ struct ValueArray : std::vector<Value> {
         : vector(std::move(v)) {}
 };
 
-} // namespace guss::render
+} // namespace guss::core
 
 // ---------------------------------------------------------------------------
 // Value implementation
 // ---------------------------------------------------------------------------
 
-namespace guss::render {
+namespace guss::core {
 
 // Destructor defined here where ValueMap/ValueArray are complete.
 Value::~Value() = default;
@@ -205,4 +205,4 @@ void Value::set(std::string key, Value val) {
     }
 }
 
-} // namespace guss::render
+} // namespace guss::core

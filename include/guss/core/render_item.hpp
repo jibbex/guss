@@ -23,7 +23,7 @@
 #include <vector>
 #include "guss/core/value.hpp"
 
-namespace guss::render {
+namespace guss::core {
 
 /**
  * \brief A single renderable page: output path, template, and data Value.
@@ -63,4 +63,4 @@ struct RenderItem {
  */
 using CollectionMap = std::unordered_map<std::string, std::vector<RenderItem>>;
 
-} // namespace guss::render
+} // namespace guss::core

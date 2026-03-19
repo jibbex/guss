@@ -17,7 +17,7 @@
 #include "guss/core/error.hpp"
 #include "guss/render/compiler.hpp"
 #include "guss/render/context.hpp"
-#include "guss/render/value.hpp"
+#include "guss/core/value.hpp"
 
 #include <filesystem>
 #include <functional>
@@ -65,9 +65,9 @@ public:
      *
      * \param name Template name relative to one of the search paths.
      * \retval const CompiledTemplate* Pointer to the cached entry on success.
-     * \retval error::Error            If the file cannot be found, read, lexed, parsed, or compiled.
+     * \retval core::error::Error      If the file cannot be found, read, lexed, parsed, or compiled.
      */
-    error::Result<const CompiledTemplate*> load(std::string_view name);
+    core::error::Result<const CompiledTemplate*> load(std::string_view name);
 
     /**
      * \brief Render a template by name against the provided context.
@@ -79,17 +79,17 @@ public:
      *
      * \param template_name Template name forwarded to \c load().
      * \param ctx           Rendering context supplying variable bindings.
-     * \retval std::string  Rendered output on success.
-     * \retval error::Error Propagated from \c load() if the template cannot be loaded.
+     * \retval std::string       Rendered output on success.
+     * \retval core::error::Error Propagated from \c load() if the template cannot be loaded.
      */
-    error::Result<std::string> render(std::string_view template_name, Context& ctx);
+    core::error::Result<std::string> render(std::string_view template_name, Context& ctx);
 
 private:
     std::vector<std::filesystem::path>                search_paths_;
     std::unordered_map<std::string, CompiledTemplate> cache_;
 
     /** \brief Callable type for a registered filter function. */
-    using FilterFn = std::function<Value(const Value&, std::span<const Value>)>;
+    using FilterFn = std::function<core::Value(const core::Value&, std::span<const core::Value>)>;
 
     std::vector<FilterFn>                  filters_;
     std::unordered_map<std::string, size_t> filter_index_;

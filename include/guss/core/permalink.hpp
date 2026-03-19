@@ -31,7 +31,7 @@ public:
      * \retval std::string  Expanded permalink. Missing tokens produce empty strings for that token.
      */
     [[nodiscard]] static std::string expand(std::string_view pattern,
-                                            const render::Value& data);
+                                            const Value& data);
 
     /**
      * \brief Convert a permalink string to an output file path.

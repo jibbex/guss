@@ -24,7 +24,7 @@
 #include <variant>
 #include <vector>
 
-namespace guss::render {
+namespace guss::core {
 
 // ---------------------------------------------------------------------------
 // Forward declarations — allow recursive Map/Array definitions.
@@ -177,4 +177,4 @@ private:
     > data_;
 };
 
-} // namespace guss::render
+} // namespace guss::core

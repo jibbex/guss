@@ -1,7 +1,7 @@
 #include "guss/adapters/markdown/markdown_adapter.hpp"
 #include "guss/core/permalink.hpp"
 #include "guss/core/render_item.hpp"
-#include "guss/render/value.hpp"
+#include "guss/core/value.hpp"
 #include <chrono>
 #include <cmark.h>
 #include <ctime>
@@ -50,21 +50,21 @@ ParsedDate parse_date(std::string_view iso) {
     };
 }
 
-render::Value yaml_to_value(const YAML::Node& node) {
-    if (node.IsScalar()) return render::Value(node.as<std::string>());
+core::Value yaml_to_value(const YAML::Node& node) {
+    if (node.IsScalar()) return core::Value(node.as<std::string>());
     if (node.IsSequence()) {
-        std::vector<render::Value> arr;
+        std::vector<core::Value> arr;
         arr.reserve(node.size());
         for (const auto& item : node) arr.push_back(yaml_to_value(item));
-        return render::Value(std::move(arr));
+        return core::Value(std::move(arr));
     }
     if (node.IsMap()) {
-        std::unordered_map<std::string, render::Value> m;
+        std::unordered_map<std::string, core::Value> m;
         for (const auto& kv : node)
             m[kv.first.as<std::string>()] = yaml_to_value(kv.second);
-        return render::Value(std::move(m));
+        return core::Value(std::move(m));
     }
-    return render::Value{};
+    return core::Value{};
 }
 
 /// Parse YAML content, returning nullopt and logging on failure.
@@ -89,9 +89,9 @@ std::pair<std::string, std::string> split_frontmatter(const std::string& content
     return {content.substr(4, end - 4), content.substr(end + 5)};
 }
 
-std::optional<render::RenderItem> process_file(
+std::optional<core::RenderItem> process_file(
     const std::filesystem::path& path,
-    const config::CollectionConfig& coll_cfg)
+    const core::config::CollectionConfig& coll_cfg)
 {
     std::ifstream f(path, std::ios::binary);
     if (!f) {
@@ -104,7 +104,7 @@ std::optional<render::RenderItem> process_file(
 
     auto [fm_yaml, body] = split_frontmatter(content);
 
-    std::unordered_map<std::string, render::Value> data;
+    std::unordered_map<std::string, core::Value> data;
     if (!fm_yaml.empty()) {
         auto fm_node = safe_yaml_load(fm_yaml, path.string());
         if (fm_node && fm_node->IsMap()) {
@@ -115,7 +115,7 @@ std::optional<render::RenderItem> process_file(
 
     // slug fallback
     if (!data.count("slug") || data.at("slug").to_string().empty())
-        data["slug"] = render::Value(path.stem().string());
+        data["slug"] = core::Value(path.stem().string());
 
     // published_at fallback
     std::string published_at_str;
@@ -123,40 +123,40 @@ std::optional<render::RenderItem> process_file(
         published_at_str = it->second.to_string();
     if (published_at_str.empty()) {
         published_at_str = mtime_to_iso8601(path);
-        data["published_at"] = render::Value(published_at_str);
+        data["published_at"] = core::Value(published_at_str);
     }
 
     // year/month/day
     auto date = parse_date(published_at_str);
-    data["year"]  = render::Value(std::move(date.year));
-    data["month"] = render::Value(std::move(date.month));
-    data["day"]   = render::Value(std::move(date.day));
+    data["year"]  = core::Value(std::move(date.year));
+    data["month"] = core::Value(std::move(date.month));
+    data["day"]   = core::Value(std::move(date.day));
 
     // Render markdown with cmark
     {
         char* html_c = cmark_markdown_to_html(body.c_str(), body.size(), CMARK_OPT_DEFAULT);
-        data["html"] = render::Value(html_c ? std::string(html_c) : std::string{});
+        data["html"] = core::Value(html_c ? std::string(html_c) : std::string{});
         free(html_c);
     }
 
     // Compute output path
-    render::Value item_val(std::move(data));
+    core::Value item_val(std::move(data));
     const std::string permalink = core::PermalinkGenerator::expand(coll_cfg.permalink, item_val);
     auto output_path = core::PermalinkGenerator::permalink_to_path(permalink);
 
-    return render::RenderItem{std::move(output_path), coll_cfg.item_template, std::move(item_val)};
+    return core::RenderItem{std::move(output_path), coll_cfg.item_template, std::move(item_val)};
 }
 
 } // anonymous namespace
 
-MarkdownAdapter::MarkdownAdapter(const config::MarkdownAdapterConfig& cfg,
-                                 const config::SiteConfig& site_cfg,
-                                 const config::CollectionCfgMap& collections)
+MarkdownAdapter::MarkdownAdapter(const core::config::MarkdownAdapterConfig& cfg,
+                                 const core::config::SiteConfig& site_cfg,
+                                 const core::config::CollectionCfgMap& collections)
     : ContentAdapter(site_cfg, collections)
     , config_(cfg)
 {}
 
-error::Result<FetchResult> MarkdownAdapter::fetch_all(FetchCallback /*progress*/) {
+core::error::Result<FetchResult> MarkdownAdapter::fetch_all(FetchCallback /*progress*/) {
     FetchResult result;
 
     // Collect .md files
@@ -183,7 +183,7 @@ error::Result<FetchResult> MarkdownAdapter::fetch_all(FetchCallback /*progress*/
 
     // Pick collection: prefer "posts", otherwise first entry with item_template
     std::string collection_name;
-    const config::CollectionConfig* coll_cfg = nullptr;
+    const core::config::CollectionConfig* coll_cfg = nullptr;
     if (auto it = collections_.find("posts");
             it != collections_.end() && !it->second.item_template.empty()) {
         collection_name = "posts";
@@ -204,7 +204,7 @@ error::Result<FetchResult> MarkdownAdapter::fetch_all(FetchCallback /*progress*/
     }
 
     // Process files in parallel
-    std::vector<std::optional<render::RenderItem>> processed(md_files.size());
+    std::vector<std::optional<core::RenderItem>> processed(md_files.size());
 #ifdef GUSS_USE_OPENMP
     #pragma omp parallel for schedule(dynamic)
 #endif
@@ -224,10 +224,10 @@ error::Result<FetchResult> MarkdownAdapter::fetch_all(FetchCallback /*progress*/
     return result;
 }
 
-error::VoidResult MarkdownAdapter::ping() {
+core::error::VoidResult MarkdownAdapter::ping() {
     std::error_code ec;
     if (!std::filesystem::exists(config_.content_path, ec) || ec)
-        return error::make_error(error::ErrorCode::AdapterNotFound,
+        return core::error::make_error(core::error::ErrorCode::AdapterNotFound,
             "Content path does not exist", config_.content_path.string());
     return {};
 }

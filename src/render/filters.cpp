@@ -24,6 +24,7 @@
 #include <vector>
 
 namespace guss::render::filters {
+using guss::core::Value;
 
 // ---------------------------------------------------------------------------
 // count_words — file-local helper

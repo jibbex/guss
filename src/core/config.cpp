@@ -7,7 +7,7 @@
 #include <unordered_map>
 #include <yaml-cpp/yaml.h>
 
-namespace guss::config {
+namespace guss::core::config {
 
 namespace {
 
@@ -271,4 +271,4 @@ error::VoidResult validate_yaml(const std::string& yaml_content) {
     }
 }
 
-} // namespace guss::config
+} // namespace guss::core::config

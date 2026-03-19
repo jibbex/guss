@@ -3,7 +3,7 @@
 #include <string>
 #include <string_view>
 
-namespace guss::error {
+namespace guss::core::error {
 
 std::string_view Error::code_name() const noexcept {
     switch (code) {

@@ -115,18 +115,18 @@ int cmd_build(const std::string& config_path, bool verbose, bool clean_first) {
     spdlog::info("Loading configuration from {}", config_path);
 
     // Load config
-    guss::config::Config config(config_path);
+    guss::core::config::Config config(config_path);
 
     // Create adapter based on config
     guss::adapters::AdapterPtr adapter;
 
-    if (std::holds_alternative<guss::config::RestApiConfig>(config.adapter())) {
-        const auto& rest_cfg = std::get<guss::config::RestApiConfig>(config.adapter());
+    if (std::holds_alternative<guss::core::config::RestApiConfig>(config.adapter())) {
+        const auto& rest_cfg = std::get<guss::core::config::RestApiConfig>(config.adapter());
         adapter = std::make_unique<guss::adapters::rest::RestCmsAdapter>(
             rest_cfg, config.site(), config.collections());
         spdlog::info("Using REST API adapter: {}", rest_cfg.base_url);
-    } else if (std::holds_alternative<guss::config::MarkdownAdapterConfig>(config.adapter())) {
-        const auto& markdown_cfg = std::get<guss::config::MarkdownAdapterConfig>(config.adapter());
+    } else if (std::holds_alternative<guss::core::config::MarkdownAdapterConfig>(config.adapter())) {
+        const auto& markdown_cfg = std::get<guss::core::config::MarkdownAdapterConfig>(config.adapter());
         adapter = std::make_unique<guss::adapters::MarkdownAdapter>(
             markdown_cfg, config.site(), config.collections());
         spdlog::info("Using Markdown adapter: {}", markdown_cfg.content_path.string());
@@ -198,18 +198,18 @@ int cmd_ping(const std::string& config_path) {
     spdlog::info("Testing connection...");
 
     // Load config
-    guss::config::Config config(config_path);
+    guss::core::config::Config config(config_path);
 
     // Create adapter
     guss::adapters::AdapterPtr adapter;
 
-    if (std::holds_alternative<guss::config::RestApiConfig>(config.adapter())) {
-        const auto& rest_cfg = std::get<guss::config::RestApiConfig>(config.adapter());
+    if (std::holds_alternative<guss::core::config::RestApiConfig>(config.adapter())) {
+        const auto& rest_cfg = std::get<guss::core::config::RestApiConfig>(config.adapter());
         adapter = std::make_unique<guss::adapters::rest::RestCmsAdapter>(
             rest_cfg, config.site(), config.collections());
         spdlog::info("Adapter: REST API ({})", rest_cfg.base_url);
-    } else if (std::holds_alternative<guss::config::MarkdownAdapterConfig>(config.adapter())) {
-        const auto& markdown_cfg = std::get<guss::config::MarkdownAdapterConfig>(config.adapter());
+    } else if (std::holds_alternative<guss::core::config::MarkdownAdapterConfig>(config.adapter())) {
+        const auto& markdown_cfg = std::get<guss::core::config::MarkdownAdapterConfig>(config.adapter());
         adapter = std::make_unique<guss::adapters::MarkdownAdapter>(
             markdown_cfg, config.site(), config.collections());
         spdlog::info("Adapter: Markdown ({})", markdown_cfg.content_path.string());
@@ -239,7 +239,7 @@ int cmd_ping(const std::string& config_path) {
 int cmd_clean(const std::string& config_path) {
     setup_logging("info");
 
-    guss::config::Config config(config_path);
+    guss::core::config::Config config(config_path);
 
     spdlog::info("Cleaning output directory: {}", config.output().output_dir.string());
 
