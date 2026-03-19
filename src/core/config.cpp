@@ -1,13 +1,11 @@
 /**
- * @file config.cpp
- * @brief Configuration system implementation for Guss SSG using yaml-cpp.
+ * \file config.cpp
+ * \brief Configuration system implementation for Guss SSG using yaml-cpp.
  */
 #include "guss/core/config.hpp"
 
 #include <unordered_map>
 #include <yaml-cpp/yaml.h>
-
-namespace guss::core::config {
 
 namespace {
 
@@ -35,6 +33,10 @@ bool get_bool(const YAML::Node& node, const std::string& key, bool default_value
         return node[key].as<bool>();
     return default_value;
 }
+
+}
+
+namespace guss::core::config {
 
 SiteConfig parse_site_config(const YAML::Node& node) {
     SiteConfig cfg{};
@@ -209,8 +211,6 @@ CollectionCfgMap parse_collections_config(const YAML::Node& node) {
         result[entry.first.as<std::string>()] = parse_collection_config(entry.second);
     return result;
 }
-
-} // anonymous namespace
 
 Config::Config(std::string_view config_path)
     : adapter_(MarkdownAdapterConfig{})

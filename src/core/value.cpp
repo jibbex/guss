@@ -1,12 +1,12 @@
 #include "guss/core/value.hpp"
 #include "guss/util/overloaded.hpp"
 
+namespace guss::core {
+
 // ---------------------------------------------------------------------------
 // ValueMap and ValueArray — defined here so that Value's destructor (which
 // is defined below) can complete the shared_ptr<ValueMap/ValueArray> types.
 // ---------------------------------------------------------------------------
-
-namespace guss::core {
 
 struct ValueMap   : std::unordered_map<std::string, Value> {
     using unordered_map::unordered_map;
@@ -20,13 +20,9 @@ struct ValueArray : std::vector<Value> {
         : vector(std::move(v)) {}
 };
 
-} // namespace guss::core
-
 // ---------------------------------------------------------------------------
 // Value implementation
 // ---------------------------------------------------------------------------
-
-namespace guss::core {
 
 // Destructor defined here where ValueMap/ValueArray are complete.
 Value::~Value() = default;

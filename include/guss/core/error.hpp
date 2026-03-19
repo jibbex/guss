@@ -31,7 +31,6 @@
  * \endcode
  *
  * \author Manfred Michaelis
- * \date 2025
  */
 #pragma once
 
