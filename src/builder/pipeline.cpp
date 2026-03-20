@@ -3,6 +3,7 @@
  * @brief Build pipeline implementation for Guss SSG.
  */
 #include "guss/builder/pipeline.hpp"
+#include "guss/builder/generators.hpp"
 #include <algorithm>
 #include <chrono>
 #include <filesystem>
@@ -90,24 +91,40 @@ std::expected<BuildStats, core::error::Error> Pipeline::build(const ProgressCall
         return std::unexpected(write_result.error());
     }
 
+    stats.write_duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now() - write_start);
+
     // Copy assets
     auto assets_result = copy_assets(stats);
     if (!assets_result) {
         spdlog::warn("Failed to copy assets: {}", assets_result.error().format());
     }
 
-    stats.write_duration = std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::steady_clock::now() - write_start);
+    // Sitemap
+    if (output_config_.generate_sitemap) {
+        auto sitemap_result = generate_sitemap(files, content.site, stats);
+        if (!sitemap_result)
+            spdlog::warn("Sitemap generation failed: {}", sitemap_result.error().format());
+    }
+
+    // RSS feed
+    if (output_config_.generate_rss) {
+        auto rss_result = generate_rss(render_items, content.site, stats);
+        if (!rss_result)
+            spdlog::warn("RSS generation failed: {}", rss_result.error().format());
+    }
 
     stats.total_duration = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now() - total_start);
 
     if (progress) progress("Build complete!", 1.0f);
 
-    spdlog::info("Build complete in {}ms ({} items, {} archives)",
+    spdlog::info("Build complete in {}ms ({} items, {} archives, {} extras, {} minified)",
         stats.total_duration.count(),
         stats.items_rendered,
-        stats.archives_rendered);
+        stats.archives_rendered,
+        stats.extras_generated,
+        stats.files_minified);
 
     return stats;
 }
@@ -384,7 +401,12 @@ core::error::VoidResult Pipeline::phase_write(
             continue;
         }
 
-        file << content;
+        if (output_config_.minify_html && full_path.extension() == ".html") {
+            file << minify_html(content);
+            stats.files_minified++;
+        } else {
+            file << content;
+        }
         written++;
 
         if (progress) {
@@ -448,6 +470,50 @@ core::error::VoidResult Pipeline::copy_assets(BuildStats& stats) const {
 
     spdlog::debug("Copied {} assets", stats.assets_copied);
 
+    return {};
+}
+
+core::error::VoidResult Pipeline::generate_sitemap(
+    const std::vector<std::pair<std::filesystem::path, std::string>>& files,
+    const core::Value& site,
+    BuildStats& stats) const
+{
+    const std::string base_url = site["url"].to_string();
+    const std::string xml = guss::builder::generate_sitemap_xml(files, base_url);
+
+    auto out_path = output_config_.output_dir / "sitemap.xml";
+    std::ofstream f(out_path);
+    if (!f) return core::error::make_error(
+        core::error::ErrorCode::FileWriteError,
+        "Failed to write sitemap.xml",
+        out_path.string());
+
+    f << xml;
+    stats.extras_generated++;
+    const size_t url_count = std::count_if(files.begin(), files.end(),
+        [](const auto& p) { return !p.first.empty(); });
+    spdlog::info("Generated sitemap.xml ({} URLs)", url_count);
+    return {};
+}
+
+core::error::VoidResult Pipeline::generate_rss(
+    const std::vector<core::RenderItem>& items,
+    const core::Value& site,
+    BuildStats& stats) const
+{
+    const std::string base_url = site["url"].to_string();
+    const std::string xml = guss::builder::generate_rss_xml(items, base_url, site);
+
+    auto out_path = output_config_.output_dir / "feed.xml";
+    std::ofstream f(out_path);
+    if (!f) return core::error::make_error(
+        core::error::ErrorCode::FileWriteError,
+        "Failed to write feed.xml",
+        out_path.string());
+
+    f << xml;
+    stats.extras_generated++;
+    spdlog::info("Generated feed.xml");
     return {};
 }
 

@@ -27,10 +27,12 @@ namespace guss::builder {
  * \brief Statistics from a build run.
  */
 struct BuildStats {
-    size_t items_rendered   = 0;  ///< Individual content pages rendered
-    size_t archives_rendered = 0; ///< Archive/listing pages rendered
-    size_t assets_copied    = 0;
-    size_t errors           = 0;
+    size_t items_rendered    = 0;  ///< Individual content pages rendered
+    size_t archives_rendered = 0;  ///< Archive/listing pages rendered
+    size_t assets_copied     = 0;
+    size_t files_minified    = 0;  ///< HTML files minified (when minify_html: true)
+    size_t extras_generated  = 0;  ///< Extra files written (sitemap.xml, feed.xml)
+    size_t errors            = 0;
     std::chrono::milliseconds fetch_duration{};
     std::chrono::milliseconds prepare_duration{};
     std::chrono::milliseconds render_duration{};
@@ -99,6 +101,16 @@ private:
         ProgressCallback progress) const;
 
     [[nodiscard]] core::error::VoidResult copy_assets(BuildStats& stats) const;
+
+    [[nodiscard]] core::error::VoidResult
+    generate_sitemap(const std::vector<std::pair<std::filesystem::path, std::string>>& files,
+                     const core::Value& site,
+                     BuildStats& stats) const;
+
+    [[nodiscard]] core::error::VoidResult
+    generate_rss(const std::vector<core::RenderItem>& items,
+                 const core::Value& site,
+                 BuildStats& stats) const;
 
     adapters::AdapterPtr              adapter_;
     core::config::SiteConfig          site_config_;

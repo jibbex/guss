@@ -186,6 +186,7 @@ target_link_libraries(guss-render PUBLIC
 # -----------------------------------------------------------------------------
 add_library(guss-builder
     src/builder/pipeline.cpp
+    src/builder/generators.cpp
 )
 
 target_include_directories(guss-builder PUBLIC include)
@@ -549,11 +550,13 @@ if(GUSS_BUILD_TESTS)
         tests/test_pipeline_prepare.cpp
         tests/test_rest_adapter.cpp
         tests/test_markdown_adapter.cpp
+        tests/test_generators.cpp
     )
     target_link_libraries(guss-tests PRIVATE
         guss-core
         guss-adapters
         guss-render
+        guss-builder
         GTest::gtest_main
     )
     include(GoogleTest)

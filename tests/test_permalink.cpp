@@ -44,3 +44,9 @@ TEST(PermalinkExpandTest, PermalinkToPathEmptyInput) {
     auto p = guss::core::PermalinkGenerator::permalink_to_path("/");
     EXPECT_EQ(p, std::filesystem::path("index.html"));
 }
+
+TEST(PermalinkExpandTest, PermalinkToPathStripsDoubleLeadingSlash) {
+    // slug: "" + /{slug}/ expansion produces "//" — must resolve to index.html
+    auto p = guss::core::PermalinkGenerator::permalink_to_path("//");
+    EXPECT_EQ(p, std::filesystem::path("index.html"));
+}

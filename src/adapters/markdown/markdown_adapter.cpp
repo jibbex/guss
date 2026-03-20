@@ -109,7 +109,7 @@ std::optional<core::Value> parse_md_file(const std::filesystem::path& path) {
     }
 
     // Slug fallback
-    if (!data.count("slug") || data.at("slug").to_string().empty())
+    if (!data.count("slug"))
         data["slug"] = core::Value(path.stem().string());
 
     // published_at fallback

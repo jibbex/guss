@@ -352,6 +352,40 @@ TEST_F(MarkdownAdapterTest, TaxonomySynthesis) {
 }
 
 // ---------------------------------------------------------------------------
+// ExplicitEmptySlugIsPreserved
+// ---------------------------------------------------------------------------
+
+TEST_F(MarkdownAdapterTest, ExplicitEmptySlugIsPreserved) {
+    // An explicit slug: "" in frontmatter must not be overwritten by the stem fallback.
+    // With permalink /{slug}/, empty slug → // → permalink_to_path → index.html (root).
+    write_md(test_dir_ / "pages", "index.md",
+             "slug: \"\"\ntitle: Home\ncustom_template: landing.html\n");
+
+    config::MarkdownAdapterConfig cfg;
+    cfg.collection_paths["pages"] = test_dir_ / "pages";
+
+    config::CollectionCfgMap cols;
+    config::CollectionConfig cc;
+    cc.item_template = "docs.html";
+    cc.permalink     = "/{slug}/";
+    cc.context_key   = "page";
+    cols["pages"]    = cc;
+
+    adapters::MarkdownAdapter adapter(cfg, make_site(), cols);
+    auto result = adapter.fetch_all(nullptr);
+    ASSERT_TRUE(result.has_value());
+
+    const auto& pages = result->items.at("pages");
+    ASSERT_EQ(pages.size(), 1u);
+
+    // The slug field must be empty string (not overwritten with "index")
+    EXPECT_EQ(pages[0].data["slug"].to_string(), "");
+
+    // output_path must be "index.html" (root), not "index/index.html"
+    EXPECT_EQ(pages[0].output_path, std::filesystem::path("index.html"));
+}
+
+// ---------------------------------------------------------------------------
 // TaxonomyNotSynthesizedIfPhysicalCollectionExists
 // ---------------------------------------------------------------------------
 
