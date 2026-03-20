@@ -17,7 +17,7 @@ public:
     std::string adapter_name() const override { return "markdown"; }
 
 private:
-    core::config::MarkdownAdapterConfig config_;
+    core::config::MarkdownAdapterConfig cfg_;
 };
 
 } // namespace guss::adapters

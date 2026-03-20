@@ -17,6 +17,7 @@
 #include <string>
 #include <unordered_map>
 #include <variant>
+#include <vector>
 #include "guss/core/error.hpp"
 
 namespace guss::core::config {
@@ -168,10 +169,10 @@ struct RestApiConfig {
  * \brief Configuration for the local Markdown file adapter.
  */
 struct MarkdownAdapterConfig {
-    std::filesystem::path content_path;
-    std::filesystem::path pages_path;
-    std::filesystem::path authors_path;
-    bool recursive = true;
+    std::unordered_map<std::string, std::filesystem::path> collection_paths;
+    bool           recursive        = true;
+    FieldMapCfg    field_maps       = {};
+    CrossRefCfgMap cross_references = {};
 };
 
 /**
@@ -241,6 +242,12 @@ using CollectionCfgMap = std::unordered_map<std::string, CollectionConfig>;
 /**
  * \brief Site metadata configuration.
  */
+struct NavItem {
+    std::string label;
+    std::string url;
+    bool        external = false;
+};
+
 struct SiteConfig {
     std::string title;
     std::string description;
@@ -251,6 +258,7 @@ struct SiteConfig {
     std::optional<std::string> cover_image;
     std::optional<std::string> twitter;
     std::optional<std::string> facebook;
+    std::unordered_map<std::string, std::vector<NavItem>> navigation;
 };
 
 // ---------------------------------------------------------------------------

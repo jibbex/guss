@@ -74,6 +74,24 @@ core::Value ContentAdapter::build_site_value() const {
     if (site_cfg_.cover_image) m["cover_image"] = core::Value(*site_cfg_.cover_image);
     if (site_cfg_.twitter)     m["twitter"]     = core::Value(*site_cfg_.twitter);
     if (site_cfg_.facebook)    m["facebook"]    = core::Value(*site_cfg_.facebook);
+
+    if (!site_cfg_.navigation.empty()) {
+        std::unordered_map<std::string, core::Value> nav_map;
+        for (const auto& [nav_name, items] : site_cfg_.navigation) {
+            std::vector<core::Value> arr;
+            arr.reserve(items.size());
+            for (const auto& ni : items) {
+                std::unordered_map<std::string, core::Value> entry;
+                entry["label"]    = core::Value(ni.label);
+                entry["url"]      = core::Value(ni.url);
+                entry["external"] = core::Value(ni.external);
+                arr.push_back(core::Value(std::move(entry)));
+            }
+            nav_map[nav_name] = core::Value(std::move(arr));
+        }
+        m["navigation"] = core::Value(std::move(nav_map));
+    }
+
     return core::Value(std::move(m));
 }
 

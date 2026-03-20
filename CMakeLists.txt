@@ -330,6 +330,20 @@ site:
   language: \"de\"
   # logo: \"/images/logo.png\"
   # twitter: \"@myhandle\"
+  navigation:
+    primary:
+      - label: \"Home\"
+        url: \"/\"
+      - label: \"Blog\"
+        url: \"/blog/\"
+    footer:
+      - label: \"Legal Notice\"
+        url: \"/impressum/\"
+      - label: \"Privacy\"
+        url: \"/datenschutz/\"
+      - label: \"GitHub\"
+        url: \"https://github.com\"
+        external: true
 
 
 # ─────────────────────────────────────────────────────────────
@@ -416,6 +430,41 @@ source:
 
 
 # ─────────────────────────────────────────────────────────────
+# MARKDOWN ADAPTER (alternative to rest_api above)
+# ─────────────────────────────────────────────────────────────
+# source:
+#   type: markdown          # only this line differs from type: rest_api
+#   recursive: true
+#   collection_paths:
+#     posts: ./content/posts
+#     pages: ./content/pages
+#   field_maps:
+#     posts:
+#       content: \"html\"         # cmark stores HTML as \"html\"; templates expect \"content\"
+#     pages:
+#       content: \"html\"
+#   # ── Taxonomy synthesis ──────────────────────────────────
+#   # Tags and authors have no collection_paths entry — they are
+#   # synthesized from post frontmatter. Frontmatter must use
+#   # explicit {name, slug} objects so match_key is transparent:
+#   #   tags:
+#   #     - name: C++
+#   #       slug: cpp
+#   #   author:
+#   #     name: Alice
+#   #     slug: alice
+#   cross_references:
+#     tags:
+#       from: posts
+#       via: \"tags.slug\"         # post.tags[*].slug == tag.slug
+#       match_key: slug
+#     authors:
+#       from: posts
+#       via: \"author.slug\"       # post.author.slug == author.slug
+#       match_key: slug
+
+
+# ─────────────────────────────────────────────────────────────
 # COLLECTIONS
 # Drives page generation. Keys must match endpoints: keys.
 # context_key: variable name exposed to the template for this item.
@@ -434,12 +483,12 @@ collections:
     context_key:   \"page\"
 
   tags:
-    item_template:    \"tag.html\"
+    archive_template: \"tag.html\"
     permalink:        \"/tag/{slug}/\"
     context_key:      \"tag\"
 
   authors:
-    item_template:    \"author.html\"
+    archive_template: \"author.html\"
     permalink:        \"/author/{slug}/\"
     context_key:      \"author\"
 
@@ -499,6 +548,7 @@ if(GUSS_BUILD_TESTS)
         tests/test_render_item.cpp
         tests/test_pipeline_prepare.cpp
         tests/test_rest_adapter.cpp
+        tests/test_markdown_adapter.cpp
     )
     target_link_libraries(guss-tests PRIVATE
         guss-core

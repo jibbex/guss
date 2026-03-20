@@ -22,9 +22,9 @@
 #include <omp.h>
 #endif
 
-namespace guss::adapters::rest {
-
 namespace {
+
+using namespace guss;
 
 /**
  * \brief Convert a simdjson::ondemand::value to a core::Value recursively.
@@ -213,6 +213,8 @@ std::optional<std::string> parse_link_next(const std::string& link_header) {
 }
 
 } // anonymous namespace
+
+namespace guss::adapters::rest {
 
 // ---------------------------------------------------------------------------
 // Constructor
