@@ -159,23 +159,37 @@ TEST_F(ConfigTest, ParsesMarkdownAdapter) {
 site:
   title: "Test"
   url: "https://example.com"
-
 source:
   type: markdown
-  content_path: "./posts"
-  pages_path: "./pages"
   recursive: false
+  collection_paths:
+    posts: ./content/posts
+    pages: ./content/pages
+  field_maps:
+    posts:
+      author: "meta.author"
+  cross_references:
+    tags:
+      from: posts
+      via: "tags.slug"
+      match_key: "slug"
 )");
+    guss::core::config::Config cfg((test_dir_ / "guss.yaml").string());
+    ASSERT_TRUE(std::holds_alternative<guss::core::config::MarkdownAdapterConfig>(cfg.adapter()));
+    const auto& md = std::get<guss::core::config::MarkdownAdapterConfig>(cfg.adapter());
 
-    auto path = test_dir_ / "guss.yaml";
-    const std::string path_str = path.string();
-    guss::core::config::Config config(path_str);
-
-    ASSERT_TRUE(std::holds_alternative<guss::core::config::MarkdownAdapterConfig>(config.adapter()));
-    const auto& md = std::get<guss::core::config::MarkdownAdapterConfig>(config.adapter());
-    EXPECT_EQ(md.content_path, "./posts");
-    EXPECT_EQ(md.pages_path, "./pages");
+    EXPECT_EQ(md.collection_paths.size(), 2u);
+    EXPECT_EQ(md.collection_paths.at("posts"), std::filesystem::path("./content/posts"));
+    EXPECT_EQ(md.collection_paths.at("pages"), std::filesystem::path("./content/pages"));
     EXPECT_FALSE(md.recursive);
+
+    ASSERT_TRUE(md.field_maps.count("posts"));
+    EXPECT_EQ(md.field_maps.at("posts").at("author"), "meta.author");
+
+    ASSERT_TRUE(md.cross_references.count("tags"));
+    EXPECT_EQ(md.cross_references.at("tags").from, "posts");
+    EXPECT_EQ(md.cross_references.at("tags").via, "tags.slug");
+    EXPECT_EQ(md.cross_references.at("tags").match_key, "slug");
 }
 
 TEST_F(ConfigTest, ParsesCollectionContextKey) {

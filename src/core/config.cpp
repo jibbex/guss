@@ -7,6 +7,8 @@
 #include <unordered_map>
 #include <yaml-cpp/yaml.h>
 
+using namespace guss::core::config;
+
 namespace {
 
 std::optional<std::string> get_optional_string(const YAML::Node& node, const std::string& key) {
@@ -34,10 +36,6 @@ bool get_bool(const YAML::Node& node, const std::string& key, bool default_value
     return default_value;
 }
 
-}
-
-namespace guss::core::config {
-
 SiteConfig parse_site_config(const YAML::Node& node) {
     SiteConfig cfg{};
     if (!node) return cfg;
@@ -51,6 +49,24 @@ SiteConfig parse_site_config(const YAML::Node& node) {
     cfg.cover_image = get_optional_string(node, "cover_image");
     cfg.twitter     = get_optional_string(node, "twitter");
     cfg.facebook    = get_optional_string(node, "facebook");
+
+    if (const auto& nav = node["navigation"]; nav && nav.IsMap()) {
+        for (const auto& kv : nav) {
+            if (!kv.second.IsSequence()) continue;
+            std::vector<NavItem> items;
+            for (const auto& item : kv.second) {
+                NavItem ni;
+                ni.label    = get_string(item, "label");
+                ni.url      = get_string(item, "url");
+                ni.external = get_bool(item, "external", false);
+                if (!ni.label.empty())
+                    items.push_back(std::move(ni));
+            }
+            if (!items.empty())
+                cfg.navigation[kv.first.as<std::string>()] = std::move(items);
+        }
+    }
+
     return cfg;
 }
 
@@ -108,6 +124,33 @@ EndpointConfig parse_endpoint_config(const YAML::Node& node) {
     return cfg;
 }
 
+FieldMapCfg parse_field_maps(const YAML::Node& node) {
+    FieldMapCfg result;
+    if (!node || !node.IsMap()) return result;
+    for (const auto& coll : node) {
+        const std::string coll_name = coll.first.as<std::string>();
+        if (!coll.second.IsMap()) continue;
+        for (const auto& field : coll.second)
+            result[coll_name][field.first.as<std::string>()] =
+                field.second.as<std::string>();
+    }
+    return result;
+}
+
+CrossRefCfgMap parse_cross_references(const YAML::Node& node) {
+    CrossRefCfgMap result;
+    if (!node || !node.IsMap()) return result;
+    for (const auto& kv : node) {
+        CrossRefConfig cr;
+        cr.from = get_string(kv.second, "from");
+        cr.via  = get_string(kv.second, "via");
+        if (kv.second["match_key"])
+            cr.match_key = get_string(kv.second, "match_key");
+        result[kv.first.as<std::string>()] = cr;
+    }
+    return result;
+}
+
 RestApiConfig parse_rest_api_config(const YAML::Node& node) {
     RestApiConfig cfg;
     cfg.base_url   = get_string(node, "base_url");
@@ -120,36 +163,24 @@ RestApiConfig parse_rest_api_config(const YAML::Node& node) {
             cfg.endpoints[kv.first.as<std::string>()] = parse_endpoint_config(kv.second);
     }
 
-    if (node["field_maps"] && node["field_maps"].IsMap()) {
-        for (const auto& coll : node["field_maps"]) {
-            const std::string coll_name = coll.first.as<std::string>();
-            if (!coll.second.IsMap()) continue;
-            for (const auto& field : coll.second)
-                cfg.field_maps[coll_name][field.first.as<std::string>()] =
-                    field.second.as<std::string>();
-        }
-    }
-
-    if (node["cross_references"] && node["cross_references"].IsMap()) {
-        for (const auto& kv : node["cross_references"]) {
-            CrossRefConfig cr;
-            cr.from      = get_string(kv.second, "from");
-            cr.via       = get_string(kv.second, "via");
-            if (kv.second["match_key"])
-                cr.match_key = get_string(kv.second, "match_key");
-            cfg.cross_references[kv.first.as<std::string>()] = cr;
-        }
-    }
+    cfg.field_maps       = parse_field_maps(node["field_maps"]);
+    cfg.cross_references = parse_cross_references(node["cross_references"]);
 
     return cfg;
 }
 
 MarkdownAdapterConfig parse_markdown_config(const YAML::Node& node) {
     MarkdownAdapterConfig cfg;
-    cfg.content_path = get_string(node, "content_path", "./content");
-    cfg.pages_path   = get_string(node, "pages_path",   "./pages");
-    cfg.authors_path = get_string(node, "authors_path", "./authors");
-    cfg.recursive    = get_bool(node, "recursive", true);
+    cfg.recursive = get_bool(node, "recursive", true);
+
+    if (node["collection_paths"] && node["collection_paths"].IsMap()) {
+        for (const auto& kv : node["collection_paths"])
+            cfg.collection_paths[kv.first.as<std::string>()] =
+                std::filesystem::path(kv.second.as<std::string>());
+    }
+
+    cfg.field_maps       = parse_field_maps(node["field_maps"]);
+    cfg.cross_references = parse_cross_references(node["cross_references"]);
     return cfg;
 }
 
@@ -211,6 +242,10 @@ CollectionCfgMap parse_collections_config(const YAML::Node& node) {
         result[entry.first.as<std::string>()] = parse_collection_config(entry.second);
     return result;
 }
+
+} // anonymous namespace
+
+namespace guss::core::config {
 
 Config::Config(std::string_view config_path)
     : adapter_(MarkdownAdapterConfig{})

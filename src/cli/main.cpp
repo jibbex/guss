@@ -129,7 +129,7 @@ int cmd_build(const std::string& config_path, bool verbose, bool clean_first) {
         const auto& markdown_cfg = std::get<guss::core::config::MarkdownAdapterConfig>(config.adapter());
         adapter = std::make_unique<guss::adapters::MarkdownAdapter>(
             markdown_cfg, config.site(), config.collections());
-        spdlog::info("Using Markdown adapter: {}", markdown_cfg.content_path.string());
+        spdlog::info("Using Markdown adapter ({} collections)", markdown_cfg.collection_paths.size());
     } else {
         spdlog::error("Unknown adapter type");
         return 1;
@@ -212,7 +212,7 @@ int cmd_ping(const std::string& config_path) {
         const auto& markdown_cfg = std::get<guss::core::config::MarkdownAdapterConfig>(config.adapter());
         adapter = std::make_unique<guss::adapters::MarkdownAdapter>(
             markdown_cfg, config.site(), config.collections());
-        spdlog::info("Adapter: Markdown ({})", markdown_cfg.content_path.string());
+        spdlog::info("Adapter: Markdown ({} collections)", markdown_cfg.collection_paths.size());
     } else {
         spdlog::error("Unsupported adapter type");
         return 1;

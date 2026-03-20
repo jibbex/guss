@@ -149,6 +149,8 @@ std::expected<adapters::FetchResult, core::error::Error> Pipeline::phase_fetch(P
     });
 }
 
+} // namespace guss::builder
+
 namespace {
 
 /// Return the static URL prefix of a permalink pattern before the first {token}.
@@ -165,6 +167,8 @@ std::string archive_url_prefix(const std::string& permalink) {
 }
 
 } // anonymous namespace
+
+namespace guss::builder {
 
 std::pair<std::vector<core::RenderItem>, size_t> Pipeline::phase_prepare(adapters::FetchResult& result) const {
     std::vector<core::RenderItem> item_pages;
