@@ -28,7 +28,7 @@ std::string PermalinkGenerator::expand(std::string_view pattern,
 
 std::filesystem::path PermalinkGenerator::permalink_to_path(std::string_view permalink) {
     std::string p(permalink);
-    if (!p.empty() && p.front() == '/') p = p.substr(1);
+    while (!p.empty() && p.front() == '/') p = p.substr(1);
     if (p.empty() || p.back() == '/') p += "index.html";
     return std::filesystem::path(p);
 }
