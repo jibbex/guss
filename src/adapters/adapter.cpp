@@ -176,4 +176,90 @@ void ContentAdapter::enrich_item(core::Value& item, const std::string& collectio
     item.set("output_path", core::Value(output_path.generic_string()));
 }
 
+// ---------------------------------------------------------------------------
+// build_render_item
+// ---------------------------------------------------------------------------
+
+core::RenderItem ContentAdapter::build_render_item(
+    const core::Value& v,
+    const core::config::CollectionConfig& coll_cfg)
+{
+    std::string op  = v["output_path"].to_string();
+    std::string tpl = coll_cfg.item_template;
+
+    auto custom = v["custom_template"];
+    if (!custom.is_null() && !custom.to_string().empty())
+        tpl = custom.to_string();
+
+    core::RenderItem ri;
+    ri.data        = v;
+    ri.context_key = coll_cfg.context_key;
+
+    if (!op.empty() && op != "null" && !tpl.empty()) {
+        ri.output_path   = std::filesystem::path(op);
+        ri.template_name = tpl;
+    }
+    return ri;
+}
+
+// ---------------------------------------------------------------------------
+// apply_cross_references
+// ---------------------------------------------------------------------------
+
+void ContentAdapter::apply_cross_references(
+    FetchResult& result,
+    const core::config::CrossRefCfgMap& cross_refs) const
+{
+    for (const auto& [coll_name, cr] : cross_refs) {
+        auto target_it = result.items.find(coll_name);
+        if (target_it == result.items.end()) continue;
+
+        auto source_it = result.items.find(cr.from);
+        if (source_it == result.items.end()) continue;
+
+        for (auto& target_item : target_it->second) {
+            const std::string target_val = target_item.data[cr.match_key].to_string();
+            if (target_val.empty() || target_val == "null") continue;
+
+            std::vector<core::Value> related;
+            for (const auto& src : source_it->second) {
+                core::Value via_val = resolve_path(src.data, cr.via);
+                if (via_val.is_array()) {
+                    for (size_t k = 0; k < via_val.size(); ++k) {
+                        const core::Value& elem = via_val[k];
+                        const std::string cmp = elem.is_object()
+                            ? elem[cr.match_key].to_string()
+                            : elem.to_string();
+                        if (cmp == target_val) {
+                            related.push_back(src.data);
+                            break;
+                        }
+                    }
+                } else {
+                    if (via_val.to_string() == target_val)
+                        related.push_back(src.data);
+                }
+            }
+            target_item.extra_context.emplace_back(cr.from, core::Value(std::move(related)));
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// apply_prev_next
+// ---------------------------------------------------------------------------
+
+void ContentAdapter::apply_prev_next(FetchResult& result, const std::string& collection_name) {
+    auto it = result.items.find(collection_name);
+    if (it == result.items.end()) return;
+
+    auto& items = it->second;
+    for (size_t i = 0; i < items.size(); ++i) {
+        if (i > 0)
+            items[i].extra_context.emplace_back("prev_post", items[i - 1].data);
+        if (i + 1 < items.size())
+            items[i].extra_context.emplace_back("next_post", items[i + 1].data);
+    }
+}
+
 } // namespace guss::adapters

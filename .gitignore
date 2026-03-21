@@ -3,5 +3,5 @@ build/
 cmake-*
 */**/node_modules
 *lock
-docs/
+./docs/
 include/guss/cli/constants.hpp

@@ -180,7 +180,7 @@ The simdjson boundary is a hard architectural rule. It enters with the raw HTTP 
 
 **Phase 1 — Fetch**: The adapter pulls content from the source (HTTP or filesystem) and converts everything to `Value` via `from_simdjson()` (REST) or frontmatter parsing (Markdown). The result is a `CollectionMap`, a flat `unordered_map<string, vector<RenderItem>>`, plus a `Value` carrying site metadata. No structs. No types. Just data.
 
-**Phase 2 — Prepare**: The pipeline expands permalink patterns to output paths (`{slug}`, `{year}`, `{month}`, `{day}`, or any custom field), resolves Markdown to HTML via cmark, generates archive pages and paginated chunks, and serializes shared site data once into a `SharedSiteData` block wrapped in `shared_ptr<const>`.
+**Phase 2 — Prepare**: The pipeline expands permalink patterns to output paths (`{slug}`, `{year}`, `{month}`, `{day}`, or any custom field), resolves Markdown to HTML via md4c, generates archive pages and paginated chunks, and serializes shared site data once into a `SharedSiteData` block wrapped in `shared_ptr<const>`.
 
 **Phase 3 — Render**: OpenMP parallel loop. Each thread constructs its own `Context` with a shared pointer to `SharedSiteData` (one atomic increment per page, zero locks) plus per-page `Value` data. The bytecode engine renders to a string. No contention anywhere.
 
@@ -332,7 +332,7 @@ source:
 
 - Reads all `.md` files recursively
 - Parses YAML frontmatter into item fields
-- Renders body with cmark (GitHub Flavored Markdown)
+- Renders body with md4c (CommonMark + GFM extensions: tables, strikethrough, autolinks)
 - Falls back to file mtime for `published_at` when not in frontmatter
 - Parallel processing via OpenMP
 
@@ -529,7 +529,7 @@ collection name (e.g. `posts` for the posts archive).
 | Language     | C++23          | Because we RESPECT the machine                     |
 | JSON parsing | simdjson       | SIMD-accelerated, gigabytes/second (adapters only) |
 | Templates    | `guss::render` | Custom bytecode compiler — one pass, linear scan   |
-| Markdown     | cmark          | GitHub Flavored, C-fast                            |
+| Markdown     | md4c           | CommonMark + GFM extensions, C-fast                            |
 | HTTP client  | cpp-httplib    | Header-only, OpenSSL                               |
 | CLI          | CLI11          | Header-only, elegant                               |
 | Logging      | spdlog         | Console + syslog, sub-nanosecond                   |

@@ -1,0 +1,244 @@
+/* ── forge theme: CSS custom properties ── */
+:root {
+    --bg:             #f8f8fc;
+    --surface:        #f0f0f5;
+    --surface-hover:  #e2e2e8;
+    --footer-bg:      #eaeaf2;
+    --border:       #e4e4e7;
+    --text:         #09090b;
+    --muted:        #71717a;
+    --accent-from:  #a855f7;
+    --accent-to:    #22d3ee;
+    --code-bg:      #f0f0f3;
+    --code-text:    #1e1e2e;
+    --nav-bg:          rgba(255, 255, 255, 0.82);
+    --terminal-chrome: #d4d4d8;
+    /* 22px base: :root specificity (0,1,0) beats html (0,0,1) — guaranteed to win */
+    font-size:         22px;
+}
+
+[data-theme="dark"] {
+    --bg:         #09090b;
+    --surface:    #111113;
+    --footer-bg:  #050508;
+    --border:     rgba(255, 255, 255, 0.08);
+    --text:     #f4f4f5;
+    --muted:    #71717a;
+    --nav-bg:          rgba(9, 9, 11, 0.82);
+    --terminal-chrome: #111113;
+    --surface-hover:   #1e1e22;
+    --code-bg:         #000000;
+    --code-text:       #4ade80;
+}
+
+/* ── Base ── */
+*, *::before, *::after { box-sizing: border-box; }
+
+/* 22px base — readable at 1440p+. Unlayered to beat Tailwind's @layer base preflight. */
+html { font-family: Inter, sans-serif; font-size: 22px; }
+
+/* ── Gradient utilities — defined here (unlayered) for reliable vendor-prefix handling ── */
+.gradient-text {
+    background: linear-gradient(120deg, var(--accent-from), var(--accent-to));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.gradient-bg {
+    background: linear-gradient(120deg, var(--accent-from), var(--accent-to));
+    transition: filter 0.2s ease;
+}
+
+.gradient-bg:hover {
+    filter: brightness(1.15) saturate(1.1);
+}
+
+/* Semi-transparent nav surface — enables backdrop-blur to be visible */
+.bg-nav    { background-color: var(--nav-bg); }
+.bg-footer { background-color: var(--footer-bg); }
+.hover-surface:hover { background-color: var(--surface-hover); }
+
+/* ── Prose (used inside docs.html main content area) ── */
+.prose {
+    max-width: 84ch;
+    font-size: 1.05rem;
+    line-height: 1.8;
+    color: var(--text);
+}
+
+.prose h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 2.25rem 0 0.875rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+}
+
+.prose h3 {
+    font-size: 1.1875rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 1.75rem 0 0.625rem;
+    color: var(--text);
+}
+
+.prose p {
+    margin: 0 0 1.125rem;
+}
+
+.prose ul {
+    list-style-type: disc;
+    margin: 0 0 1.125rem 1.75rem;
+}
+
+.prose ol {
+    list-style-type: decimal;
+    margin: 0 0 1.125rem 1.75rem;
+}
+
+.prose ul ul {
+    list-style-type: circle;
+    margin-bottom: 0;
+}
+
+.prose ol ol {
+    list-style-type: lower-alpha;
+    margin-bottom: 0;
+}
+
+.prose li {
+    margin-bottom: 0.375rem;
+}
+
+.prose strong {
+    font-weight: 600;
+    color: var(--text);
+}
+
+/* Inline code */
+.prose code {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 1.05rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 6px;
+}
+
+/* Code blocks */
+.prose pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+    overflow-x: auto;
+    margin: 0 0 1.5rem;
+    font-size: 1.05rem;
+    line-height: 1.7;
+}
+
+.prose pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--code-text);
+    font-size: inherit;
+}
+
+/* Tables */
+.prose table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 1.5rem;
+    font-size: 1.05rem;
+}
+
+.prose th {
+    font-weight: 600;
+    text-align: left;
+    padding: 0.625rem 0.875rem;
+    border-bottom: 2px solid var(--border);
+    color: var(--text);
+}
+
+.prose td {
+    padding: 0.625rem 0.875rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.prose tr:nth-child(even) td {
+    background: var(--surface);
+}
+
+/* Blockquote */
+.prose blockquote {
+    border-left: 3px solid var(--accent-from);
+    margin: 0 0 1.125rem;
+    padding: 0.375rem 1.125rem;
+    font-style: italic;
+    color: var(--muted);
+}
+
+/* ── highlight.js theme overrides ── */
+.hljs {
+    background: var(--code-bg);
+    color: var(--code-text);
+}
+
+[data-theme="dark"] .hljs {
+    color: #e4e4e7;
+}
+
+/* ── Theme-toggle ripple via View Transitions API ── */
+@keyframes theme-reveal {
+    from { clip-path: circle(0px at var(--ripple-x, 50%) var(--ripple-y, 50%)); }
+    to   { clip-path: circle(150vmax at var(--ripple-x, 50%) var(--ripple-y, 50%)); }
+}
+
+::view-transition-new(root) {
+    animation: theme-reveal 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+::view-transition-old(root) {
+    animation: none;
+}
+
+/* ── Scroll entrance animations ── */
+.anim-up {
+    opacity: 0;
+    transform: translateY(32px);
+    transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.anim-up.visible {
+    opacity: 1;
+    transform: none;
+}
+
+.anim-delay-1 { transition-delay: 0.10s; }
+.anim-delay-2 { transition-delay: 0.20s; }
+.anim-delay-3 { transition-delay: 0.30s; }
+.anim-delay-4 { transition-delay: 0.40s; }
+
+/* ── TOC sidebar ── */
+#toc a {
+    display: block;
+    font-size: 0.875rem;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 4px 0;
+    transition: color 0.15s;
+}
+
+#toc a:hover,
+#toc a.active {
+    color: var(--accent-from);
+}
+
+#toc .toc-h3 {
+    padding-left: 0.875rem;
+}

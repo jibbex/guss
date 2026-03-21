@@ -144,6 +144,50 @@ protected:
      * \param collection_name Collection name to look up permalink pattern.
      */
     void enrich_item(core::Value& item, const std::string& collection_name) const;
+
+    /**
+     * \brief Build a RenderItem from an enriched Value and its collection config.
+     *
+     * \details
+     * Reads output_path from the Value, applies custom_template override if
+     * item["custom_template"] is non-empty, and fills in context_key.
+     * output_path and template_name are left empty if either is absent.
+     *
+     * \param v        Enriched item Value (modified in place to set data).
+     * \param coll_cfg Collection configuration for this item.
+     * \retval core::RenderItem  Fully populated RenderItem.
+     */
+    static core::RenderItem build_render_item(
+        const core::Value& v,
+        const core::config::CollectionConfig& coll_cfg);
+
+    /**
+     * \brief Wire cross-references into a FetchResult.
+     *
+     * \details
+     * For each entry in \p cross_refs, finds the target and source collections
+     * in \p result and injects matching source items as extra_context into each
+     * target item under the source collection name.
+     *
+     * \param result     FetchResult whose items are mutated in place.
+     * \param cross_refs Map of target collection name to CrossRefConfig.
+     */
+    void apply_cross_references(
+        FetchResult& result,
+        const core::config::CrossRefCfgMap& cross_refs) const;
+
+    /**
+     * \brief Add prev_post / next_post extra_context to a collection's items.
+     *
+     * \details
+     * Iterates the named collection in order and injects the adjacent item's
+     * data as "prev_post" / "next_post" extra_context.  No-op if the collection
+     * is absent or has fewer than two items.
+     *
+     * \param result          FetchResult whose items are mutated in place.
+     * \param collection_name Name of the collection to link (e.g. "posts").
+     */
+    static void apply_prev_next(FetchResult& result, const std::string& collection_name);
 };
 
 /** \brief Unique pointer type alias for adapters. */
