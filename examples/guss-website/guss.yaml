@@ -1,0 +1,39 @@
+site:
+  title: "Guss"
+  description: "A pluggable static site generator written in C++23"
+  url: "https://guss.dev"
+  language: "en"
+  navigation:
+    docs:
+      - label: "Installation"
+        url: "/docs/getting-started/"
+      - label: "Configuration"
+        url: "/docs/configuration/"
+      - label: "CLI Reference"
+        url: "/docs/cli/"
+    internals:
+      - label: "Build Pipeline"
+        url: "/internals/pipeline/"
+      - label: "Template Engine"
+        url: "/internals/template-engine/"
+      - label: "Value System"
+        url: "/internals/value-system/"
+      - label: "Adapters"
+        url: "/internals/adapters/"
+
+
+source:
+  type: markdown
+  recursive: true
+  collection_paths:
+    pages: "content"
+
+output:
+  output_dir: "dist"
+  copy_assets: true
+
+collections:
+  pages:
+    item_template: "docs.html"
+    permalink: "/{slug}/"
+    context_key: "page"

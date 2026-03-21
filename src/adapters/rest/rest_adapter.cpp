@@ -526,77 +526,12 @@ core::error::Result<FetchResult> RestCmsAdapter::fetch_all(FetchCallback progres
                 apply_field_map(v, fm_it->second);
 
             enrich_item(v, coll_name);
-
-            std::string op  = v["output_path"].to_string();
-            std::string tpl = coll_cfg.item_template;
-
-            // Per-item template override (custom_template field)
-            auto custom = v["custom_template"];
-            if (!custom.is_null() && !custom.to_string().empty())
-                tpl = custom.to_string();
-
-            core::RenderItem ri;
-            ri.data        = v;
-            ri.context_key = coll_cfg.context_key;
-
-            if (!op.empty() && op != "null" && !tpl.empty()) {
-                ri.output_path   = std::filesystem::path(op);
-                ri.template_name = tpl;
-            }
-
-            items_vec.push_back(std::move(ri));
+            items_vec.push_back(build_render_item(v, coll_cfg));
         }
     }
 
-    // Build cross-references.
-    for (const auto& [coll_name, cr] : cfg_.cross_references) {
-        auto target_it = result.items.find(coll_name);
-        if (target_it == result.items.end()) continue;
-
-        auto source_it = result.items.find(cr.from);
-        if (source_it == result.items.end()) continue;
-
-        for (auto& target_item : target_it->second) {
-            const std::string target_val = target_item.data[cr.match_key].to_string();
-            if (target_val.empty() || target_val == "null") continue;
-
-            std::vector<core::Value> related;
-            for (const auto& src : source_it->second) {
-                core::Value via_val = resolve_path(src.data, cr.via);
-                if (via_val.is_array()) {
-                    for (size_t k = 0; k < via_val.size(); ++k) {
-                        const core::Value& elem = via_val[k];
-                        const std::string cmp = elem.is_object()
-                            ? elem[cr.match_key].to_string()
-                            : elem.to_string();
-                        if (cmp == target_val) {
-                            related.push_back(src.data);
-                            break;
-                        }
-                    }
-                } else {
-                    if (via_val.to_string() == target_val)
-                        related.push_back(src.data);
-                }
-            }
-
-            target_item.extra_context.emplace_back(cr.from,
-                                                   core::Value(std::move(related)));
-        }
-    }
-
-    // Add prev/next links to the posts collection.
-    if (auto posts_it = result.items.find("posts"); posts_it != result.items.end()) {
-        auto& posts = posts_it->second;
-        for (size_t i = 0; i < posts.size(); ++i) {
-            if (i > 0) {
-                posts[i].extra_context.emplace_back("prev_post", posts[i - 1].data);
-            }
-            if (i + 1 < posts.size()) {
-                posts[i].extra_context.emplace_back("next_post", posts[i + 1].data);
-            }
-        }
-    }
+    apply_cross_references(result, cfg_.cross_references);
+    apply_prev_next(result, "posts");
 
     spdlog::info("RestCmsAdapter: fetched {} collections", active_collections.size());
     for (const auto& name : active_collections) {

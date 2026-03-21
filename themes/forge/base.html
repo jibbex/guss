@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="{{ site.language }}" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  {% block head %}
+  <title>{% block title %}{{ site.title }}{% endblock %}</title>
+  <meta name="description" content="{% block description %}{{ site.description }}{% endblock %}">
+  {% endblock %}
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS v4 -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style type="text/tailwindcss">
+    @layer base {
+      /* Layered link color: Tailwind color utilities (text-white etc.) override this */
+      a { color: currentColor; }
+    }
+    @layer utilities {
+      /* Theme-aware colour utilities — reference CSS custom properties from style.css */
+      .bg-page      { background-color: var(--bg); }
+      .bg-surface   { background-color: var(--surface); }
+      .text-body    { color: var(--text); }
+      .text-muted   { color: var(--muted); }
+      .border-subtle { border-color: var(--border); }
+      /* gradient-text, gradient-bg, bg-nav are in style.css for reliable vendor-prefix handling */
+    }
+  </style>
+
+  <!-- Site styles -->
+  <link rel="stylesheet" href="/assets/style.css">
+
+  <!-- Theme init: runs before first paint to prevent flash -->
+  <script>
+    (function () {
+      const stored = localStorage.getItem('forge-theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const theme = stored || (prefersDark ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+</head>
+<body class="bg-page text-body font-[Inter,sans-serif] antialiased">
+
+  <!-- Navigation -->
+  <nav x-data="themeToggle"
+       class="sticky top-0 z-50 flex items-center justify-between px-8 h-16 bg-nav border-b border-subtle backdrop-blur-md">
+
+    <!-- Logo -->
+    <a href="/" class="gradient-text font-black text-xl tracking-tight no-underline">guss</a>
+
+    <!-- Nav links -->
+    <div class="hidden md:flex items-center gap-8 text-muted text-lg">
+      <a href="/docs/getting-started/" class="hover:text-body transition-colors">Docs</a>
+      <a href="/internals/pipeline/" class="hover:text-body transition-colors">Internals</a>
+      <a href="https://github.com/your-org/guss" class="hover:text-body transition-colors" target="_blank" rel="noopener">GitHub</a>
+    </div>
+
+    <!-- Right side: theme toggle + CTA -->
+    <div class="flex items-center gap-4">
+      <!-- Theme toggle -->
+      <button @click="toggle($event)"
+              class="w-10 h-10 flex items-center justify-center rounded-md border border-subtle text-muted hover:text-body hover:bg-surface transition-colors"
+              :title="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+              aria-label="Toggle theme">
+        <svg x-show="!dark" aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+        </svg>
+        <svg x-show="dark" aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+        </svg>
+      </button>
+
+      <!-- Get Started CTA -->
+      <a href="/docs/getting-started/"
+         class="hidden sm:inline-flex gradient-bg text-white px-5 py-2 rounded-md font-semibold active:ring-2 active:ring-offset-2 active:ring-violet-400 no-underline">
+        Get Started
+      </a>
+    </div>
+  </nav>
+
+  <!-- Page content — overridden by child templates -->
+  {% block content %}{% endblock %}
+
+  <!-- Footer -->
+  <footer class="bg-footer border-t border-subtle mt-16 py-10 px-8 text-muted text-lg">
+    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-5">
+      <span class="gradient-text font-black text-xl tracking-tight">guss</span>
+      <span>A pluggable static site generator written in C++23</span>
+      <div class="flex items-center gap-6">
+        <a href="/docs/getting-started/" class="hover:text-body transition-colors">Docs</a>
+        <a href="/internals/pipeline/" class="hover:text-body transition-colors">Internals</a>
+        <a href="https://github.com/your-org/guss" class="hover:text-body transition-colors" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </footer>
+  
+  <!-- Site JS -->
+  <script defer src="/assets/main.js"></script>
+  <!-- Alpine.js -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

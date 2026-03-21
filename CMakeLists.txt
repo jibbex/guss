@@ -75,14 +75,14 @@ CPMAddPackage(
     OPTIONS "HTTPLIB_REQUIRE_OPENSSL ON"
 )
 
-# Markdown rendering
+# Markdown rendering (GFM: tables, strikethrough, autolinks)
 CPMAddPackage(
-    NAME cmark
-    GITHUB_REPOSITORY commonmark/cmark
-    GIT_TAG 0.31.2
+    NAME md4c
+    GITHUB_REPOSITORY mity/md4c
+    GIT_TAG release-0.5.2
     OPTIONS
-        "CMARK_TESTS OFF"
         "BUILD_SHARED_LIBS OFF"
+        "BUILD_MD2HTML_EXECUTABLE OFF"
 )
 
 # CLI argument parsing
@@ -137,11 +137,6 @@ target_link_libraries(guss-core PUBLIC
     spdlog::spdlog
 )
 
-if(TARGET cmark)
-    target_link_libraries(guss-core PUBLIC cmark)
-elseif(TARGET libcmark)
-    target_link_libraries(guss-core PUBLIC libcmark)
-endif()
 
 # -----------------------------------------------------------------------------
 # Adapters library
@@ -158,6 +153,11 @@ target_link_libraries(guss-adapters PUBLIC
     httplib::httplib
     simdjson
 )
+
+if(TARGET md4c-html)
+    target_include_directories(guss-adapters PUBLIC ${md4c_SOURCE_DIR}/src)
+    target_link_libraries(guss-adapters PUBLIC md4c-html)
+endif()
 
 if(OpenMP_CXX_FOUND)
     target_link_libraries(guss-adapters PUBLIC OpenMP::OpenMP_CXX)

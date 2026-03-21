@@ -1,0 +1,12 @@
+<footer class="border-t border-outline dark:border-outline-dark mt-8">
+    <div class="mx-auto max-w-7xl px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-on-surface-muted dark:text-on-surface-dark-muted">
+        <span class="font-semibold text-on-surface-strong dark:text-on-surface-dark-strong">{{ site.title }}</span>
+        <nav class="flex items-center gap-6 flex-wrap justify-center sm:justify-end">
+            {% for link in site.navigation.footer %}
+                <a href="{{ link.url }}" {% if link.external %}target="_blank"{% endif %} class="hover:text-primary dark:hover:text-primary-dark transition-colors no-underline">
+                    {{ link.label }}
+                </a>
+            {% endfor %}
+        </nav>
+    </div>
+</footer>
