@@ -104,3 +104,100 @@ const animObserver = new IntersectionObserver((entries) => {
 
 // Attach the observer to every element that should animate in on scroll.
 document.querySelectorAll('.anim-up').forEach(el => animObserver.observe(el));
+
+/**
+ * Animates a `.counter` element's text content from `0` to its `data-target`
+ * value using an ease-out cubic easing curve over 900 ms.
+ *
+ * The animation is driven by `requestAnimationFrame` and updates the element's
+ * `textContent` on every frame. An optional `data-suffix` attribute (e.g. `"ms"`)
+ * is appended to the displayed value on every frame and on completion.
+ *
+ * The element receives the `counted` CSS class before the first frame fires,
+ * allowing CSS to play a complementary pop-in entrance animation in sync with
+ * the number count-up.
+ *
+ * @param {HTMLElement} el - The counter element to animate. Must have a
+ *     `data-target` attribute containing a valid integer string. May optionally
+ *     have a `data-suffix` attribute (e.g. `"ms"`) appended after the number.
+ * @returns {void} Returns immediately without scheduling a frame if
+ *     `data-target` is absent or not a valid integer.
+ *
+ * @example
+ * // HTML: <span class="counter" data-target="506" data-suffix="ms">506ms</span>
+ * animateCounter(document.querySelector('.counter'));
+ * // → counts 0ms … 253ms … 506ms over 900 ms
+ */
+function animateCounter(el) {
+    const target = parseInt(el.dataset.target, 10);
+    const suffix = el.dataset.suffix || '';
+    if (isNaN(target)) {
+        return;
+    }
+
+    const durationInMS = 900;
+    const startTime = performance.now();
+
+    /**
+     * Single animation frame callback. Computes the eased progress, updates
+     * the element's text, and schedules the next frame until complete.
+     *
+     * @param {DOMHighResTimeStamp} now - Timestamp supplied by `requestAnimationFrame`.
+     */
+    function tick(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / durationInMS, 1);
+        // ease-out cubic: fast start, decelerates towards the target value
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const current = Math.round(eased * target);
+        el.textContent = current + suffix;
+        if (progress < 1) {
+            requestAnimationFrame(tick);
+        } else {
+            el.textContent = target + suffix;
+        }
+    }
+
+    el.classList.add('counted');
+    requestAnimationFrame(tick);
+}
+
+/**
+ * `IntersectionObserver` that triggers and resets counter animations for every
+ * element carrying the `.counter` class.
+ *
+ * **Entering viewport** (`isIntersecting === true`): calls `animateCounter()`
+ * to count up from `0` to `data-target`.
+ *
+ * **Leaving below the fold** (`boundingClientRect.top > 0`): resets the element's
+ * text back to its raw `data-target` value (plus any suffix) and removes the
+ * `counted` class so the animation replays the next time the element enters the
+ * viewport. Elements that have already been scrolled *past* (top ≤ 0) are left
+ * unchanged — they keep their final value.
+ *
+ * A threshold of `0.5` means the animation starts only once at least half of the
+ * element is visible, preventing a premature trigger at the very edge of the
+ * viewport.
+ *
+ * @type {IntersectionObserver}
+ *
+ * @see animateCounter
+ *
+ * @example
+ * // HTML: <span class="counter gradient-text" data-target="27">27</span>
+ * // Automatically observed — no manual call needed.
+ */
+const counterObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            animateCounter(entry.target);
+        } else if (entry.boundingClientRect.top > 0) {
+            // Reset when element scrolls back below fold so it replays on re-entry.
+            entry.target.classList.remove('counted');
+            const suffix = entry.target.dataset.suffix || '';
+            entry.target.textContent = (entry.target.dataset.target || '0') + suffix;
+        }
+    });
+}, { threshold: 0.5 });
+
+document.querySelectorAll('.counter').forEach(el => counterObserver.observe(el));

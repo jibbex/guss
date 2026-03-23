@@ -11,6 +11,8 @@ site:
         url: "/docs/configuration/"
       - label: "CLI Reference"
         url: "/docs/cli/"
+      - label: "Template Syntax"
+        url: "/docs/templates/"
     internals:
       - label: "Build Pipeline"
         url: "/internals/pipeline/"
@@ -20,6 +22,8 @@ site:
         url: "/internals/value-system/"
       - label: "Adapters"
         url: "/internals/adapters/"
+      - label: "Filters Reference"
+        url: "/internals/filters/"
 
 
 source:
