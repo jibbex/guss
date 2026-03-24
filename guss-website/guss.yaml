@@ -1,7 +1,7 @@
 site:
   title: "Guss"
   description: "A pluggable static site generator written in C++23"
-  url: "https://guss.dev"
+  url: "https://derguss.dev"
   language: "en"
   navigation:
     docs:
