@@ -56,7 +56,7 @@ struct ValueArray;
  * \note The destructor is user-declared and defined in value.cpp, where
  *       ValueMap and ValueArray are complete types.
  */
-class Value {
+class Value final {
 public:
     // -- Constructors --------------------------------------------------------
 

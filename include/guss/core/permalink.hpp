@@ -22,7 +22,7 @@ namespace guss::core {
 /**
  * \brief Permalink pattern expander.
  */
-class PermalinkGenerator {
+class PermalinkGenerator final {
 public:
     /**
      * \brief Expand a permalink pattern using fields from a Value.

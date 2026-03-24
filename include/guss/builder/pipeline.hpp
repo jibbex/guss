@@ -48,7 +48,7 @@ using ProgressCallback = std::function<void(std::string_view label, float fracti
 /**
  * \brief Build pipeline orchestrating the full SSG workflow.
  */
-class Pipeline {
+class Pipeline final {
 public:
     /**
      * \brief Construct a pipeline.
