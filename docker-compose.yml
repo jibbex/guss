@@ -1,8 +1,10 @@
 # Usage:
-#   docker compose build             # build / refresh the guss:builder image
-#   docker compose run --rm release  # optimised release build
-#   docker compose run --rm debug    # debug build with symbols
-#   docker compose run --rm test     # debug build + run all tests
+#   docker compose build                      # build / refresh the guss:builder image
+#   docker compose run --rm themes            # build all theme assets (CSS + JS)
+#   docker compose run --rm themes pinguin   # build a single theme by name
+#   docker compose run --rm release           # optimised release build (themes + cmake)
+#   docker compose run --rm debug             # debug build with symbols
+#   docker compose run --rm test              # debug build + run all tests
 #
 # Build artifacts land in host directories (bind mounts) so they are
 # accessible directly from Windows after the container exits.
@@ -19,6 +21,21 @@ x-builder: &builder
     - .:/app
 
 services:
+  themes:
+    <<: *builder
+    volumes:
+      - .:/app
+    entrypoint: ["/app/scripts/build-themes.sh"]
+
+  website:
+    <<: *builder
+    volumes:
+      - .:/app
+      - ./cmake-build:/app/cmake-build
+    entrypoint: ["/app/scripts/serve-website.sh"]
+    ports:
+      - "8080:8080"
+
   release:
     <<: *builder
     volumes:

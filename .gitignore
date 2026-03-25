@@ -1,7 +1,11 @@
 .*/
+!.github/
 build/
 cmake-*
 */**/node_modules
 *lock
+!bun.lock
 guss-website/dist
+guss-website/templates/
 include/guss/cli/constants.hpp
+docs/

@@ -46,10 +46,10 @@
 
             <!-- Breadcrumb -->
             <div class="text-muted font-mono mb-5" style="font-size:0.8rem">
-                {% if page.slug == 'docs/getting-started' or page.slug == 'docs/configuration' or page.slug == 'docs/cli' %}
+                {% if page.slug == 'docs/getting-started' or page.slug == 'docs/configuration' or page.slug == 'docs/cli' or page.slug == 'docs/templates' %}
                 Docs /
                 {% endif %}
-                {% if page.slug == 'internals/pipeline' or page.slug == 'internals/template-engine' or page.slug == 'internals/value-system' or page.slug == 'internals/adapters' %}
+                {% if page.slug == 'internals/pipeline' or page.slug == 'internals/template-engine' or page.slug == 'internals/value-system' or page.slug == 'internals/adapters' or page.slug == 'internals/filters' %}
                 Internals /
                 {% endif %}
                 {{ page.title }}
@@ -74,8 +74,11 @@
                     {% if page.slug == 'docs/cli' %}
                     <a href="/docs/configuration/" class="text-muted hover:text-body transition-colors no-underline">← Configuration</a>
                     {% endif %}
-                    {% if page.slug == 'internals/pipeline' %}
+                    {% if page.slug == 'docs/templates' %}
                     <a href="/docs/cli/" class="text-muted hover:text-body transition-colors no-underline">← CLI Reference</a>
+                    {% endif %}
+                    {% if page.slug == 'internals/pipeline' %}
+                    <a href="/docs/templates/" class="text-muted hover:text-body transition-colors no-underline">← Template Syntax</a>
                     {% endif %}
                     {% if page.slug == 'internals/template-engine' %}
                     <a href="/internals/pipeline/" class="text-muted hover:text-body transition-colors no-underline">← Build Pipeline</a>
@@ -86,6 +89,9 @@
                     {% if page.slug == 'internals/adapters' %}
                     <a href="/internals/value-system/" class="text-muted hover:text-body transition-colors no-underline">← Value System</a>
                     {% endif %}
+                    {% if page.slug == 'internals/filters' %}
+                    <a href="/internals/adapters/" class="text-muted hover:text-body transition-colors no-underline">← Adapters</a>
+                    {% endif %}
                 </div>
                 <div>
                     {% if page.slug == 'docs/getting-started' %}
@@ -95,6 +101,9 @@
                     <a href="/docs/cli/" class="text-muted hover:text-body transition-colors no-underline">CLI Reference →</a>
                     {% endif %}
                     {% if page.slug == 'docs/cli' %}
+                    <a href="/docs/templates/" class="text-muted hover:text-body transition-colors no-underline">Template Syntax →</a>
+                    {% endif %}
+                    {% if page.slug == 'docs/templates' %}
                     <a href="/internals/pipeline/" class="text-muted hover:text-body transition-colors no-underline">Build Pipeline →</a>
                     {% endif %}
                     {% if page.slug == 'internals/pipeline' %}
@@ -105,6 +114,9 @@
                     {% endif %}
                     {% if page.slug == 'internals/value-system' %}
                     <a href="/internals/adapters/" class="text-muted hover:text-body transition-colors no-underline">Adapters →</a>
+                    {% endif %}
+                    {% if page.slug == 'internals/adapters' %}
+                    <a href="/internals/filters/" class="text-muted hover:text-body transition-colors no-underline">Filters Reference →</a>
                     {% endif %}
                 </div>
             </nav>
@@ -124,23 +136,10 @@
 {% endblock %}
 
 {% block scripts %}
-<!-- highlight.js for code blocks -->
-<link id="hljs-theme-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
-<link id="hljs-theme-dark"  rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" disabled>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-<script>
-  hljs.highlightAll();
-  (function syncHljs() {
-    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
-    document.getElementById('hljs-theme-light').disabled = dark;
-    document.getElementById('hljs-theme-dark').disabled  = !dark;
-    new MutationObserver(() => {
-      const d = document.documentElement.getAttribute('data-theme') === 'dark';
-      document.getElementById('hljs-theme-light').disabled = d;
-      document.getElementById('hljs-theme-dark').disabled  = !d;
-    }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-  })();
-</script>
+<!-- highlight.js -->
+<link id="hljs-theme-light" rel="stylesheet" href="/assets/hljs-light.css">
+<link id="hljs-theme-dark"  rel="stylesheet" href="/assets/hljs-dark.css" disabled>
+<script src="/assets/highlight.js" defer></script>
 <!-- TOC builder -->
 <script src="/assets/toc.js" defer></script>
 {% endblock %}

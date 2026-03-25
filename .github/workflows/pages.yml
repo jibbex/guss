@@ -1,0 +1,63 @@
+name: Deploy GitHub Pages
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    branches: [main]
+    types: [completed]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download guss binary from CI
+        uses: actions/download-artifact@v4
+        with:
+          name: guss-linux-x64
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+          path: bin/
+
+      - name: Make binary executable
+        run: chmod +x bin/guss
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install Tailwind CSS standalone binary (v4.2.2)
+        run: |
+          curl -fsSL https://github.com/tailwindlabs/tailwindcss/releases/download/v4.2.2/tailwindcss-linux-x64 \
+            -o /usr/local/bin/tailwindcss
+          chmod +x /usr/local/bin/tailwindcss
+
+      - name: Build all themes
+        run: ./scripts/build-themes.sh
+
+      - name: Sync forge theme into guss-website
+        run: |
+          mkdir -p guss-website/templates
+          cp themes/forge/*.html guss-website/templates/
+          cp -r themes/forge/assets guss-website/templates/assets
+
+      - name: Build guss-website
+        run: cd guss-website && ../bin/guss build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: guss-website/dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

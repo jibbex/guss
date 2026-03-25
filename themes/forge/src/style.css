@@ -1,3 +1,100 @@
+@import "tailwindcss";
+
+/* ── Self-hosted fonts ───────────────────────────────────────────────────── */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('fonts/inter-latin-wght-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+                 U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+                 U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('fonts/jetbrains-mono-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('fonts/jetbrains-mono-latin-500-normal.woff2') format('woff2');
+}
+
+:root {
+  --bg:               oklch(0.98 0.005 286.302);
+  --surface:          oklch(0.957 0.007 286.273);
+  --primary:          oklch(0.627 0.233 303.9);
+  --surface-hover:    oklch(0.915 0.008 286.239);
+  --footer-bg:        oklch(0.939 0.011 286.192);
+  --border:           oklch(0.92 0.004 286.32);
+  --text:             oklch(0.141 0.004 285.823);
+  --muted:            oklch(0.552 0.014 285.938);
+  --accent-from:      oklch(0.627 0.233 303.9);
+  --accent-to:        oklch(0.797 0.134 211.53);
+  --code-bg:          oklch(0.956 0.004 286.324);
+  --code-text:        oklch(0.243 0.03 283.911);
+  --nav-bg:           rgba(255, 255, 255, 0.82);
+  --terminal-chrome:  oklch(0.871 0.005 286.286);
+  --footer-border:    oklch(0.92 0 0 / 0.27);
+  font-size:          16px;
+}
+
+[data-theme="dark"] {
+  --bg:               oklch(0.141 0.004 285.823);
+  --surface:          oklch(0.179 0.004 285.981);
+  --primary:          oklch(0.627 0.233 303.9);
+  --footer-bg:        oklch(0.117 0.009 284.949);
+  --border:           rgba(255, 255, 255, 0.08);
+  --text:             oklch(0.967 0.001 286.375);
+  --muted:            oklch(0.552 0.014 285.938);
+  --nav-bg:           rgba(9, 9, 11, 0.82);
+  --terminal-chrome:  oklch(0.179 0.004 285.981);
+  --surface-hover:    oklch(0.237 0.008 285.806);
+  --code-bg:          oklch(0 0 0);
+  --code-text:        oklch(0.8 0.182 151.711);
+  --footer-border:    rgba(255, 255, 255, 0.08);
+}
+
+@theme inline {
+  --color-bg:              var(--bg);
+  --color-primary:         var(--primary);
+  --color-primary-hover:   color-mix(var(--primary), var(--accent-to), 0.2);
+  --color-surface:         var(--surface);
+  --color-surface-hover:   var(--surface-hover);
+  --color-footer-bg:       var(--footer-bg);
+  --color-nav-bg:          var(--nav-bg);
+  --color-terminal-chrome: var(--terminal-chrome);
+  --color-code-bg:         var(--code-bg);
+  --color-text:            var(--text);
+  --color-muted:           var(--muted);
+  --color-code-text:       var(--code-text);
+  --color-border:          var(--border);
+  --color-footer-border:   var(--footer-border);
+  --color-accent-from:     var(--accent-from);
+  --color-accent-to:       var(--accent-to);
+}
+
+@layer base {
+  a { color: currentColor; }
+}
+
+@layer utilities {
+  .bg-page      { background-color: var(--bg); }
+  .bg-surface   { background-color: var(--surface); }
+  .text-body    { color: var(--text); }
+  .text-muted   { color: var(--muted); }
+  .border-subtle { border-color: var(--border); }
+}
+
+/* ── Component styles ────────────────────────────────────────────────────── */
 /* ── Base ── */
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -469,4 +566,3 @@ html {
 .border-footer {
     border-top: 2px ridge var(--footer-border);
 }
-

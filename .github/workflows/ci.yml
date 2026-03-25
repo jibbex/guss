@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        run: docker compose build
+
+      - name: Run tests
+        run: docker compose run --rm test
+
+      - name: Build release
+        run: docker compose run --rm release
+
+      - name: Upload guss binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: guss-linux-x64
+          path: cmake-build/guss
+          if-no-files-found: error
+          retention-days: 1
