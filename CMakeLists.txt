@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5...3.25)
 
 project(guss
-    VERSION 0.1.0
+    VERSION 0.9.0
     DESCRIPTION "Guss — a pluggable static site generator that FORGES your content into PERFECTION"
     LANGUAGES CXX
 )
