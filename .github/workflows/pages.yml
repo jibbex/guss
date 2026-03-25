@@ -42,7 +42,9 @@ jobs:
           chmod +x /usr/local/bin/tailwindcss
 
       - name: Build all themes
-        run: ./scripts/build-themes.sh
+        run: |
+          chmod +x scripts/build-themes.sh
+          ./scripts/build-themes.sh
 
       - name: Sync forge theme into guss-website
         run: |
