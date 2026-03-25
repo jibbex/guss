@@ -15,7 +15,7 @@
                     <ul class="space-y-1">
                         {% for link in site.navigation.docs %}
                         <li>
-                            <a href="{{link.url}}"
+                            <a href="{{ site.url }}{{link.url}}"
                                class="block px-3 py-2 rounded-md text-muted hover:text-body hover:bg-surface transition-colors no-underline{% if link.url == '/' + page.slug + '/' %} bg-surface text-body font-medium{% endif %}">
                                 {{link.label}}
                             </a>
@@ -29,7 +29,7 @@
                     <ul class="space-y-1">
                         {% for link in site.navigation.internals %}
                         <li>
-                            <a href="{{link.url}}"
+                            <a href="{{ site.url }}{{link.url}}"
                                class="block px-3 py-2 rounded-md text-muted hover:text-body hover:bg-surface transition-colors no-underline{% if link.url == '/' + page.slug + '/' %} bg-surface text-body font-medium{% endif %}">
                                 {{link.label}}
                             </a>
@@ -69,54 +69,54 @@
             <nav class="flex justify-between mt-12 pt-8 border-t border-subtle text-lg">
                 <div>
                     {% if page.slug == 'docs/configuration' %}
-                    <a href="/docs/getting-started/" class="text-muted hover:text-body transition-colors no-underline">← Installation</a>
+                    <a href="{{ site.url }}/docs/getting-started/" class="text-muted hover:text-body transition-colors no-underline">← Installation</a>
                     {% endif %}
                     {% if page.slug == 'docs/cli' %}
-                    <a href="/docs/configuration/" class="text-muted hover:text-body transition-colors no-underline">← Configuration</a>
+                    <a href="{{ site.url }}/docs/configuration/" class="text-muted hover:text-body transition-colors no-underline">← Configuration</a>
                     {% endif %}
                     {% if page.slug == 'docs/templates' %}
-                    <a href="/docs/cli/" class="text-muted hover:text-body transition-colors no-underline">← CLI Reference</a>
+                    <a href="{{ site.url }}/docs/cli/" class="text-muted hover:text-body transition-colors no-underline">← CLI Reference</a>
                     {% endif %}
                     {% if page.slug == 'internals/pipeline' %}
-                    <a href="/docs/templates/" class="text-muted hover:text-body transition-colors no-underline">← Template Syntax</a>
+                    <a href="{{ site.url }}/docs/templates/" class="text-muted hover:text-body transition-colors no-underline">← Template Syntax</a>
                     {% endif %}
                     {% if page.slug == 'internals/template-engine' %}
-                    <a href="/internals/pipeline/" class="text-muted hover:text-body transition-colors no-underline">← Build Pipeline</a>
+                    <a href="{{ site.url }}/internals/pipeline/" class="text-muted hover:text-body transition-colors no-underline">← Build Pipeline</a>
                     {% endif %}
                     {% if page.slug == 'internals/value-system' %}
-                    <a href="/internals/template-engine/" class="text-muted hover:text-body transition-colors no-underline">← Template Engine</a>
+                    <a href="{{ site.url }}/internals/template-engine/" class="text-muted hover:text-body transition-colors no-underline">← Template Engine</a>
                     {% endif %}
                     {% if page.slug == 'internals/adapters' %}
-                    <a href="/internals/value-system/" class="text-muted hover:text-body transition-colors no-underline">← Value System</a>
+                    <a href="{{ site.url }}/internals/value-system/" class="text-muted hover:text-body transition-colors no-underline">← Value System</a>
                     {% endif %}
                     {% if page.slug == 'internals/filters' %}
-                    <a href="/internals/adapters/" class="text-muted hover:text-body transition-colors no-underline">← Adapters</a>
+                    <a href="{{ site.url }}/internals/adapters/" class="text-muted hover:text-body transition-colors no-underline">← Adapters</a>
                     {% endif %}
                 </div>
                 <div>
                     {% if page.slug == 'docs/getting-started' %}
-                    <a href="/docs/configuration/" class="text-muted hover:text-body transition-colors no-underline">Configuration →</a>
+                    <a href="{{ site.url }}/docs/configuration/" class="text-muted hover:text-body transition-colors no-underline">Configuration →</a>
                     {% endif %}
                     {% if page.slug == 'docs/configuration' %}
-                    <a href="/docs/cli/" class="text-muted hover:text-body transition-colors no-underline">CLI Reference →</a>
+                    <a href="{{ site.url }}/docs/cli/" class="text-muted hover:text-body transition-colors no-underline">CLI Reference →</a>
                     {% endif %}
                     {% if page.slug == 'docs/cli' %}
-                    <a href="/docs/templates/" class="text-muted hover:text-body transition-colors no-underline">Template Syntax →</a>
+                    <a href="{{ site.url }}/docs/templates/" class="text-muted hover:text-body transition-colors no-underline">Template Syntax →</a>
                     {% endif %}
                     {% if page.slug == 'docs/templates' %}
-                    <a href="/internals/pipeline/" class="text-muted hover:text-body transition-colors no-underline">Build Pipeline →</a>
+                    <a href="{{ site.url }}/internals/pipeline/" class="text-muted hover:text-body transition-colors no-underline">Build Pipeline →</a>
                     {% endif %}
                     {% if page.slug == 'internals/pipeline' %}
-                    <a href="/internals/template-engine/" class="text-muted hover:text-body transition-colors no-underline">Template Engine →</a>
+                    <a href="{{ site.url }}/internals/template-engine/" class="text-muted hover:text-body transition-colors no-underline">Template Engine →</a>
                     {% endif %}
                     {% if page.slug == 'internals/template-engine' %}
-                    <a href="/internals/value-system/" class="text-muted hover:text-body transition-colors no-underline">Value System →</a>
+                    <a href="{{ site.url }}/internals/value-system/" class="text-muted hover:text-body transition-colors no-underline">Value System →</a>
                     {% endif %}
                     {% if page.slug == 'internals/value-system' %}
-                    <a href="/internals/adapters/" class="text-muted hover:text-body transition-colors no-underline">Adapters →</a>
+                    <a href="{{ site.url }}/internals/adapters/" class="text-muted hover:text-body transition-colors no-underline">Adapters →</a>
                     {% endif %}
                     {% if page.slug == 'internals/adapters' %}
-                    <a href="/internals/filters/" class="text-muted hover:text-body transition-colors no-underline">Filters Reference →</a>
+                    <a href="{{ site.url }}/internals/filters/" class="text-muted hover:text-body transition-colors no-underline">Filters Reference →</a>
                     {% endif %}
                 </div>
             </nav>
@@ -137,9 +137,9 @@
 
 {% block scripts %}
 <!-- highlight.js -->
-<link id="hljs-theme-light" rel="stylesheet" href="/assets/hljs-light.css">
-<link id="hljs-theme-dark"  rel="stylesheet" href="/assets/hljs-dark.css" disabled>
-<script src="/assets/highlight.js" defer></script>
+<link id="hljs-theme-light" rel="stylesheet" href="{{ site.url }}/assets/hljs-light.css">
+<link id="hljs-theme-dark"  rel="stylesheet" href="{{ site.url }}/assets/hljs-dark.css" disabled>
+<script src="{{ site.url }}/assets/highlight.js" defer></script>
 <!-- TOC builder -->
-<script src="/assets/toc.js" defer></script>
+<script src="{{ site.url }}/assets/toc.js" defer></script>
 {% endblock %}

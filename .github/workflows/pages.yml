@@ -52,6 +52,13 @@ jobs:
           cp themes/forge/*.html guss-website/templates/
           cp -r themes/forge/assets guss-website/templates/assets
 
+      - name: Set site URL for GitHub Pages
+        run: |
+          OWNER="${{ github.repository_owner }}"
+          REPO="${GITHUB_REPOSITORY#*/}"
+          BASE_URL="https://${OWNER}.github.io/${REPO}"
+          sed -i "s|  url: \"[^\"]*\"|  url: \"${BASE_URL}\"|" guss-website/guss.yaml
+
       - name: Build guss-website
         run: cd guss-website && ../bin/guss build
 
