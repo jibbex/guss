@@ -22,9 +22,15 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         python3 \
         libssl-dev \
         libomp-dev \
-        ca-certificates
+        ca-certificates \
+        curl
 
 RUN git config --global --add safe.directory /app
+
+# ── Frontend toolchain (bun + Tailwind CSS standalone binary) ─────────────────
+COPY --from=oven/bun:latest /usr/local/bin/bun /usr/local/bin/bun
+RUN curl -fsSL https://github.com/tailwindlabs/tailwindcss/releases/download/v4.2.2/tailwindcss-linux-x64 \
+        -o /usr/local/bin/tailwindcss && chmod +x /usr/local/bin/tailwindcss
 
 # ── Stage 2: CPM source cache ────────────────────────────────────────────────
 # Runs cmake configure-only (no compilation) to download all CPM packages

@@ -222,7 +222,7 @@ The monotonic arena is the key performance feature. `pmr::unordered_map` for `{%
 OpenMP distributes pages across all available CPU cores:
 
 ```cpp
-#pragma omp parallel for schedule(dynamic)
+##pragma omp parallel for schedule(dynamic)
 for (size_t i = 0; i < pages.size(); ++i) {
     // Each thread: own Context, own arena, shared site data
 }
@@ -286,6 +286,57 @@ For a site with 40 posts, 33 tags, 1 author, 2 pages (76 total items, 80 output 
 The render phase — the part with the custom compiler, the arenas, the parallelism — is a rounding error in the total time. This is by design. The engine is so fast that the network is the only bottleneck left.
 
 For local Markdown sources with no network involved, total build times drop to double-digit milliseconds.
+
+#### Guss vs Gatsby — Same Content, Same CMS, Same Hardware
+
+My blog currently runs on Gatsby 5 with a Ghost CMS backend. Both Guss and Gatsby fetch from the same Ghost instance on the same machine. This is not a synthetic benchmark — it's the same site, built by two different tools.
+
+Gatsby's cached build (no image processing, all assets already generated):
+
+```
+success load plugins - 0.402s
+success source and transform nodes - 0.402s
+warn  createResolvers passed resolvers for type that doesn't exist in the schema
+success building schema - 0.353s
+success extract queries from components - 0.928s
+warn  The GraphQL query in the non-page component will not be run
+warn  Browserslist: caniuse-lite is outdated
+warn  `isModuleDeclaration` has been deprecated
+success Building production JavaScript and CSS bundles - 4.420s
+success Building static HTML for pages - 0.300s - 89/89 297.08/s
+info Done building in 9.88 sec
+```
+
+Guss building the same content:
+
+```
+[2026-03-25 21:46:54.175] [console] [info] 🔥 GUSS BUILD, WITNESS PERFECTION
+[2026-03-25 21:46:54.176] [console] [info] Phase 1: Fetching content from rest_api
+[2026-03-25 21:46:54.700] [console] [info] RestCmsAdapter: fetched 4 collections
+[2026-03-25 21:46:54.700] [console] [info]   tags: 33  authors: 1  pages: 2  posts: 41
+[2026-03-25 21:46:54.701] [console] [info] Phase 3: Rendering templates
+[2026-03-25 21:46:54.704] [console] [info] Phase 4: Writing 82 files
+[==================================================] 100% [00m:00s] Writing files...
+[2026-03-25 21:46:54.756] [console] [info] Build complete in 506ms (77 items, 5 archives, 2 extras, 0 minified)
+```
+
+|                        | Gatsby (cached)             | Guss             |
+|------------------------|-----------------------------|------------------|
+| **Total build time**   | 9.88s                       | 506ms            |
+| **HTML rendering**     | 300ms (89 pages)            | <1ms (82 pages)  |
+| **Speed factor**       | 1×                          | **~20× faster**  |
+| **HTML render factor** | 1×                          | **~300× faster** |
+| **Warnings**           | 4                           | 0                |
+| **Runtime**            | Node.js + GraphQL + webpack | Single binary    |
+| **Dependencies**       | node_modules                | Zero             |
+
+The total build comparison is striking enough: ~20× faster. But the HTML rendering comparison is the one worth pausing on. Gatsby's static HTML generation step — "Building static HTML for pages" — takes 300ms for 89 pages. Guss renders 82 pages in under 1ms. That's a 300× difference in the step where the template engine is doing actual work.
+
+The reason is architectural. Gatsby renders pages through React's server-side rendering pipeline, which involves a JavaScript VM, a virtual DOM, component tree reconciliation, and garbage collection. Guss executes pre-compiled bytecode against a fixed stack with an 8 KiB arena context. There is no VM, no DOM, no GC. The bytecode executor is a tight `switch` loop touching only integers until the moment it writes output to a buffer.
+
+Gatsby's remaining 9.58 seconds are consumed by plugin loading, GraphQL schema construction, query extraction and execution, and webpack bundling. Guss has no equivalent steps — there is no plugin system, no query layer, no bundler. Data arrives as JSON, gets converted to `Value`, and flows directly through the pipeline.
+
+Note: this comparison uses Gatsby's cached build, which excludes the 58-second image thumbnail generation step from a clean build. Guss does not currently support image optimization, so the cached numbers are the fair comparison.
 
 ---
 
