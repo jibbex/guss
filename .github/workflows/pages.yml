@@ -54,9 +54,7 @@ jobs:
 
       - name: Set site URL for GitHub Pages
         run: |
-          OWNER="${{ github.repository_owner }}"
-          REPO="${GITHUB_REPOSITORY#*/}"
-          BASE_URL="https://${OWNER}.github.io/${REPO}"
+          BASE_URL="https://derguss.dev"
           sed -i "s|^  url: \"[^\"]*\"|  url: \"${BASE_URL}\"|" guss-website/guss.yaml
 
       - name: Build guss-website
