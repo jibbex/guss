@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 #include "guss/builder/generators.hpp"
 #include "guss/core/value.hpp"
+#include "guss/core/config.hpp"
 #include <filesystem>
 #include <unordered_map>
 
@@ -152,4 +153,58 @@ TEST(GenerateRssXml, SortedDescendingByPublishedAt) {
     const auto pos_new = xml.find("New");
     const auto pos_old = xml.find("Old");
     EXPECT_LT(pos_new, pos_old) << "newer item must appear first in feed";
+}
+
+TEST(GenerateRobotsTxt, Empty) {
+    auto make_robots_cfg = []() {
+        config::RobotsTxtConfig cfg;
+        return cfg;
+    };
+    const auto txt = generate_robots_txt(make_robots_cfg());
+    EXPECT_NE(txt.find("User-agent: *"), std::string::npos);
+}
+
+TEST(GenerateRobotsTxt, SiteMap) {
+    auto make_robots_cfg = []() {
+        config::RobotsTxtConfig cfg;
+        cfg.sitemap_url = "https://example.com/sitemap.xml";
+        return cfg;
+    };
+    const auto txt = generate_robots_txt(make_robots_cfg());
+    EXPECT_NE(txt.find("User-agent: *"), std::string::npos);
+    EXPECT_NE(txt.find("Sitemap: https://example.com/sitemap.xml"), std::string::npos);
+}
+
+TEST(GenerateRobotsTxt, Agents) {
+    auto make_robots_cfg = []() {
+        config::RobotsTxtConfig cfg;
+        for (const auto& agent : {
+            config::UserAgent{
+                .name = "*",
+                .allow_paths = {"/"},
+            },
+            config::UserAgent{
+                .name = "Googlebot",
+                .disallow_paths = {"/private", "/tmp"},
+                .allow_paths = {"/public"},
+            },
+            config::UserAgent{
+                .name = "BadBot",
+                .disallow_paths = {"/"},
+                .crawl_delay_sec = 10,
+            },
+        }) cfg.agents.push_back(std::move(agent));
+        return cfg;
+    };
+
+    const auto txt = generate_robots_txt(make_robots_cfg());
+    EXPECT_NE(txt.find("User-agent: *"), std::string::npos);
+    EXPECT_NE(txt.find("Allow: /"), std::string::npos);
+    EXPECT_NE(txt.find("User-agent: Googlebot"), std::string::npos);
+    EXPECT_NE(txt.find("Disallow: /private"), std::string::npos);
+    EXPECT_NE(txt.find("Disallow: /tmp"), std::string::npos);
+    EXPECT_NE(txt.find("Allow: /public"), std::string::npos);
+    EXPECT_NE(txt.find("User-agent: BadBot"), std::string::npos);
+    EXPECT_NE(txt.find("Disallow: /"), std::string::npos);
+    EXPECT_NE(txt.find("Crawl-delay: 10"), std::string::npos);
 }

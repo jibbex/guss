@@ -22,6 +22,8 @@
 
 namespace guss::core::config {
 
+constexpr int SECONDS_PER_DAY = 0x15180; ///< 24 * 60 * 60 seconds
+
 // ---------------------------------------------------------------------------
 // Auth configuration
 // ---------------------------------------------------------------------------
@@ -153,7 +155,7 @@ using CrossRefCfgMap = std::unordered_map<std::string, CrossRefConfig>;
  */
 struct RestApiConfig {
     std::string      base_url;
-    int              timeout_ms = 30000;
+    int		         timeout_ms = 30000;
     AuthConfig       auth;
     PaginationConfig pagination;
     EndpointCfgMap   endpoints;
@@ -198,11 +200,30 @@ struct WatchConfig {
 };
 
 /**
+ * \brief UserAgent configuration
+ */
+struct UserAgent {
+	std::string 				name;
+	std::vector<std::string> 	disallow_paths;
+	std::vector<std::string> 	allow_paths;
+	std::optional<int> 			crawl_delay_sec;
+};
+
+/**
+ * \brief robots.txt configuration for controlling crawler access.
+ */
+struct RobotsTxtConfig {
+	std::vector<UserAgent> 		agents;
+	std::optional<std::string> 	sitemap_url;
+};
+
+/**
  * \brief Output and generation settings.
  */
 struct OutputConfig {
     std::filesystem::path output_dir    = "./dist";
     std::filesystem::path assets_dir    = "./assets";
+	RobotsTxtConfig robots_txt			= {};
     bool generate_sitemap               = true;
     bool generate_rss                   = true;
     bool minify_html                    = false;
@@ -248,6 +269,9 @@ struct NavItem {
     bool        external = false;
 };
 
+/**
+ * \brief Site configuration.
+ */
 struct SiteConfig {
     std::string title;
     std::string description;

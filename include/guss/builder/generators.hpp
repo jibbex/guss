@@ -4,6 +4,7 @@
  */
 #pragma once
 
+#include "guss/core/config.hpp"
 #include "guss/core/render_item.hpp"
 #include "guss/core/value.hpp"
 
@@ -55,5 +56,18 @@ std::string generate_rss_xml(
     const std::vector<core::RenderItem>& items,
     std::string_view base_url,
     const core::Value& site);
+
+/**
+ * \brief Generate a robots.txt body from the given crawler-access configuration.
+ *
+ * \details
+ * Produces a standards-compliant robots.txt string containing one or more
+ * User-agent / Disallow directive blocks as described by \p cfg.agents.
+ * If \p cfg.sitemap_url is set, a Sitemap directive is appended at the end.
+ *
+ * \param[in] cfg      robots.txt configuration (user-agent rules and optional sitemap URL).
+ * \retval std::string Complete robots.txt file content, ready to be written to disk.
+ */
+std::string generate_robots_txt(const core::config::RobotsTxtConfig& cfg);
 
 } // namespace guss::builder

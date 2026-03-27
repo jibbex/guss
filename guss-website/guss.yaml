@@ -35,6 +35,12 @@ source:
 output:
   output_dir: "dist"
   copy_assets: true
+  robots_txt:
+    agents:
+      - name: "*"
+        allow_paths:
+          - "/"
+    sitemap_url: "https://derguss.dev/sitemap.xml"
 
 collections:
   pages:

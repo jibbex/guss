@@ -114,6 +114,11 @@ std::expected<BuildStats, core::error::Error> Pipeline::build(const ProgressCall
             spdlog::warn("RSS generation failed: {}", rss_result.error().format());
     }
 
+    // Robots.txt
+    auto robots_result = generate_robots_txt();
+    if (!robots_result)
+        spdlog::warn("robots.txt generation failed: {}", robots_result.error().format());
+
     stats.total_duration = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now() - total_start);
 
@@ -492,7 +497,7 @@ core::error::VoidResult Pipeline::generate_sitemap(
     stats.extras_generated++;
     const size_t url_count = std::count_if(files.begin(), files.end(),
         [](const auto& p) { return !p.first.empty(); });
-    spdlog::info("Generated sitemap.xml ({} URLs)", url_count);
+    spdlog::debug("Generated sitemap.xml ({} URLs)", url_count);
     return {};
 }
 
@@ -513,8 +518,24 @@ core::error::VoidResult Pipeline::generate_rss(
 
     f << xml;
     stats.extras_generated++;
-    spdlog::info("Generated feed.xml");
+    spdlog::debug("Generated feed.xml");
     return {};
+}
+
+core::error::VoidResult Pipeline::generate_robots_txt() const {
+    const std::string content = guss::builder::generate_robots_txt(output_config_.robots_txt);
+
+    auto out_path = output_config_.output_dir / "robots.txt";
+    std::ofstream f(out_path);
+    if (!f) return core::error::make_error(
+        core::error::ErrorCode::FileWriteError,
+        "Failed to write robots.txt",
+        out_path.string());
+
+    f << content;
+    spdlog::debug("Generated robots.txt");
+    return {};
+
 }
 
 } // namespace guss::builder

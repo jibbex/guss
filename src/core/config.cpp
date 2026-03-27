@@ -36,6 +36,15 @@ bool get_bool(const YAML::Node& node, const std::string& key, bool default_value
     return default_value;
 }
 
+std::vector<std::string> get_list(const YAML::Node& node, std::string_view key) {
+    std::vector<std::string> list;
+    if (node[key] && node[key].IsSequence()) {
+        for (const auto& path : node[key])
+            list.push_back(std::move(path.as<std::string>()));
+    }
+    return list;
+}
+
 SiteConfig parse_site_config(const YAML::Node& node) {
     SiteConfig cfg{};
     if (!node) return cfg;
@@ -209,6 +218,36 @@ WatchConfig parse_watch_config(const YAML::Node& node) {
     return cfg;
 }
 
+
+
+RobotsTxtConfig parse_robots_config(const YAML::Node& node) {
+    RobotsTxtConfig cfg;
+    if (!node) return cfg;
+
+    const auto parse_delay = [](const YAML::Node& ua) -> std::optional<int> {
+        if (ua["crawl_delay"]) {
+            int delay = ua["crawl_delay"].as<int>();
+            if (delay >= 0 && delay <= SECONDS_PER_DAY)
+                return delay;
+        }
+        return std::nullopt;
+    };
+
+    if (node["agents"] && node["agents"].IsSequence()) {
+        for (const auto& ua : node["agents"]) {
+            cfg.agents.emplace_back(UserAgent{
+                .name = get_string(ua, "name"),
+                .disallow_paths = get_list(ua, "disallow_paths"),
+                .allow_paths = get_list(ua, "allow_paths"),
+                .crawl_delay_sec = parse_delay(ua),
+            });
+        }
+    }
+
+    cfg.sitemap_url = get_optional_string(node, "sitemap_url");
+    return cfg;
+}
+
 OutputConfig parse_output_config(const YAML::Node& node) {
     OutputConfig cfg;
     if (!node) return cfg;
@@ -219,6 +258,7 @@ OutputConfig parse_output_config(const YAML::Node& node) {
     cfg.generate_rss     = get_bool(node, "generate_rss", true);
     cfg.minify_html      = get_bool(node, "minify_html", false);
     cfg.copy_assets      = get_bool(node, "copy_assets", true);
+    cfg.robots_txt       = parse_robots_config(node["robots_txt"]);
     return cfg;
 }
 
@@ -259,13 +299,13 @@ Config::Config(std::string_view config_path)
         return;
     }
 
-    site_             = parse_site_config(root["site"]);
-    adapter_          = parse_adapter_config(root["source"]);
-    watch_            = parse_watch_config(root["watch"]);
-    output_           = parse_output_config(root["output"]);
-    collections_      = parse_collections_config(root["collections"]);
-    parallel_workers_ = get_int(root, "parallel_workers", 0);
-    log_level_        = get_string(root, "log_level", "info");
+    site_               = parse_site_config(root["site"]);
+    adapter_            = parse_adapter_config(root["source"]);
+    watch_              = parse_watch_config(root["watch"]);
+    output_             = parse_output_config(root["output"]);
+    collections_        = parse_collections_config(root["collections"]);
+    parallel_workers_   = get_int(root, "parallel_workers", 0);
+    log_level_          = get_string(root, "log_level", "info");
 }
 
 error::Result<Config> load_config(const std::filesystem::path& path) {

@@ -123,6 +123,22 @@ output:
   generate_sitemap: false
   generate_rss: true
   minify_html: true
+  robots_txt:
+    sitemap_url: "https://example.com/sitemap.xml"
+    agents:
+      - name: "*"
+        allow_paths:
+          - "/"
+      - name: "GoogleBot"
+        allow_paths:
+          - "/public"
+          - "/docs"
+        disallow_paths:
+          - "/private"
+      - name: "BadBot"
+        disallow_paths:
+          - "/"
+        crawl_delay: 10
 )");
 
     auto path = test_dir_ / "guss.yaml";
@@ -130,6 +146,22 @@ output:
     guss::core::config::Config config(path_str);
 
     EXPECT_EQ(config.output().output_dir, "./public");
+    EXPECT_EQ(config.output().robots_txt.sitemap_url, "https://example.com/sitemap.xml");
+    EXPECT_EQ(config.output().robots_txt.agents.size(), 3u);
+    EXPECT_EQ(config.output().robots_txt.agents[0].name, "*");
+    EXPECT_EQ(config.output().robots_txt.agents[0].allow_paths.size(), 1u);
+    EXPECT_EQ(config.output().robots_txt.agents[0].allow_paths[0], "/");
+    EXPECT_EQ(config.output().robots_txt.agents[1].name, "GoogleBot");
+    EXPECT_EQ(config.output().robots_txt.agents[1].allow_paths.size(), 2u);
+    EXPECT_EQ(config.output().robots_txt.agents[1].allow_paths[0], "/public");
+    EXPECT_EQ(config.output().robots_txt.agents[1].allow_paths[1], "/docs");
+    EXPECT_EQ(config.output().robots_txt.agents[1].disallow_paths.size(), 1u);
+    EXPECT_EQ(config.output().robots_txt.agents[1].disallow_paths[0], "/private");
+    EXPECT_EQ(config.output().robots_txt.agents[2].name, "BadBot");
+    EXPECT_EQ(config.output().robots_txt.agents[2].disallow_paths.size(), 1u);
+    EXPECT_EQ(config.output().robots_txt.agents[2].disallow_paths[0], "/");
+    EXPECT_TRUE(config.output().robots_txt.agents[2].crawl_delay_sec.has_value());
+    EXPECT_EQ(config.output().robots_txt.agents[2].crawl_delay_sec.value(), 10);
     EXPECT_FALSE(config.output().generate_sitemap);
     EXPECT_TRUE(config.output().generate_rss);
     EXPECT_TRUE(config.output().minify_html);

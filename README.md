@@ -661,7 +661,15 @@ output:
   generate_sitemap: true
   generate_rss:     true
   copy_assets:      true
-
+  robots_txt:       
+    sitemap_url: "https://example.com/sitemap.xml"
+    agents:
+      - name: "*"
+        allow_paths:
+          - "/"
+        disallow_paths:
+          - "/admin/"
+        Crawl_delay: 5
 
 # ─────────────────────────────────────────────────────────────
 # BUILD

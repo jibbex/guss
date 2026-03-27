@@ -112,6 +112,8 @@ private:
                  const core::Value& site,
                  BuildStats& stats) const;
 
+	[[nodiscard]] core::error::VoidResult generate_robots_txt() const;
+
     adapters::AdapterPtr              adapter_;
     core::config::SiteConfig          site_config_;
     core::config::CollectionCfgMap    collections_;

@@ -245,4 +245,30 @@ std::string generate_rss_xml(
     return xml;
 }
 
+std::string generate_robots_txt(const core::config::RobotsTxtConfig& cfg) {
+    std::string txt;
+
+    if (cfg.agents.empty()) {
+        txt += "User-agent: *\n";
+    } else {
+        for (const auto& ua : cfg.agents) {
+            txt += "User-agent: " + ua.name + "\n";
+            if (!ua.disallow_paths.empty())
+                for (const auto& path : ua.disallow_paths)
+                    txt += "Disallow: " + path + "\n";
+            if (!ua.allow_paths.empty())
+                for (const auto& path : ua.allow_paths)
+                    txt += "Allow: " + path + "\n";
+            if (ua.crawl_delay_sec.has_value())
+                txt += "Crawl-delay: " + std::to_string(ua.crawl_delay_sec.value()) + "\n";
+        }
+    }
+
+    if (cfg.sitemap_url.has_value()) {
+        txt += "Sitemap: " + cfg.sitemap_url.value() + "\n";
+    }
+
+    return txt;
+}
+
 } // namespace guss::builder
