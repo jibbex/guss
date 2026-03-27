@@ -1,13 +1,14 @@
 /**
- * @file main.cpp
- * @brief CLI entry point for Guss SSG.
+ * \file main.cpp
+ * \brief CLI entry point for Guss SSG.
  *
- * @details
+ * \details
  * Commands:
  * - guss init [directory] - Scaffold a new Guss project
  * - guss build [-c config] [-v] - Run the full build pipeline
  * - guss ping [-c config] - Test CMS connection
  * - guss clean [-c config] - Clean output directory
+ * - guss serve [-d directory] - Spin up development server
  */
 
 #include <CLI/CLI.hpp>
