@@ -1,10 +1,18 @@
 # 🔥 Guss
 
+<div align="right">
+
+![Build](https://img.shields.io/badge/build-FORGED-brightgreen) ![Performance](https://img.shields.io/badge/threads-ALL%20OF%20THEM-blue) ![C++](https://img.shields.io/badge/C%2B%2B-23-red)
+
+</div>
+
 > **I Am** Not A Static Site Generator. **I AM STATIC SITE GENERATION ITSELF!**
 
-![Build](https://img.shields.io/badge/build-FORGED-brightgreen)
-![Performance](https://img.shields.io/badge/threads-ALL%20OF%20THEM-blue)
-![C++](https://img.shields.io/badge/C%2B%2B-23-red)
+<div align="center">
+
+[derguss.dev](https://derguss.dev)
+
+</div>
 
 ## 🌋 What Is This?
 
