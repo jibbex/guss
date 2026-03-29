@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="{{ site.language }}" class="">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ site.title }}{% endblock %}</title>
+    <meta name="description" content="{% block description %}{{ site.description }}{% endblock %}">
+
+    {% block og %}
+    <meta property="og:site_name" content="{{ site.title }}">
+    <meta property="og:title" content="{% block og_title %}{{ site.title }}{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}{{ site.description }}{% endblock %}">
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    {% if site.cover_image %}
+    <meta property="og:image" content="{{ site.cover_image }}">
+    {% endif %}
+    {% if site.url %}
+    <meta property="og:url" content="{{ site.url }}">
+    {% endif %}
+    {% endblock %}
+
+    <link rel="alternate" type="application/rss+xml" title="{{ site.title }}" href="/rss.xml">
+    <link rel="stylesheet" href="/assets/style.css">
+
+    {% block extra_head %}{% endblock %}
+
+    <script>
+        (function initTheme() {
+            const stored = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (stored === 'dark' || (!stored && prefersDark)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+</head>
+<body class="bg-surface dark:bg-surface-dark text-on-surface dark:text-on-surface-dark transition-colors duration-300 flex flex-col min-h-screen">
+
+{% block above_nav %}{% endblock %}
+
+<!-- ══════════════════════════════════════════════════════
+     NAVBAR
+══════════════════════════════════════════════════════ -->
+<nav x-data="nav" class="fixed top-0 inset-x-0 z-50 border-b border-outline/50 dark:border-outline-dark/50 bg-surface/80 dark:bg-surface-dark/80 backdrop-blur-xl">
+    <div class="mx-auto max-w-7xl px-6 flex h-16 items-center justify-between gap-6">
+
+        <a href="/" class="font-thin tracking-tight text-2xl italic text-on-surface-strong dark:text-on-surface-dark-strong hover:text-primary dark:hover:text-primary-dark transition-colors">
+            {{ site.title }}
+        </a>
+
+        <ul class="hidden md:flex items-center gap-1 text-sm font-medium">
+            <li><a href="/" class="px-4 py-2 rounded-full text-on-surface dark:text-on-surface-dark hover:bg-surface-alt dark:hover:bg-surface-dark-alt hover:text-on-surface-strong dark:hover:text-on-surface-dark-strong transition-colors">Home</a></li>
+        </ul>
+
+        <div class="flex items-center gap-3">
+            <button x-bind="themeToggle" type="button" aria-label="Toggle theme"
+                    class="size-9 rounded-full border border-outline dark:border-outline-dark bg-surface-alt dark:bg-surface-dark-alt grid place-items-center text-on-surface dark:text-on-surface-dark hover:border-primary dark:hover:border-primary-dark hover:text-primary dark:hover:text-primary-dark transition-all hover:scale-110">
+                <svg class="dark:hidden size-[1.1rem]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/>
+                </svg>
+                <svg class="hidden dark:block size-[1.1rem]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2m0 14v2M3 12H1m22 0h-2m-2.636-6.364-1.414 1.414M6.05 17.95l-1.414 1.414m0-12.728 1.414 1.414M17.95 17.95l1.414 1.414M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"/>
+                </svg>
+            </button>
+
+            <!-- Mobile menu button -->
+            <button  x-on:click="toggle" x-bind:class="open ? 'fixed top-4 right-6 z-50' : ''"
+                    type="button" aria-label="Menu"
+                    class="md:hidden size-9 grid place-items-center rounded-full border border-outline dark:border-outline-dark bg-surface-alt dark:bg-surface-dark-alt text-on-surface dark:text-on-surface-dark hover:text-primary dark:hover:text-primary-dark transition-colors">
+                <svg x-cloak x-show="!open" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg>
+                <svg x-cloak x-show="open"  xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Mobile menu dropdown -->
+    <div x-cloak x-show="open"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 -translate-y-2"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-end="opacity-0 -translate-y-2"
+         class="border-t border-outline dark:border-outline-dark bg-surface dark:bg-surface-dark px-6 py-5 md:hidden">
+        <a href="/" class="block py-2 text-sm font-medium text-on-surface dark:text-on-surface-dark hover:text-primary dark:hover:text-primary-dark">Home</a>
+    </div>
+</nav>
+
+<main class="flex-1">
+<!-- Page content -->
+{% block content %}{% endblock %}
+</main>
+
+<footer class="border-t border-outline dark:border-outline-dark mt-8">
+    <div class="mx-auto max-w-7xl px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-on-surface-muted dark:text-on-surface-dark-muted">
+        <span class="font-semibold text-on-surface-strong dark:text-on-surface-dark-strong">{{ site.title }}</span>
+        <nav class="flex items-center gap-6 flex-wrap justify-center sm:justify-end">
+            {% for link in site.navigation.footer %}
+                <a href="{{ link.url }}" {% if link.external %}target="_blank"{% endif %} class="hover:text-primary dark:hover:text-primary-dark transition-colors no-underline">
+                    {{ link.label }}
+                </a>
+            {% endfor %}
+        </nav>
+    </div>
+</footer>
+
+<!-- Back to top button -->
+<button x-data="backToTop"
+        x-show="visible"
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 translate-y-4"
+        x-transition:enter-end="opacity-100 translate-y-0"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-end="opacity-0 translate-y-4"
+        x-on:click="scrollToTop()"
+        type="button" aria-label="Scroll to top"
+        class="fixed bottom-8 right-8 z-50 size-11 rounded-full border border-outline dark:border-outline-dark bg-surface-elevated dark:bg-surface-dark-elevated shadow-lg shadow-primary/10 dark:shadow-black/30 grid place-items-center text-on-surface dark:text-on-surface-dark hover:border-primary dark:hover:border-primary-dark hover:text-primary dark:hover:text-primary-dark hover:scale-110 transition-all"
+        x-cloak>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="size-4">
+        <path fill-rule="evenodd" d="M8 14a.75.75 0 0 1-.75-.75V4.56L4.03 7.78a.75.75 0 0 1-1.06-1.06l4.5-4.5a.75.75 0 0 1 1.06 0l4.5 4.5a.75.75 0 0 1-1.06 1.06L8.75 4.56v8.69A.75.75 0 0 1 8 14Z" clip-rule="evenodd"/>
+    </svg>
+</button>
+
+<script defer src="/assets/main.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

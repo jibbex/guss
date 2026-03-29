@@ -1,0 +1,10 @@
+{
+  "name": "pinguin",
+  "private": true,
+  "dependencies": {
+    "@alpinejs/csp": "^3.15.8",
+    "@fontsource-variable/inter": "^5.0.0",
+    "@fontsource/jetbrains-mono": "^5.0.0",
+    "highlight.js": "^11.9.0"
+  }
+}
