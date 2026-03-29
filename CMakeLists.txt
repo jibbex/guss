@@ -269,57 +269,57 @@ file(WRITE "${_constants_out}" "\
 namespace guss::cli {
 
 /// \\brief Embedded content of themes/pinguin/index.html
-constexpr std::string_view DEFAULT_INDEX_TEMPLATE = R\"(
+constexpr std::string_view DEFAULT_INDEX_TEMPLATE = R\"RAW(
 ${_tpl_index}
-)\";
+)RAW\";
 
 /// \\brief Embedded content of themes/pinguin/post.html
-constexpr std::string_view DEFAULT_POST_TEMPLATE = R\"(
+constexpr std::string_view DEFAULT_POST_TEMPLATE = R\"RAW(
 ${_tpl_post}
-)\";
+)RAW\";
 
 /// \\brief Embedded content of themes/pinguin/page.html
-constexpr std::string_view DEFAULT_PAGE_TEMPLATE = R\"(
+constexpr std::string_view DEFAULT_PAGE_TEMPLATE = R\"RAW(
 ${_tpl_page}
-)\";
+)RAW\";
 
 /// \\brief Embedded content of themes/pinguin/tag.html
-constexpr std::string_view DEFAULT_TAG_TEMPLATE = R\"(
+constexpr std::string_view DEFAULT_TAG_TEMPLATE = R\"RAW(
 ${_tpl_tag}
-)\";
+)RAW\";
 
 /// \\brief Embedded content of themes/pinguin/author.html
-constexpr std::string_view DEFAULT_AUTHOR_TEMPLATE = R\"(
+constexpr std::string_view DEFAULT_AUTHOR_TEMPLATE = R\"RAW(
 ${_tpl_author}
-)\";
+)RAW\";
 
 /// \\brief Embedded content of themes/pinguin/assets/style.css
-constexpr std::string_view DEFAULT_STYLE_CSS = R\"(
+constexpr std::string_view DEFAULT_STYLE_CSS = R\"RAW(
 ${_tpl_style}
-)\";
+)RAW\";
 
 /// \\brief Embedded content of themes/pinguin/assets/main.js
-constexpr std::string_view DEFAULT_MAIN_JS = R\"(
+constexpr std::string_view DEFAULT_MAIN_JS = R\"RAW(
 ${_tpl_main_js}
-)\";
+)RAW\";
 
 /// \\brief Embedded content of themes/pinguin/assets/reveal.js
-constexpr std::string_view DEFAULT_REVEAL_JS = R\"(
+constexpr std::string_view DEFAULT_REVEAL_JS = R\"RAW(
 ${_tpl_reveal_js}
-)\";
+)RAW\";
 
 /// \\brief Embedded content of themes/pinguin/assets/reading-progress.js
-constexpr std::string_view DEFAULT_READING_PROGRESS_JS = R\"(
+constexpr std::string_view DEFAULT_READING_PROGRESS_JS = R\"RAW(
 ${_tpl_reading_progress_js}
-)\";
+)RAW\";
 
 /// \\brief Embedded content of themes/pinguin/assets/toc.js
-constexpr std::string_view DEFAULT_TOC_JS = R\"(
+constexpr std::string_view DEFAULT_TOC_JS = R\"RAW(
 ${_tpl_toc_js}
-)\";
+)RAW\";
 
 /// \\brief Default guss.yaml written by guss init
-constexpr std::string_view DEFAULT_CONFIG = R\"(
+constexpr std::string_view DEFAULT_CONFIG = R\"RAW(
 # ─────────────────────────────────────────────────────────────
 # SITE METADATA
 # Populates the \"site\" variable in every template.
@@ -509,7 +509,7 @@ output:
 # BUILD
 # ─────────────────────────────────────────────────────────────
 parallel_workers: 0      # 0 = auto-detect
-log_level: \"info\"        # debug | info | warn | error)\";
+log_level: \"info\"        # debug | info | warn | error)RAW\";
 
 } // namespace guss::cli
 ")
