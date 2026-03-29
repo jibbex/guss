@@ -131,9 +131,6 @@
     }
 }
 
-html {
-    font-size: 1.2rem;
-}
 /* ── Page scrollbar: visible while scrolling (JS-driven) ── */
 /* Firefox — transition works here */
 html {
@@ -236,7 +233,7 @@ pre:hover::-webkit-scrollbar-thumb:hover {
 
 /* ── Prose (post/page body) ───────────────────── */
 html, body {
-    @apply text-lg;
+    font-size: 1.2rem;
     scroll-behavior: smooth;
 }
 
