@@ -46,25 +46,25 @@
     <!-- ── Stats bar ── -->
     <div class="border-y border-subtle bg-surface">
         <div class="anim-up max-w-6xl mx-auto flex flex-wrap justify-center">
-            <div class="flex flex-col items-center px-10 py-6 border-r border-subtle last:border-r-0">
-                <span class="gradient-text text-3xl font-black tracking-tight counter" data-target="506" data-suffix="ms">506ms</span>
-                <span class="text-muted uppercase tracking-widest mt-1" style="font-size:0.75rem">76 items + archives</span>
-            </div>
-            <div class="flex flex-col items-center px-10 py-6 border-r border-subtle last:border-r-0">
-                <span class="gradient-text text-3xl font-black tracking-tight">C++23</span>
-                <span class="text-muted uppercase tracking-widest mt-1" style="font-size:0.75rem">zero runtime</span>
-            </div>
-            <div class="flex flex-col items-center px-10 py-6 border-r border-subtle last:border-r-0">
-                <span class="gradient-text text-3xl font-black tracking-tight counter" data-target="27">27</span>
-                <span class="text-muted uppercase tracking-widest mt-1" style="font-size:0.75rem">template filters</span>
-            </div>
-            <div class="flex flex-col items-center px-10 py-6 border-r border-subtle last:border-r-0">
-                <span class="gradient-text text-3xl font-black tracking-tight">4-phase</span>
-                <span class="text-muted uppercase tracking-widest mt-1" style="font-size:0.75rem">build pipeline</span>
+            <div class="flex flex-col items-center px-10 py-6">
+                <span class="gradient-text text-center text-3xl font-black tracking-tight counter" data-target="506" data-suffix="ms">506ms</span>
+                <span class="text-muted text-center uppercase tracking-widest mt-1" style="font-size:0.75rem">76 items + archives</span>
             </div>
             <div class="flex flex-col items-center px-10 py-6">
-                <span class="gradient-text text-3xl font-black tracking-tight counter" data-target="8">8</span>
-                <span class="text-muted uppercase tracking-widest mt-1" style="font-size:0.75rem">pagination strategies</span>
+                <span class="gradient-text text-center text-3xl font-black tracking-tight">C++23</span>
+                <span class="text-muted text-center uppercase tracking-widest mt-1" style="font-size:0.75rem">zero runtime</span>
+            </div>
+            <div class="flex flex-col items-center px-10 py-6">
+                <span class="gradient-text text-center text-3xl font-black tracking-tight counter" data-target="27">27</span>
+                <span class="text-muted text-center uppercase tracking-widest mt-1" style="font-size:0.75rem">template filters</span>
+            </div>
+            <div class="flex flex-col items-center px-10 py-6">
+                <span class="gradient-text text-center text-3xl font-black tracking-tight">4-phase</span>
+                <span class="text-muted text-center uppercase tracking-widest mt-1" style="font-size:0.75rem">build pipeline</span>
+            </div>
+            <div class="flex flex-col items-center px-10 py-6">
+                <span class="gradient-text text-center text-3xl font-black tracking-tight counter" data-target="8">8</span>
+                <span class="text-muted text-center uppercase tracking-widest mt-1" style="font-size:0.75rem">pagination strategies</span>
             </div>
         </div>
     </div>
@@ -97,7 +97,7 @@
                     <div><span style="color:#fbbf24">warn</span> Browserslist: caniuse-lite is outdated</div>
                     <div><span style="color:#fbbf24">warn</span> `isModuleDeclaration` has been deprecated</div>
                     <div>success Building production JavaScript and CSS bundles - 4.420s</div>
-                    <div>success Building static HTML for pages - 0.300s - 89/89 297.08/s</div>
+                    <div>success Building static HTML for pages - 0.300s - 82/82 297.08/s</div>
                     <div class="mt-2" style="color:#e4e4e7">info Done building in <span style="color:#f87171; font-weight:bold">9.88 sec</span></div>
                     <div class="mt-1" style="color:#52525b; font-size:0.7rem">4 warnings · GraphQL · node_modules · webpack</div>
                 </div>
@@ -136,28 +136,28 @@
 
         <p class="anim-up anim-delay-3 text-center text-muted mt-8 text-lg max-w-2xl mx-auto leading-relaxed">
             Gatsby numbers from a cached build (no image processing) on identical hardware against the same Ghost CMS instance.
-            HTML render: Gatsby 300ms for 89 pages vs Guss &lt;1ms for 82 pages.
+            HTML render: Gatsby 300ms vs Guss 3ms. 
         </p>
     </section>
 
     <!-- ── Comparison stats bar ── -->
     <div class="border-y border-subtle bg-surface">
         <div class="anim-up max-w-6xl mx-auto flex flex-wrap justify-center">
-            <div class="flex flex-col items-center px-10 py-6 border-r border-subtle last:border-r-0">
-                <span class="gradient-text text-3xl font-black tracking-tight counter" data-target="20" data-prefix="~" data-suffix="×">20</span>
-                <span class="text-muted uppercase tracking-widest mt-1" style="font-size:0.75rem">faster build</span>
-            </div>
-            <div class="flex flex-col items-center px-10 py-6 border-r border-subtle last:border-r-0">
-                <span class="gradient-text text-3xl font-black tracking-tight counter" data-target="300" data-suffix="×">300</span>
-                <span class="text-muted uppercase tracking-widest mt-1" style="font-size:0.75rem">faster HTML render</span>
-            </div>
-            <div class="flex flex-col items-center px-10 py-6 border-r border-subtle last:border-r-0">
-                <span class="gradient-text text-3xl font-black tracking-tight counter" data-target="0">0</span>
-                <span class="text-muted uppercase tracking-widest mt-1" style="font-size:0.75rem">warnings</span>
+            <div class="flex flex-col items-center px-10 py-6">
+                <span class="gradient-text text-center text-3xl font-black tracking-tight counter" data-target="20" data-prefix="~" data-suffix="×">20</span>
+                <span class="text-muted text-center uppercase tracking-widest mt-1" style="font-size:0.75rem">faster build</span>
             </div>
             <div class="flex flex-col items-center px-10 py-6">
-                <span class="gradient-text text-3xl font-black tracking-tight counter" data-target="0">0</span>
-                <span class="text-muted uppercase tracking-widest mt-1" style="font-size:0.75rem">node_modules</span>
+                <span class="gradient-text text-center text-3xl font-black tracking-tight counter" data-target="100" data-suffix="×">100</span>
+                <span class="text-muted text-center uppercase tracking-widest mt-1" style="font-size:0.75rem">faster HTML render</span>
+            </div>
+            <div class="flex flex-col items-center px-10 py-6">
+                <span class="gradient-text text-center text-3xl font-black tracking-tight counter" data-target="0">0</span>
+                <span class="text-muted text-center uppercase tracking-widest mt-1" style="font-size:0.75rem">warnings</span>
+            </div>
+            <div class="flex flex-col items-center px-10 py-6">
+                <span class="gradient-text text-center text-3xl font-black tracking-tight counter" data-target="0">0</span>
+                <span class="text-muted text-center uppercase tracking-widest mt-1" style="font-size:0.75rem">node_modules</span>
             </div>
         </div>
     </div>
@@ -212,33 +212,36 @@
             <h2 class="anim-up text-center text-3xl font-bold tracking-tight text-body mb-12" style="letter-spacing:-0.03em">
                 The full pipeline, nothing extraneous.
             </h2>
-            <div class="flex items-stretch justify-center gap-0 flex-wrap">
+            <div class="flex items-center justify-center gap-2 flex-wrap">
 
-                <div class="anim-up flex flex-1 flex-col items-center px-10 py-8 rounded-xl border border-subtle bg-surface min-w-[160px]">
+                <div class="anim-up flex flex-1 flex-col items-center px-5 py-4 rounded-xl border border-subtle bg-surface">
                     <span class="text-4xl mb-4">⬇</span>
                     <span class="gradient-text font-black text-2xl tracking-tight mb-1">Fetch</span>
                     <span class="text-muted text-lg mt-1">Adapters</span>
                 </div>
-                <div class="flex items-center px-4 text-muted text-3xl font-light">→</div>
+                <div class="md:flex hidden items-center px-2 text-muted text-3xl font-light">→</div>
+                <div class="md:hidden flex w-full justify-center items-center px-4 text-muted text-3xl font-light">↓</div>
 
-                <div class="anim-up anim-delay-1 flex flex-1 flex-col items-center px-10 py-8 rounded-xl border border-subtle bg-surface min-w-[160px]">
+                <div class="anim-up anim-delay-1 flex flex-1 flex-col items-center px-6 py-4 rounded-xl border border-subtle bg-surface">
                     <span class="text-4xl mb-4">⚙</span>
                     <span class="gradient-text font-black text-2xl tracking-tight mb-1">Prepare</span>
                     <span class="text-muted text-lg mt-1">Enrich</span>
                 </div>
-                <div class="flex items-center px-4 text-muted text-3xl font-light">→</div>
+                <div class="md:flex hidden items-center px-2 text-muted text-3xl font-light">→</div>
+                <div class="md:hidden flex w-full justify-center items-center px-4 text-muted text-3xl font-light">↓</div>
 
-                <div class="anim-up anim-delay-2 flex flex-1 flex-col items-center px-10 py-8 rounded-xl border border-subtle bg-surface min-w-[160px]">
+                <div class="anim-up anim-delay-2 flex flex-1 flex-col items-center px-5 py-4 rounded-xl border border-subtle bg-surface">
                     <span class="text-4xl mb-4">⚡</span>
                     <span class="gradient-text font-black text-2xl tracking-tight mb-1">Render</span>
                     <span class="text-muted text-lg mt-1">OpenMP</span>
                 </div>
-                <div class="flex items-center px-4 text-muted text-3xl font-light">→</div>
+                <div class="md:flex hidden items-center px-2 text-muted text-3xl font-light">→</div>
+                <div class="md:hidden flex w-full justify-center items-center px-4 text-muted text-3xl font-light">↓</div>
 
-                <div class="anim-up anim-delay-3 flex flex-1 flex-col items-center px-10 py-8 rounded-xl border border-subtle bg-surface min-w-[160px]">
+                <div class="anim-up anim-delay-3 flex flex-1 flex-col items-center px-5 py-4 rounded-xl border border-subtle bg-surface">
                     <span class="text-4xl mb-4">✓</span>
                     <span class="gradient-text font-black text-2xl tracking-tight mb-1">Write</span>
-                    <span class="text-muted text-lg mt-1">HTML + assets</span>
+                    <span class="text-muted text-lg mt-1">HTML</span>
                 </div>
 
             </div>
@@ -304,11 +307,11 @@
             <p class="anim-up anim-delay-1 text-center text-muted text-xl mb-12 max-w-2xl mx-auto leading-relaxed">
                 Write familiar template syntax. Guss compiles it once, executes it thousands of times — no re-parsing per page.
             </p>
-            <div class="anim-up anim-delay-2 code-showcase rounded-xl overflow-hidden border border-subtle shadow-2xl">
+            <div class="anim-up anim-delay-2 code-showcase rounded-xl border border-subtle shadow-2xl">
                 <!-- Source panel -->
                 <div class="code-showcase-panel">
-                    <div class="code-showcase-label">post.html — template source</div>
-                    <pre class="code-showcase-pre"><code>&#123;% extends "base.html" %&#125;
+                    <div class="code-showcase-label">Template Source</div>
+                    <pre class="code-showcase-pre"><code style="overflow: hidden;">&#123;% extends "base.html" %&#125;
 &#123;% block content %&#125;
 &#123;% set reading = post.html | reading_minutes %&#125;
 
@@ -336,8 +339,8 @@
                 </div>
                 <!-- Output panel -->
                 <div class="code-showcase-panel code-showcase-panel--output">
-                    <div class="code-showcase-label">Rendered HTML — dist/2024/01/hello-world/index.html</div>
-                    <pre class="code-showcase-pre"><code>&lt;article&gt;
+                    <div class="code-showcase-label">Rendered HTML</div>
+                    <pre class="code-showcase-pre"><code style="overflow: hidden;">&lt;article&gt;
   &lt;header&gt;
     &lt;h1&gt;Hello, World!&lt;/h1&gt;
     &lt;time&gt;January 15, 2024&lt;/time&gt;

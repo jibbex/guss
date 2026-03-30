@@ -217,6 +217,8 @@ html {
 /* Tables */
 .prose table {
     width: 100%;
+    display: block;
+    overflow-x: auto;
     border-collapse: collapse;
     margin: 0 0 1.5rem;
     font-size: 1.05rem;
@@ -380,6 +382,7 @@ html {
     padding: 0.75rem 1.25rem;
     border-bottom: 1px solid var(--border);
     background: var(--terminal-chrome);
+    overflow: hidden;
 }
 
 .code-showcase-pre {
@@ -391,6 +394,7 @@ html {
     background: transparent;
     border: none;
     border-radius: 0;
+    overflow: hidden;
 }
 
 .code-showcase-pre code {
@@ -400,6 +404,7 @@ html {
     border: none;
     padding: 0;
     font-size: inherit;
+    overflow: hidden;
 }
 
 /* ── Why C++ grid ── */
