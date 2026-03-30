@@ -407,29 +407,39 @@ void Runtime::execute(
                 break;
 
             case Op::Resolve:
+#ifdef USE_RUNTIME_CHECKS
                 assert(sp < MAX_VALUE_STACK_SIZE && "runtime: value stack overflow");
+#endif
                 stack[sp++] = ctx.resolve(tpl.paths[static_cast<size_t>(instr.operand)]);
                 break;
 
             case Op::Push:
+#ifdef USE_RUNTIME_CHECKS
                 assert(sp < MAX_VALUE_STACK_SIZE && "runtime: value stack overflow");
+#endif
                 stack[sp++] = tpl.constants[static_cast<size_t>(instr.operand)];
                 break;
 
             case Op::Emit:
+#ifdef USE_RUNTIME_CHECKS
                 assert(sp > 0 && "runtime: value stack underflow");
+#endif
                 detail::html_escape_into(stack[--sp].to_string(), out);
                 break;
 
             case Op::EmitRaw:
+#ifdef USE_RUNTIME_CHECKS
                 assert(sp > 0 && "runtime: value stack underflow");
+#endif
                 out += stack[--sp].to_string();
                 break;
 
             case Op::Filter: {
                 const size_t filter_id = static_cast<size_t>(instr.operand >> 8);
                 const size_t arg_count = static_cast<size_t>(instr.operand & 0xFF);
+#ifdef USE_RUNTIME_CHECKS
                 assert(sp >= arg_count + 1 && "runtime: value stack underflow");
+#endif
                 sp -= arg_count;
                 Value& subject = stack[sp - 1];
                 subject = filters_[filter_id](
@@ -440,18 +450,24 @@ void Runtime::execute(
             }
 
             case Op::BinaryOp:
+#ifdef USE_RUNTIME_CHECKS
                 assert(sp >= 2 && "runtime: value stack underflow");
+#endif
                 stack[sp - 2] = eval_binary(instr.operand, stack[sp - 2], stack[sp - 1]);
                 --sp;
                 break;
 
             case Op::UnaryOp:
+#ifdef USE_RUNTIME_CHECKS
                 assert(sp > 0 && "runtime: value stack underflow");
+#endif
                 stack[sp - 1] = eval_unary(instr.operand, stack[sp - 1]);
                 break;
 
             case Op::JumpIfFalse:
+#ifdef USE_RUNTIME_CHECKS
                 assert(sp > 0 && "runtime: value stack underflow");
+#endif
                 if (!stack[--sp].is_truthy()) {
                     pc = static_cast<size_t>(
                         static_cast<int32_t>(pc) + instr.operand - 1);
@@ -464,7 +480,9 @@ void Runtime::execute(
                 break;
 
             case Op::ForBegin: {
+#ifdef USE_RUNTIME_CHECKS
                 assert(lsp < MAX_LOOP_STACK_SIZE && "runtime: loop stack overflow");
+#endif
                 const size_t iterable_idx =
                     static_cast<size_t>((instr.operand >> 16) & 0xFFFF);
                 const size_t var_idx =
@@ -476,7 +494,9 @@ void Runtime::execute(
             }
 
             case Op::ForNext: {
+#ifdef USE_RUNTIME_CHECKS
                 assert(lsp > 0 && "runtime: loop stack underflow");
+#endif
                 LoopFrame& frame = loop_stack[lsp - 1];
                 if (frame.index >= frame.length) {
                     --lsp;
@@ -540,7 +560,7 @@ void Runtime::execute(
                 auto it = cache_.find(inc_name);
                 // Unreachable in correct operation: Runtime::load() pre-loads all includes
                 // and returns an error if any are missing, so execute() is never called
-                // with an un-cached include target.
+                // with an un-cached include target.                
                 assert(it != cache_.end() && "runtime: include target not in cache — pre-load failed silently");
                 if (it == cache_.end()) break;  // Release-build safety net; pre-load should have caught this.
                 execute(it->second, ctx, out, overrides, {});
@@ -550,16 +570,19 @@ void Runtime::execute(
             case Op::Set: {
                 // Unreachable in correct operation: verify_stack_depths() in the compiler
                 // ensures sp > 0 before any Set instruction is reachable.
+#ifdef USE_RUNTIME_CHECKS
                 assert(sp > 0 && "runtime: value stack underflow in Op::Set — compiler bug");
+#endif
                 if (sp == 0) break;  // Release-build safety net; verifier should have caught this.
                 ctx.set(tpl.paths[static_cast<size_t>(instr.operand)], stack[--sp]);
                 break;
             }
 
             case Op::Super: {
+#ifdef USE_RUNTIME_CHECKS
                 assert(sp < MAX_VALUE_STACK_SIZE && "runtime: value stack overflow");
                 if (sp >= MAX_VALUE_STACK_SIZE) break;  // release safety net
-
+#endif
                 if (!super_chain.empty()) {
                     // Render the immediate parent block body into a temporary string,
                     // passing its own ancestor chain for nested super() calls.

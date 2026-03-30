@@ -19,6 +19,7 @@ link_libraries(Threads::Threads)
 # -----------------------------------------------------------------------------
 # Options
 # -----------------------------------------------------------------------------
+option(GUSS_RUNTIME_CHECKS "Build with runtime checks" OFF)
 option(GUSS_BUILD_TESTS "Build tests" OFF)
 option(GUSS_BUILD_SERVER "Build HTTP server component" OFF)
 option(GUSS_ENABLE_SANITIZERS "Enable ASan/UBSan" OFF)
@@ -239,6 +240,10 @@ target_link_libraries(guss PRIVATE
     spdlog::spdlog
     indicators
 )
+
+if(GUSS_RUNTIME_CHECKS)
+    target_compile_definitions(guss PRIVATE USE_RUNTIME_CHECKS=true)
+endif()
 
 target_compile_definitions(guss PRIVATE MAX_RECURSION=${MAX_RECURSION})
 
