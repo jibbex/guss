@@ -334,6 +334,8 @@ Guss building the same content:
 [2026-03-30 21:52:18.353] [console] [info]   Duration: 517ms
 ```
 
+> ⚠️ The garbled output above (`itemsd...`, `templateshing`) is a known race condition between spdlog and the indicators progress bar. Tracked in [#1](https://github.com/jibbex/guss/issues/1).
+
 
 |                        | Gatsby (images pre-cached) | Guss             |
 |------------------------|----------------------------|------------------|
