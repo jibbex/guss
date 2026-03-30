@@ -127,16 +127,16 @@ calls `enrich_item()` per item, builds cross-references, and injects `prev_item`
 
 **Pagination strategies — evaluated in priority order:**
 
-| Priority | Strategy | Config field |
-|---|---|---|
-| 1 | Total pages header | `total_pages_header: "X-Total-Pages"` |
-| 2 | Total count header | `total_count_header: "X-Total-Count"` |
-| 3 | Link header (RFC 5988) | `link_header: true` |
-| 4 | JSON cursor | `json_cursor: "meta.next_cursor"` |
-| 5 | JSON next URL | `json_next_url: "meta.next_page_url"` |
-| 6 | JSON next sentinel | `json_next: "meta.pagination.next"` |
-| 7 | Optimistic fetching | `optimistic_fetching: true` |
-| 8 | Single page | *(none set)* |
+| Priority | Strategy               | Config field                          |
+|----------|------------------------|---------------------------------------|
+| 1        | Total pages header     | `total_pages_header: "X-Total-Pages"` |
+| 2        | Total count header     | `total_count_header: "X-Total-Count"` |
+| 3        | Link header (RFC 5988) | `link_header: true`                   |
+| 4        | JSON cursor            | `json_cursor: "meta.next_cursor"`     |
+| 5        | JSON next URL          | `json_next_url: "meta.next_page_url"` |
+| 6        | JSON next sentinel     | `json_next: "meta.pagination.next"`   |
+| 7        | Optimistic fetching    | `optimistic_fetching: true`           |
+| 8        | Single page            | *(none set)*                          |
 
 The adapter selects the first matching strategy from the config and runs it for the
 lifetime of that endpoint's fetch. Strategies 3–6 are per-request (the next URL or

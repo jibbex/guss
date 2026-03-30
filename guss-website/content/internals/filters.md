@@ -264,12 +264,12 @@ using `strftime`. Returns the original value unchanged if parsing fails.
 
 Common `strftime` format codes:
 
-| Code | Example | Meaning |
-|---|---|---|
-| `%Y` | `2024` | 4-digit year |
-| `%m` | `01` | 2-digit month |
-| `%d` | `15` | 2-digit day |
-| `%B` | `January` | Full month name |
-| `%b` | `Jan` | Abbreviated month name |
-| `%H:%M` | `10:30` | Hour and minute |
+| Code    | Example   | Meaning                |
+|---------|-----------|------------------------|
+| `%Y`    | `2024`    | 4-digit year           |
+| `%m`    | `01`      | 2-digit month          |
+| `%d`    | `15`      | 2-digit day            |
+| `%B`    | `January` | Full month name        |
+| `%b`    | `Jan`     | Abbreviated month name |
+| `%H:%M` | `10:30`   | Hour and minute        |
 

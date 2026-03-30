@@ -21,27 +21,27 @@ calls are pure execution — no re-parsing, no re-compilation.
 
 ## Bytecode opcodes
 
-| Op | Stack effect | Description |
-|---|---|---|
-| `EmitText` | — | Append literal string to output (no stack involvement) |
-| `Resolve` | → Value | Look up dotted path in Context |
-| `Push` | → Value | Push compile-time constant |
-| `Emit` | Value → | HTML-escape top of stack, append to output |
-| `EmitRaw` | Value → | Append top of stack unescaped (`\| safe`) |
-| `Filter` | (args+subj) → Value | Apply registered filter; args popped first, then subject |
-| `BinaryOp` | (a, b) → Value | Arithmetic, comparison, logical |
-| `UnaryOp` | Value → Value | Negation, `not` |
-| `JumpIfFalse` | Value → | Pop, branch if not truthy |
-| `Jump` | — | Unconditional branch |
-| `ForBegin` | — | Push LoopFrame onto loop stack |
-| `ForNext` | — | Advance loop or jump past body; sets loop variable + `loop.*` |
-| `ForEnd` | — | No-op marker — end of for-loop region |
-| `Set` | Value → | Pop, store in Context under path name |
-| `Include` | — | Render named template inline, inheriting current Context |
-| `BlockCall` | — | Template inheritance: execute block override or fall through |
-| `BlockEnd` | — | No-op marker — end of block's default body |
-| `Super` | → Value | Render parent block into a string, push onto stack |
-| `Return` | — | Terminate execution of current template |
+| Op            | Stack effect        | Description                                                   |
+|---------------|---------------------|---------------------------------------------------------------|
+| `EmitText`    | —                   | Append literal string to output (no stack involvement)        |
+| `Resolve`     | → Value             | Look up dotted path in Context                                |
+| `Push`        | → Value             | Push compile-time constant                                    |
+| `Emit`        | Value →             | HTML-escape top of stack, append to output                    |
+| `EmitRaw`     | Value →             | Append top of stack unescaped (`\| safe`)                     |
+| `Filter`      | (args+subj) → Value | Apply registered filter; args popped first, then subject      |
+| `BinaryOp`    | (a, b) → Value      | Arithmetic, comparison, logical                               |
+| `UnaryOp`     | Value → Value       | Negation, `not`                                               |
+| `JumpIfFalse` | Value →             | Pop, branch if not truthy                                     |
+| `Jump`        | —                   | Unconditional branch                                          |
+| `ForBegin`    | —                   | Push LoopFrame onto loop stack                                |
+| `ForNext`     | —                   | Advance loop or jump past body; sets loop variable + `loop.*` |
+| `ForEnd`      | —                   | No-op marker — end of for-loop region                         |
+| `Set`         | Value →             | Pop, store in Context under path name                         |
+| `Include`     | —                   | Render named template inline, inheriting current Context      |
+| `BlockCall`   | —                   | Template inheritance: execute block override or fall through  |
+| `BlockEnd`    | —                   | No-op marker — end of block's default body                    |
+| `Super`       | → Value             | Render parent block into a string, push onto stack            |
+| `Return`      | —                   | Terminate execution of current template                       |
 
 The value stack is a fixed C-array of 64 slots declared in `execute()`'s stack frame.
 The loop stack is a fixed C-array of 16 slots. Neither is ever heap-allocated.
@@ -66,13 +66,13 @@ Emit                        # pop, HTML-escape, append to output → stack: []
 
 Stack trace step by step:
 
-| Step | Instruction | Stack after |
-|---|---|---|
-| 1 | `Push 50` | `[50]` |
-| 2 | `Resolve "post.title"` | `[50, "My Post Title"]` |
-| 3 | `Filter upper (0 args)` | `[50, "MY POST TITLE"]` |
-| 4 | `Filter truncate (1 arg)` | `["MY POST TI…"]` |
-| 5 | `Emit` | `[]` |
+| Step | Instruction               | Stack after             |
+|------|---------------------------|-------------------------|
+| 1    | `Push 50`                 | `[50]`                  |
+| 2    | `Resolve "post.title"`    | `[50, "My Post Title"]` |
+| 3    | `Filter upper (0 args)`   | `[50, "MY POST TITLE"]` |
+| 4    | `Filter truncate (1 arg)` | `["MY POST TI…"]`       |
+| 5    | `Emit`                    | `[]`                    |
 
 The stack is always empty at statement boundaries — this is a compiler invariant, not
 a runtime check. `Filter` with `N` args pops args right-to-left, then the subject.
@@ -146,13 +146,13 @@ discarded.
 
 **`loop.*` variables** available inside every `{% for %}` body:
 
-| Variable | Type | Description |
-|---|---|---|
-| `loop.index` | int | 1-based iteration counter |
-| `loop.index0` | int | 0-based iteration counter |
-| `loop.first` | bool | `true` on the first iteration |
-| `loop.last` | bool | `true` on the last iteration |
-| `loop.length` | int | Total number of elements in the iterable |
+| Variable      | Type | Description                              |
+|---------------|------|------------------------------------------|
+| `loop.index`  | int  | 1-based iteration counter                |
+| `loop.index0` | int  | 0-based iteration counter                |
+| `loop.first`  | bool | `true` on the first iteration            |
+| `loop.last`   | bool | `true` on the last iteration             |
+| `loop.length` | int  | Total number of elements in the iterable |
 
 ## Filters
 

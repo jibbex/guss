@@ -77,13 +77,13 @@ Supports `{% if %}`, `{% elif %}`, `{% else %}`, `{% endif %}`. Operators: `==`,
 
 **`loop.*` variables** available inside every `{% for %}` body:
 
-| Variable | Type | Description |
-|---|---|---|
-| `loop.index` | int | 1-based counter |
-| `loop.index0` | int | 0-based counter |
-| `loop.first` | bool | `true` on first iteration |
-| `loop.last` | bool | `true` on last iteration |
-| `loop.length` | int | Total number of elements |
+| Variable      | Type | Description               |
+|---------------|------|---------------------------|
+| `loop.index`  | int  | 1-based counter           |
+| `loop.index0` | int  | 0-based counter           |
+| `loop.first`  | bool | `true` on first iteration |
+| `loop.last`   | bool | `true` on last iteration  |
+| `loop.length` | int  | Total number of elements  |
 
 ## Partials: `{% include %}`
 
@@ -143,34 +143,34 @@ Inheritance chains to any depth. The deepest override of each block wins.
 
 These variables are available in every template:
 
-| Variable | Description |
-|---|---|
-| `site` | Site metadata (`site.title`, `site.description`, `site.url`, `site.navigation`) |
-| `page` (or configured `context_key`) | The current item's data |
-| `page.html` | md4c-rendered HTML body (Markdown adapter) |
-| `page.slug` | Item slug |
-| `page.permalink` | Computed permalink URL |
-| `page.year`, `page.month`, `page.day` | Date parts extracted from `published_at` |
-| `page.prev_item`, `page.next_item` | Adjacent items (if `prev_next` enabled) |
+| Variable                              | Description                                                                     |
+|---------------------------------------|---------------------------------------------------------------------------------|
+| `site`                                | Site metadata (`site.title`, `site.description`, `site.url`, `site.navigation`) |
+| `page` (or configured `context_key`)  | The current item's data                                                         |
+| `page.html`                           | md4c-rendered HTML body (Markdown adapter)                                      |
+| `page.slug`                           | Item slug                                                                       |
+| `page.permalink`                      | Computed permalink URL                                                          |
+| `page.year`, `page.month`, `page.day` | Date parts extracted from `published_at`                                        |
+| `page.prev_item`, `page.next_item`    | Adjacent items (if `prev_next` enabled)                                         |
 
 Archive templates additionally receive:
 
-| Variable | Description |
-|---|---|
-| `posts` (or collection name) | Array of all items on this archive page |
-| `tags` | Array of all tag items (if a `tags` collection exists) |
-| `pagination` | Pagination metadata (see below) |
+| Variable                     | Description                                            |
+|------------------------------|--------------------------------------------------------|
+| `posts` (or collection name) | Array of all items on this archive page                |
+| `tags`                       | Array of all tag items (if a `tags` collection exists) |
+| `pagination`                 | Pagination metadata (see below)                        |
 
 **`pagination` object** (paginated archives only):
 
-| Field | Type | Description |
-|---|---|---|
-| `pagination.current_page` | int | Current page number (1-based) |
-| `pagination.total_pages` | int | Total number of pages |
-| `pagination.has_prev` | bool | `true` if a previous page exists |
-| `pagination.has_next` | bool | `true` if a next page exists |
-| `pagination.prev_url` | string | URL of the previous page |
-| `pagination.next_url` | string | URL of the next page |
+| Field                     | Type   | Description                      |
+|---------------------------|--------|----------------------------------|
+| `pagination.current_page` | int    | Current page number (1-based)    |
+| `pagination.total_pages`  | int    | Total number of pages            |
+| `pagination.has_prev`     | bool   | `true` if a previous page exists |
+| `pagination.has_next`     | bool   | `true` if a next page exists     |
+| `pagination.prev_url`     | string | URL of the previous page         |
+| `pagination.next_url`     | string | URL of the next page             |
 
 ## Comments
 

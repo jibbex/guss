@@ -78,13 +78,13 @@ bytes of post data, regardless of how many posts exist.
 A blog post is a `Value` holding a `ValueMap` — a map from field names to values.
 Which data structure should that map use?
 
-| Criterion | `unordered_map` | `flat_map` (C++23) |
-|---|---|---|
-| Lookup complexity | O(1) amortised | O(log n) |
-| Cache behaviour | Poor (pointer chasing) | Excellent (contiguous arrays) |
-| Speed at n < ~50 | Slower in practice | Faster in practice |
-| Insert complexity | O(1) amortised | O(n) — shifts sorted vectors |
-| Memory overhead | High (node + bucket) | Minimal |
+| Criterion         | `unordered_map`        | `flat_map` (C++23)            |
+|-------------------|------------------------|-------------------------------|
+| Lookup complexity | O(1) amortised         | O(log n)                      |
+| Cache behaviour   | Poor (pointer chasing) | Excellent (contiguous arrays) |
+| Speed at n < ~50  | Slower in practice     | Faster in practice            |
+| Insert complexity | O(1) amortised         | O(n) — shifts sorted vectors  |
+| Memory overhead   | High (node + bucket)   | Minimal                       |
 
 A typical blog post has 10–30 fields. At that scale `flat_map` would win on lookups
 because all keys fit in two cache lines. However, `ValueMap` uses `unordered_map`

@@ -5,13 +5,13 @@ title: Getting Started
 
 ## Prerequisites
 
-| | Docker (recommended) | Native |
-|---|---|---|
-| **Works on** | Any OS with Docker | Linux / macOS |
-| **Compiler** | Provided in image | GCC 14+ or Clang 18+ |
-| **CMake** | Provided in image | 3.25+ |
-| **OpenSSL** | Provided in image | Required (for HTTPS) |
-| **Setup time** | ~2 min (image pull) | ~5 min |
+|                | Docker (recommended) | Native               |
+|----------------|----------------------|----------------------|
+| **Works on**   | Any OS with Docker   | Linux / macOS        |
+| **Compiler**   | Provided in image    | GCC 14+ or Clang 18+ |
+| **CMake**      | Provided in image    | 3.25+                |
+| **OpenSSL**    | Provided in image    | Required (for HTTPS) |
+| **Setup time** | ~2 min (image pull)  | ~5 min               |
 
 Docker is recommended because the image pins the exact compiler version (GCC 14) and all
 system libraries. Native builds are faster for iterative development once dependencies
@@ -43,11 +43,12 @@ ctest --test-dir build
 
 Optional build flags:
 
-| Flag | Effect |
-|---|---|
-| `-DGUSS_BUILD_TESTS=ON` | Build the test suite (`guss-tests` target) |
-| `-DGUSS_BUILD_SERVER=ON` | Build the optional HTTP server component |
-| `-DGUSS_ENABLE_SANITIZERS=ON` | Enable AddressSanitizer + UBSan |
+| Flag                          | Effect                                     |
+|-------------------------------|--------------------------------------------|
+| `-DGUSS_RUNTIME_CHECKS=ON`    | Enable assertions in hot path of runtime   |
+| `-DGUSS_BUILD_TESTS=ON`       | Build the test suite (`guss-tests` target) |
+| `-DGUSS_BUILD_SERVER=ON`      | Build the optional HTTP server component   |
+| `-DGUSS_ENABLE_SANITIZERS=ON` | Enable AddressSanitizer + UBSan            |
 
 ## Quick Start
 

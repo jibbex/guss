@@ -33,17 +33,17 @@ collections:
 
 ## `site`
 
-| Field | Type | Description |
-|---|---|---|
-| `title` | string | Site title — available as `{{ site.title }}` in all templates |
-| `description` | string | Short description — `{{ site.description }}` |
-| `url` | string | Canonical base URL, no trailing slash |
-| `language` | string | BCP 47 language code, e.g. `en` |
-| `logo` | string | Optional logo URL |
-| `icon` | string | Optional favicon URL |
-| `twitter` | string | Optional Twitter handle |
-| `facebook` | string | Optional Facebook page URL |
-| `navigation` | map | Named nav groups — `{{ site.navigation.<group> }}` |
+| Field         | Type   | Description                                                   |
+|---------------|--------|---------------------------------------------------------------|
+| `title`       | string | Site title — available as `{{ site.title }}` in all templates |
+| `description` | string | Short description — `{{ site.description }}`                  |
+| `url`         | string | Canonical base URL, no trailing slash                         |
+| `language`    | string | BCP 47 language code, e.g. `en`                               |
+| `logo`        | string | Optional logo URL                                             |
+| `icon`        | string | Optional favicon URL                                          |
+| `twitter`     | string | Optional Twitter handle                                       |
+| `facebook`    | string | Optional Facebook page URL                                    |
+| `navigation`  | map    | Named nav groups — `{{ site.navigation.<group> }}`            |
 
 ## `source`
 
@@ -87,12 +87,12 @@ source:
 
 ### Auth types
 
-| Type | Fields | Description |
-|---|---|---|
-| `none` | — | No authentication |
-| `api_key` | `header`, `key` | Sends `header: key` as a request header |
-| `basic` | `username`, `password` | HTTP Basic Authentication |
-| `bearer` | `value` | Sends `Authorization: Bearer <value>` |
+| Type      | Fields                 | Description                             |
+|-----------|------------------------|-----------------------------------------|
+| `none`    | —                      | No authentication                       |
+| `api_key` | `header`, `key`        | Sends `header: key` as a request header |
+| `basic`   | `username`, `password` | HTTP Basic Authentication               |
+| `bearer`  | `value`                | Sends `Authorization: Bearer <value>`   |
 
 ### `field_maps`
 
@@ -130,37 +130,37 @@ If `tags` has no files of its own, Guss synthesizes the collection from the embe
 
 ## `output`
 
-| Field | Type | Default | Description |
-|---|---|---|---|
-| `output_dir` | string | `dist` | Output directory path |
-| `copy_assets` | bool | `true` | Copy `templates/assets/` to `dist/assets/` |
-| `generate_sitemap` | bool | `true` | Write `dist/sitemap.xml` |
-| `generate_rss` | bool | `true` | Write `dist/feed.xml` (RSS 2.0) |
-| `minify_html` | bool | `false` | Minify all output HTML |
+| Field              | Type   | Default | Description                                |
+|--------------------|--------|---------|--------------------------------------------|
+| `output_dir`       | string | `dist`  | Output directory path                      |
+| `copy_assets`      | bool   | `true`  | Copy `templates/assets/` to `dist/assets/` |
+| `generate_sitemap` | bool   | `true`  | Write `dist/sitemap.xml`                   |
+| `generate_rss`     | bool   | `true`  | Write `dist/feed.xml` (RSS 2.0)            |
+| `minify_html`      | bool   | `false` | Minify all output HTML                     |
 
 ## `collections`
 
 Each key must match a collection name in your source config.
 
-| Field | Type | Default | Description |
-|---|---|---|---|
-| `item_template` | string | — | Template for individual item pages. Empty = no item pages. |
-| `archive_template` | string | — | Template for archive/listing pages. Empty = no archive. |
-| `permalink` | string | — | Pattern with `{token}` placeholders. |
-| `paginate` | int | `0` | Items per archive page. `0` = single archive page. |
-| `context_key` | string | `item` | Template variable name for the item. |
+| Field              | Type   | Default | Description                                                |
+|--------------------|--------|---------|------------------------------------------------------------|
+| `item_template`    | string | —       | Template for individual item pages. Empty = no item pages. |
+| `archive_template` | string | —       | Template for archive/listing pages. Empty = no archive.    |
+| `permalink`        | string | —       | Pattern with `{token}` placeholders.                       |
+| `paginate`         | int    | `0`     | Items per archive page. `0` = single archive page.         |
+| `context_key`      | string | `item`  | Template variable name for the item.                       |
 
 **Archive pages** are only generated when both `item_template` and `archive_template` are set.
 
 **Permalink tokens** are plain field lookups on the item's Value:
 
-| Token | Source |
-|---|---|
-| `{slug}` | Item's `slug` field |
-| `{year}` | Extracted from `published_at` by the adapter |
-| `{month}` | Extracted from `published_at` by the adapter |
-| `{day}` | Extracted from `published_at` by the adapter |
-| `{<field>}` | Any other field on the item |
+| Token       | Source                                       |
+|-------------|----------------------------------------------|
+| `{slug}`    | Item's `slug` field                          |
+| `{year}`    | Extracted from `published_at` by the adapter |
+| `{month}`   | Extracted from `published_at` by the adapter |
+| `{day}`     | Extracted from `published_at` by the adapter |
+| `{<field>}` | Any other field on the item                  |
 
 Example: `permalink: "/{year}/{month}/{slug}/"` + `slug: hello-world`, `year: 2024`,
 `month: 01` → writes to `dist/2024/01/hello-world/index.html`.
@@ -170,16 +170,16 @@ Example: `permalink: "/{year}/{month}/{slug}/"` + `slug: hello-world`, `year: 20
 When using a REST API source, Guss supports eight pagination strategies evaluated
 in priority order. Set the field(s) that match your CMS's API:
 
-| Priority | Config field | Behavior |
-|---|---|---|
-| 1 | `total_pages_header: "X-Total-Pages"` | Read header on first response — total pages known upfront |
-| 2 | `total_count_header: "X-Total-Count"` | Read header → derive pages via `ceil(count / limit)` |
-| 3 | `link_header: true` | Follow verbatim `Link: rel="next"` URL each round-trip (RFC 5988) |
-| 4 | `json_cursor: "meta.next_cursor"` | Extract cursor from body, append as `?<cursor_param>=<token>` |
-| 5 | `json_next_url: "meta.next_page_url"` | Extract full next-page URL from body, follow verbatim |
-| 6 | `json_next: "meta.pagination.next"` | Dot-path non-null sentinel; increment page counter (Ghost-style) |
-| 7 | `optimistic_fetching: true` | Blind GET N+1 until 404, empty body, or parse error |
-| 8 | *(none set)* | Single page fetch |
+| Priority | Config field                          | Behavior                                                          |
+|----------|---------------------------------------|-------------------------------------------------------------------|
+| 1        | `total_pages_header: "X-Total-Pages"` | Read header on first response — total pages known upfront         |
+| 2        | `total_count_header: "X-Total-Count"` | Read header → derive pages via `ceil(count / limit)`              |
+| 3        | `link_header: true`                   | Follow verbatim `Link: rel="next"` URL each round-trip (RFC 5988) |
+| 4        | `json_cursor: "meta.next_cursor"`     | Extract cursor from body, append as `?<cursor_param>=<token>`     |
+| 5        | `json_next_url: "meta.next_page_url"` | Extract full next-page URL from body, follow verbatim             |
+| 6        | `json_next: "meta.pagination.next"`   | Dot-path non-null sentinel; increment page counter (Ghost-style)  |
+| 7        | `optimistic_fetching: true`           | Blind GET N+1 until 404, empty body, or parse error               |
+| 8        | *(none set)*                          | Single page fetch                                                 |
 
 Configure globally or override per endpoint:
 
@@ -200,9 +200,9 @@ source:
 
 Additional pagination fields:
 
-| Field | Description |
-|---|---|
-| `cursor_param` | Query param name for cursor-based pagination (default: `"cursor"`) |
+| Field          | Description                                                               |
+|----------------|---------------------------------------------------------------------------|
+| `cursor_param` | Query param name for cursor-based pagination (default: `"cursor"`)        |
 | `offset_param` | Query param name for item offset, sent alongside `page_param` when needed |
 
 ## `parallel_workers`
