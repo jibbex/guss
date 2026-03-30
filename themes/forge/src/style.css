@@ -131,6 +131,7 @@ html {
     font-size: 1.05rem;
     line-height: 1.8;
     color: var(--text);
+    overflow-x: auto;
 }
 
 .prose h2 {
@@ -217,8 +218,6 @@ html {
 /* Tables */
 .prose table {
     width: 100%;
-    display: block;
-    overflow-x: auto;
     border-collapse: collapse;
     margin: 0 0 1.5rem;
     font-size: 1.05rem;
