@@ -16,7 +16,7 @@
         <!-- Badge -->
         <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-subtle bg-surface font-mono text-muted mb-8">
             <span class="w-2 h-2 rounded-full gradient-bg animate-pulse"></span>
-            C++23 · OpenMP · Bytecode Compiler
+            C++23 · OpenMP · Compiler
         </div>
 
         <!-- Heading -->
@@ -47,8 +47,8 @@
     <div class="border-y border-subtle bg-surface">
         <div class="anim-up max-w-6xl mx-auto flex flex-wrap justify-center">
             <div class="flex flex-col items-center px-10 py-6">
-                <span class="gradient-text text-center text-3xl font-black tracking-tight counter" data-target="506" data-suffix="ms">506ms</span>
-                <span class="text-muted text-center uppercase tracking-widest mt-1" style="font-size:0.75rem">76 items + archives</span>
+                <span class="gradient-text text-center text-3xl font-black tracking-tight counter" data-target="517" data-suffix="ms">517ms</span>
+                <span class="text-muted text-center uppercase tracking-widest mt-1" style="font-size:0.75rem">77 items + archives</span>
             </div>
             <div class="flex flex-col items-center px-10 py-6">
                 <span class="gradient-text text-center text-3xl font-black tracking-tight">C++23</span>
@@ -80,31 +80,35 @@
             </p>
 
             <!-- Gatsby terminal -->
-            <div class="anim-up anim-delay-2 w-full max-w-4xl mx-auto rounded-xl overflow-hidden border border-subtle shadow-2xl mb-6" style="background:#000;">
+            <div class="anim-up anim-delay-2 w-full max-w-4xl mx-auto rounded-xl overflow-hidden border border-subtle shadow-2xl mb-6 dark:bg-black bg-gray-800">
                 <div class="flex items-center gap-2 px-5 py-3.5 border-b border-subtle" style="background:var(--terminal-chrome)">
                     <span class="w-3.5 h-3.5 rounded-full" style="background:#ff5f57"></span>
                     <span class="w-3.5 h-3.5 rounded-full" style="background:#febc2e"></span>
                     <span class="w-3.5 h-3.5 rounded-full" style="background:#28c840"></span>
-                    <span class="font-mono text-muted mx-auto" style="font-size:0.8rem">gatsby build (cached)</span>
+                    <span class="font-mono text-muted mx-auto" style="font-size:0.8rem">gatsby build (images pre-cached)</span>
                 </div>
                 <div class="px-5 py-4 font-mono" style="color:#a1a1aa; font-size:0.78rem; line-height:1.7; overflow-x:auto; white-space:nowrap;">
-                    <div>success load plugins - 0.402s</div>
-                    <div>success source and transform nodes - 0.402s</div>
+                    <div>success load plugins - 0.610s</div>
+                    <div>success source and transform nodes - 0.611s</div>
                     <div><span style="color:#fbbf24">warn</span> createResolvers passed resolvers for type that doesn't exist in the schema</div>
-                    <div>success building schema - 0.353s</div>
-                    <div>success extract queries from components - 0.928s</div>
+                    <div>success building schema - 0.422s</div>
+                    <div>success createPages - 0.350s</div>
+                    <div>success extract queries from components - 1.114s</div>
                     <div><span style="color:#fbbf24">warn</span> The GraphQL query in the non-page component will not be run</div>
                     <div><span style="color:#fbbf24">warn</span> Browserslist: caniuse-lite is outdated</div>
-                    <div><span style="color:#fbbf24">warn</span> `isModuleDeclaration` has been deprecated</div>
-                    <div>success Building production JavaScript and CSS bundles - 4.420s</div>
-                    <div>success Building static HTML for pages - 0.300s - 82/82 297.08/s</div>
-                    <div class="mt-2" style="color:#e4e4e7">info Done building in <span style="color:#f87171; font-weight:bold">9.88 sec</span></div>
-                    <div class="mt-1" style="color:#52525b; font-size:0.7rem">4 warnings · GraphQL · node_modules · webpack</div>
+                    <div style="color:#52525b"># ... (bootstrap finished - 5.591s)</div>
+                    <div>success run page queries - 1.699s</div>
+                    <div>success Building production JavaScript and CSS bundles - 7.085s</div>
+                    <div>success Building HTML renderer - 0.890s</div>
+                    <div>success Building static HTML for pages - 0.302s - 89/89 294.70/s</div>
+                    <div>success onPostBuild - 0.107s</div>
+                    <div class="mt-2" style="color:#e4e4e7">info Done building in <span style="color:#f87171; font-weight:bold">16.016 sec</span></div>
+                    <div class="mt-1" style="color:#52525b; font-size:0.7rem">3 warnings · GraphQL · node_modules · webpack</div>
                 </div>
             </div>
 
             <!-- Guss terminal -->
-            <div class="anim-up anim-delay-3 w-full max-w-4xl mx-auto rounded-xl overflow-hidden border border-subtle shadow-2xl" style="background:#000; box-shadow: 0 0 30px rgba(168,85,247,0.12);">
+            <div class="anim-up anim-delay-3 w-full max-w-4xl mx-auto rounded-xl overflow-hidden border border-subtle shadow-2xl dark:bg-black bg-gray-800" style="box-shadow: 0 0 30px rgba(168,85,247,0.12);">
                 <div class="flex items-center gap-2 px-5 py-3.5 border-b border-subtle" style="background:var(--terminal-chrome)">
                     <span class="w-3.5 h-3.5 rounded-full" style="background:#ff5f57"></span>
                     <span class="w-3.5 h-3.5 rounded-full" style="background:#febc2e"></span>
@@ -112,31 +116,28 @@
                     <span class="font-mono text-muted mx-auto" style="font-size:0.8rem">guss build</span>
                 </div>
                 <div class="px-5 py-4 font-mono" style="color:#a1a1aa; font-size:0.72rem; line-height:1.65; overflow-x:auto; white-space:nowrap;">
-                    <div><span style="color:#52525b">[2026-03-25 21:46:54.175] [console] [info] </span><span style="color:#c084fc">🔥 GUSS BUILD, WITNESS PERFECTION</span></div>
-                    <div><span style="color:#52525b">[2026-03-25 21:46:54.175] [console] [info] </span>Loading configuration from guss.yaml</div>
-                    <div><span style="color:#52525b">[2026-03-25 21:46:54.176] [console] [info] </span>Using REST API adapter: https://ghost.michm.de/</div>
-                    <div><span style="color:#52525b">[2026-03-25 21:46:54.176] [console] [info] </span>Phase 1: Fetching content from rest_api</div>
-                    <div><span style="color:#52525b">[2026-03-25 21:46:54.700] [console] [info] </span><span style="color:#60a5fa">RestCmsAdapter: fetched 4 collections</span></div>
-                    <div><span style="color:#52525b">[2026-03-25 21:46:54.700] [console] [info] </span>&nbsp; tags: 33 items</div>
-                    <div><span style="color:#52525b">[2026-03-25 21:46:54.700] [console] [info] </span>&nbsp; authors: 1 items</div>
-                    <div><span style="color:#52525b">[2026-03-25 21:46:54.700] [console] [info] </span>&nbsp; pages: 2 items</div>
-                    <div><span style="color:#52525b">[2026-03-25 21:46:54.700] [console] [info] </span>&nbsp; posts: 41 items</div>
-                    <div><span style="color:#52525b">[2026-03-25 21:46:54.700] [console] [info] </span>Fetched 4 collections, 77 total items</div>
-                    <div><span style="color:#52525b">[2026-03-25 21:46:54.700] [console] [info] </span>Phase 2: Preparing content</div>
-                    <div><span style="color:#52525b">[2026-03-25 21:46:54.701] [console] [info] </span>Phase 3: Rendering templates</div>
-                    <div><span style="color:#52525b">[2026-03-25 21:46:54.704] [console] [info] </span>Phase 4: Writing 82 files</div>
+                    <div><span style="color:#52525b">[2026-03-30 21:52:17.834] [console] [info] </span><span style="color:#c084fc">🔥 GUSS BUILD, WITNESS PERFECTION</span></div>
+                    <div><span style="color:#52525b">[2026-03-30 21:52:17.834] [console] [info] </span>Loading configuration from guss.yaml</div>
+                    <div><span style="color:#52525b">[2026-03-30 21:52:17.834] [console] [info] </span>Using REST API adapter: https://ghost.michm.de/</div>
+                    <div><span style="color:#52525b">[2026-03-30 21:52:17.835] [console] [info] </span>Phase 1: Fetching content from rest_api</div>
+                    <div><span style="color:#52525b">[2026-03-30 21:52:18.315] [console] [info] </span><span style="color:#60a5fa">RestCmsAdapter: fetched 4 collections</span></div>
+                    <div><span style="color:#52525b">[2026-03-30 21:52:18.315] [console] [info] </span>&nbsp; tags: 33 items</div>
+                    <div><span style="color:#52525b">[2026-03-30 21:52:18.315] [console] [info] </span>&nbsp; authors: 1 items</div>
+                    <div><span style="color:#52525b">[2026-03-30 21:52:18.315] [console] [info] </span>&nbsp; pages: 2 items</div>
+                    <div><span style="color:#52525b">[2026-03-30 21:52:18.315] [console] [info] </span>&nbsp; posts: 41 items</div>
+                    <div><span style="color:#52525b">[2026-03-30 21:52:18.315] [console] [info] </span>Fetched 4 collections, 77 total items</div>
+                    <div><span style="color:#52525b">[2026-03-30 21:52:18.315] [console] [info] </span>Phase 2: Preparing content</div>
+                    <div><span style="color:#52525b">[2026-03-30 21:52:18.315] [console] [info] </span>Phase 3: Rendering templates</div>
+                    <div><span style="color:#52525b">[2026-03-30 21:52:18.319] [console] [info] </span>Phase 4: Writing 82 files</div>
                     <div><span style="color:#4ade80">[==================================================] 100% [00m:00s] Writing files...</span></div>
-                    <div><span style="color:#52525b">[2026-03-25 21:46:54.756] [console] [info] </span>Generated sitemap.xml (82 URLs)</div>
-                    <div><span style="color:#52525b">[2026-03-25 21:46:54.756] [console] [info] </span>Generated feed.xml</div>
-                    <div><span style="color:#4ade80">[==================================================] 100% [00m:00s] Writing files...</span></div>
-                    <div><span style="color:#52525b">[2026-03-25 21:46:54.756] [console] [info] </span><span style="color:#4ade80">Build complete in 506ms</span> (77 items, 5 archives, 2 extras, 0 minified)</div>
+                    <div><span style="color:#52525b">[2026-03-30 21:52:18.352] [console] [info] </span><span style="color:#4ade80">Build complete in 517ms</span> (77 items, 5 archives, 2 extras, 0 minified)</div>
                 </div>
             </div>
         </div>
 
         <p class="anim-up anim-delay-3 text-center text-muted mt-8 text-lg max-w-2xl mx-auto leading-relaxed">
             Gatsby numbers from a cached build (no image processing) on identical hardware against the same Ghost CMS instance.
-            HTML render: Gatsby 300ms vs Guss 3ms. 
+            HTML render: Gatsby 1.192s vs Guss 4ms.
         </p>
     </section>
 
@@ -144,11 +145,11 @@
     <div class="border-y border-subtle bg-surface">
         <div class="anim-up max-w-6xl mx-auto flex flex-wrap justify-center">
             <div class="flex flex-col items-center px-10 py-6">
-                <span class="gradient-text text-center text-3xl font-black tracking-tight counter" data-target="20" data-prefix="~" data-suffix="×">20</span>
+                <span class="gradient-text text-center text-3xl font-black tracking-tight counter" data-target="31" data-prefix="~" data-suffix="×">31</span>
                 <span class="text-muted text-center uppercase tracking-widest mt-1" style="font-size:0.75rem">faster build</span>
             </div>
             <div class="flex flex-col items-center px-10 py-6">
-                <span class="gradient-text text-center text-3xl font-black tracking-tight counter" data-target="100" data-suffix="×">100</span>
+                <span class="gradient-text text-center text-3xl font-black tracking-tight counter" data-target="298" data-prefix="~" data-suffix="×">298</span>
                 <span class="text-muted text-center uppercase tracking-widest mt-1" style="font-size:0.75rem">faster HTML render</span>
             </div>
             <div class="flex flex-col items-center px-10 py-6">
