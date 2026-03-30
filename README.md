@@ -30,27 +30,29 @@ A pluggable static site generator written in C++23 that:
 
 ## ⚡ Performance That Other SSGs Find Personally Offensive
 
-```bash
+```
 ~/blog$ guss build
-[2026-03-11 02:32:46.228] [console] [info] 🔥 GUSS BUILD, WITNESS PERFECTION
-[2026-03-11 02:32:46.228] [console] [info] Loading configuration from guss.yaml
-[2026-03-11 02:32:46.229] [console] [info] Using REST API adapter: https://ghost.michm.de/
-[2026-03-11 02:32:46.229] [console] [info] Phase 1: Fetching content from rest_api
-[2026-03-11 02:32:46.713] [console] [info] RestCmsAdapter: fetched 4 collections
-[2026-03-11 02:32:46.713] [console] [info]   tags: 33 items
-[2026-03-11 02:32:46.713] [console] [info]   authors: 1 items
-[2026-03-11 02:32:46.713] [console] [info]   pages: 2 items
-[2026-03-11 02:32:46.713] [console] [info]   posts: 40 items
-[2026-03-11 02:32:46.713] [console] [info] Fetched 4 collections, 76 total items...
-[2026-03-11 02:32:46.713] [console] [info] Phase 2: Preparing content
-[2026-03-11 02:32:46.713] [console] [info] Phase 3: Rendering templates...
-[2026-03-11 02:32:46.714] [console] [info] Phase 4: Writing 80 files
+[2026-03-30 21:52:17.834] [console] [info] 🔥 GUSS BUILD, WITNESS PERFECTION
+[2026-03-30 21:52:17.834] [console] [info] Loading configuration from guss.yaml
+[2026-03-30 21:52:17.834] [console] [info] Using REST API adapter: https://ghost.michm.de/
+[2026-03-30 21:52:17.835] [console] [info] Phase 1: Fetching content from rest_api
+[2026-03-30 21:52:18.315] [console] [info] RestCmsAdapter: fetched 4 collections
+[2026-03-30 21:52:18.315] [console] [info]   tags: 33 items
+[2026-03-30 21:52:18.315] [console] [info]   authors: 1 items
+[2026-03-30 21:52:18.315] [console] [info]   pages: 2 items
+[2026-03-30 21:52:18.315] [console] [info]   posts: 41 items
+[2026-03-30 21:52:18.315] [console] [info] Fetched 4 collections, 77 total itemsd...
+[2026-03-30 21:52:18.315] [console] [info] Phase 2: Preparing content
+[2026-03-30 21:52:18.315] [console] [info] Phase 3: Rendering templateshing content...
+[2026-03-30 21:52:18.319] [console] [info] Phase 4: Writing 82 files
 [==================================================] 100% [00m:00s] Writing files...
-[2026-03-11 02:32:46.735] [console] [info] Build complete!
-[2026-03-11 02:32:46.735] [console] [info]   Items:    76
-[2026-03-11 02:32:46.735] [console] [info]   Archives: 4
-[2026-03-11 02:32:46.735] [console] [info]   Assets:   1
-[2026-03-11 02:32:46.735] [console] [info]   Duration: 506ms
+[2026-03-30 21:52:18.352] [console] [info] Build complete in 517ms (77 items, 5 archives, 2 extras, 0 minified)
+
+[2026-03-30 21:52:18.353] [console] [info] Build complete!
+[2026-03-30 21:52:18.353] [console] [info]   Items:    77
+[2026-03-30 21:52:18.353] [console] [info]   Archives: 5
+[2026-03-30 21:52:18.353] [console] [info]   Assets:   12
+[2026-03-30 21:52:18.353] [console] [info]   Duration: 517ms
 ```
 
 ---
