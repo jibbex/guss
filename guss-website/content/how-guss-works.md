@@ -6,7 +6,7 @@ description: "A deep dive into the architecture of Guss — from SIMD-accelerate
 
 ## How Guss Works
 
-Guss is a static site generator written in C++23. It builds a complete website — 76 items across 4 collections, 80 output files — from a live Ghost CMS in **506 milliseconds**. That time includes DNS resolution, HTTP round-trips, JSON parsing, Markdown processing, template compilation, parallel rendering, and writing files to disk.
+Guss is a static site generator written in C++23. It builds a complete website — 76 items across 4 collections, a RSS feed and a sitemap, 82 output files — from a live Ghost CMS in **506 milliseconds**. That time includes DNS resolution, HTTP round-trips, JSON parsing, Markdown processing, template compilation, parallel rendering, and writing files to disk.
 
 This page explains how.
 
@@ -303,7 +303,7 @@ warn  The GraphQL query in the non-page component will not be run
 warn  Browserslist: caniuse-lite is outdated
 warn  `isModuleDeclaration` has been deprecated
 success Building production JavaScript and CSS bundles - 4.420s
-success Building static HTML for pages - 0.300s - 89/89 297.08/s
+success Building static HTML for pages - 0.300s - 82/82 297.08/s
 info Done building in 9.88 sec
 ```
 
@@ -320,17 +320,17 @@ Guss building the same content:
 [2026-03-25 21:46:54.756] [console] [info] Build complete in 506ms (77 items, 5 archives, 2 extras, 0 minified)
 ```
 
-|                        | Gatsby (cached)             | Guss             |
-|------------------------|-----------------------------|------------------|
-| **Total build time**   | 9.88s                       | 506ms            |
-| **HTML rendering**     | 300ms (89 pages)            | <1ms (82 pages)  |
-| **Speed factor**       | 1×                          | **~20× faster**  |
-| **HTML render factor** | 1×                          | **~300× faster** |
-| **Warnings**           | 4                           | 0                |
-| **Runtime**            | Node.js + GraphQL + webpack | Single binary    |
-| **Dependencies**       | node_modules                | Zero             |
+|                        | Gatsby (cached) | Guss             |
+|------------------------|-----------------|------------------|
+| **Total build time**   | 9.88s           | 506ms            |
+| **HTML rendering**     | 300ms           | 3ms              |
+| **Speed factor**       | 1×              | **~20× faster**  |
+| **HTML render factor** | 1×              | **~100× faster** |
+| **Warnings**           | 4               | 0                |
+| **Runtime**            | Node.js         | Single binary    |
+| **Dependencies**       | node_modules    | Zero             |
 
-The total build comparison is striking enough: ~20× faster. But the HTML rendering comparison is the one worth pausing on. Gatsby's static HTML generation step — "Building static HTML for pages" — takes 300ms for 89 pages. Guss renders 82 pages in under 1ms. That's a 300× difference in the step where the template engine is doing actual work.
+The total build comparison is striking enough: ~20× faster. But the HTML rendering comparison is the one worth pausing on. Gatsby's static HTML generation step — "Building static HTML for pages" — takes 300ms. Guss renders 82 pages in 3ms. That's a 100× difference in the step where the template engine is doing actual work.
 
 The reason is architectural. Gatsby renders pages through React's server-side rendering pipeline, which involves a JavaScript VM, a virtual DOM, component tree reconciliation, and garbage collection. Guss executes pre-compiled bytecode against a fixed stack with an 8 KiB arena context. There is no VM, no DOM, no GC. The bytecode executor is a tight `switch` loop touching only integers until the moment it writes output to a buffer.
 
