@@ -314,16 +314,14 @@ Pipeline::phase_render(const std::vector<core::RenderItem>& items,
     files.resize(items.size());
 
     render::Runtime engine(std::filesystem::path("./templates"));
-
-    static constexpr std::size_t kCtxBufSize = 8192;
     const size_t item_boundary = items.size() - archive_count;
 
 #ifdef GUSS_USE_OPENMP
     #pragma omp parallel for schedule(dynamic)
 #endif
     for (size_t i = 0; i < items.size(); ++i) {
-        alignas(std::max_align_t) std::byte ctx_buf[kCtxBufSize];
-        std::pmr::monotonic_buffer_resource mbr(ctx_buf, kCtxBufSize,
+        alignas(std::max_align_t) std::byte ctx_buf[CONTEXT_BUFFER_SIZE];
+        std::pmr::monotonic_buffer_resource mbr(ctx_buf, CONTEXT_BUFFER_SIZE,
                                                 std::pmr::new_delete_resource());
         render::Context ctx(&mbr);
         ctx.set("site", site);

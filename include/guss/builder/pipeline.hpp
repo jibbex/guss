@@ -24,6 +24,21 @@
 namespace guss::builder {
 
 /**
+ * \brief Size in bytes of the per-thread monotonic stack buffer used during rendering.
+ *
+ * \details
+ * Each OpenMP worker thread allocates a fixed-size buffer of this capacity on its
+ * stack and wraps it in a \c std::pmr::monotonic_buffer_resource. Template rendering
+ * operates exclusively against this arena, avoiding heap allocations on the hot path.
+ * 8 KiB is chosen as a balance between stack pressure and the typical working-set
+ * size of a single rendered page. Adjust upward if profiling reveals monotonic
+ * buffer exhaustion falling back to the upstream allocator.
+ *
+ * \note One buffer is instantiated per thread, not per rendered item.
+ */
+constexpr size_t CONTEXT_BUFFER_SIZE = 8192;
+
+/**
  * \brief Statistics from a build run.
  */
 struct BuildStats {
