@@ -55,6 +55,11 @@ A pluggable static site generator written in C++23 that:
 [2026-03-30 21:52:18.353] [console] [info]   Duration: 517ms
 ```
 
+> [!NOTE]
+> The garbled lines in the output above are a known race condition between
+> the logger and the progress bar, not a build error. Tracked in
+> [GitHub issue #1](https://github.com/jibbex/guss/issues/1).
+> 
 ---
 
 ## 🛠 Prerequisites
