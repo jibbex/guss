@@ -59,7 +59,7 @@ A pluggable static site generator written in C++23 that:
 > The garbled lines in the output above are a known race condition between
 > the logger and the progress bar, not a build error. Tracked in
 > [GitHub issue #1](https://github.com/jibbex/guss/issues/1).
-> 
+
 ---
 
 ## 🛠 Prerequisites
