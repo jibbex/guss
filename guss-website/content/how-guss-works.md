@@ -6,7 +6,7 @@ description: "A deep dive into the architecture of Guss — from SIMD-accelerate
 
 ## How Guss Works
 
-Guss is a static site generator written in C++23. It builds a complete website — 76 items across 4 collections, a RSS feed and a sitemap, 82 output files — from a live Ghost CMS in **506 milliseconds**. That time includes DNS resolution, HTTP round-trips, JSON parsing, Markdown processing, template compilation, parallel rendering, and writing files to disk.
+Guss is a static site generator written in C++23. It builds a complete website. 77 items across 4 collections, a RSS feed and a sitemap, 82 output files, from a live Ghost CMS in **517 milliseconds**. That time includes DNS resolution, HTTP round-trips, JSON parsing, Markdown processing, template compilation, parallel rendering, and writing files to disk.
 
 This page explains how.
 
@@ -273,7 +273,7 @@ The test suite contains 448 unit tests covering every filter, every bytecode ins
 
 ### Performance Breakdown
 
-For a site with 40 posts, 33 tags, 1 author, 2 pages (76 total items, 80 output files):
+For a site with 41 posts, 33 tags, 1 author, 2 pages (77 total items, 82 output files):
 
 | Phase     | Time       | Notes                                              |
 |-----------|------------|----------------------------------------------------|
@@ -283,7 +283,7 @@ For a site with 40 posts, 33 tags, 1 author, 2 pages (76 total items, 80 output 
 | Write     | 33ms       | Disk I/O                                           |
 | **Total** | **~517ms** | Including DNS, TLS handshake, everything           |
 
-The render phase — the part with the custom compiler, the arenas, the parallelism — is a rounding error in the total time. This is by design. The engine is so fast that the network is the only bottleneck left.
+The prepare phase is a rounding error in the total time. The render phase at 4ms is measurable but still accounts for less than 1% of the total. The network is the only bottleneck left.
 
 For local Markdown sources with no network involved, total build times drop to double-digit milliseconds.
 
