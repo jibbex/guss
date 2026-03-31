@@ -361,7 +361,7 @@ Guss building the same content:
 | **Fetch content**      | 611ms _¹_                  | 480ms _²_        |
 | **HTML rendering**     | 1192ms                     | 4ms              |
 | **JS bundle**          | 7085ms                     | —                |
-| **GraphQL overhead**   | ~3.6s                      | —                |
+| **GraphQL overhead**   | ~3600ms                    | —                |
 | **Speed factor**       | 1×                         | **~31× faster**  |
 | **HTML render factor** | 1×                         | **~298× faster** |
 | **Warnings**           | 4                          | 0                |
