@@ -357,10 +357,10 @@ Guss building the same content:
 
 |                        | Gatsby (images pre-cached) | Guss             |
 |------------------------|----------------------------|------------------|
-| **Total build time**   | 16.016s                    | 517ms            |
-| **Fetch content**      | 0.611s _¹_                 | 480ms _²_        |
-| **HTML rendering**     | 1.192s                     | 4ms              |
-| **JS bundle**          | 7.085s                     | —                |
+| **Total build time**   | 16016ms                    | 517ms            |
+| **Fetch content**      | 611ms _¹_                  | 480ms _²_        |
+| **HTML rendering**     | 1192ms                     | 4ms              |
+| **JS bundle**          | 7085ms                     | —                |
 | **GraphQL overhead**   | ~3.6s                      | —                |
 | **Speed factor**       | 1×                         | **~31× faster**  |
 | **HTML render factor** | 1×                         | **~298× faster** |
