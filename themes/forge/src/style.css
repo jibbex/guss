@@ -152,6 +152,11 @@ html {
     color: var(--text);
 }
 
+.prose h4 {
+				font-size: 1.15rem;
+    Font-weight: 450;
+} 
+
 .prose p {
     margin: 0 0 1.125rem;
 }
