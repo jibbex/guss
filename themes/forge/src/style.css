@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 /* ── Self-hosted fonts ───────────────────────────────────────────────────── */
 @font-face {
   font-family: 'Inter';
