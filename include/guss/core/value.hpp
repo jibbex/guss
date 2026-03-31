@@ -55,12 +55,20 @@ struct ValueArray;
  *
  * \note The destructor is user-declared and defined in value.cpp, where
  *       ValueMap and ValueArray are complete types.
+ *
+ * TODO: Remove string_view support in favor of explicit ownership semantics with std::string.
+ *       The zero-copy benefit is outweighed by the complexity and potential for dangling references,
+ *       especially as the template engine evolves to support more complex data flows and filter outputs
+ *       that are naturally represented as owned strings.
  */
 class Value final {
 public:
     // -- Constructors --------------------------------------------------------
 
-    /** \brief Construct a string-view value (zero-copy). */
+    /** 
+     * \brief Construct a string-view value (zero-copy).
+     * \deprecated To be removed in favor of move semantics with explicit ownership. Use Value(std::string) instead.
+     */
     explicit Value(std::string_view sv);
     /** \brief Construct an owned-string value. */
     explicit Value(std::string owned);
@@ -166,7 +174,7 @@ private:
 
     std::variant<
         NullTag,
-        std::string_view,
+        std::string_view,             ///< TODO: Remove in favor of explicit ownership semantics with std::string.
         std::string,
         bool,
         int64_t,
