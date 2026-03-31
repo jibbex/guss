@@ -236,7 +236,7 @@ The monotonic arena is the key performance feature. `pmr::unordered_map` for `{%
 OpenMP distributes pages across all available CPU cores:
 
 ```cpp
-##pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(dynamic)
 for (size_t i = 0; i < pages.size(); ++i) {
     // Each thread: own Context, own arena, shared site data
 }
