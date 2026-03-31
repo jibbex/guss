@@ -49,7 +49,7 @@ The entire architecture rests on one decision: **there are no domain types**. Th
 ```cpp
 std::variant<
     NullTag,
-    std::string_view,       // zero-copy into adapter-owned memory
+    std::string_view,       // deprecated
     std::string,            // owned string (e.g. from filter output)
     bool,
     int64_t,
@@ -60,6 +60,16 @@ std::variant<
 >
 ```
 
+> ⚠️
+>
+> **Note on `std::string_view`:** The `string_view` variant is **deprecated** and will be removed in a future release. The original idea was elegant. Reference directly into the `simdjson::ondemand` parsed buffer and pass `string_view` down to the runtime with zero allocation for strings. No copies, no heap usage, just pointers into the already-loaded JSON.
+>
+> But `simdjson::ondemand` objects are **transient**. They are valid only while the parser holds the underlying buffer and while the iteration position hasn't advanced. Once the adapter finishes converting a batch of items, the `ondemand::document` is destroyed and its buffer is freed. Any `string_view` pointing into that buffer becomes a dangling reference and the render phase runs **much later**, potentially on different threads, long after the adapter has been destroyed.
+>
+> This is not a bug in simdjson; it's a deliberate design choice for performance. The on-demand parser reuses buffers and advances through documents sequentially. To make zero-copy work across phases, I would need to keep every CMS response buffer alive for the entire build, which would spike memory usage significantly.
+>
+> So the `string_view` variant remains as a vestigial organ, never used at all. All strings reaching the runtime are either owned `std::string` (from filters or enrichment) or live inside `shared_ptr<ValueMap>` allocations that outlive the adapter. The deprecation note exists because I was busy debugging real issues.
+
 The recursive structure — a Value can contain a map of Values, each of which can contain more maps or arrays — mirrors JSON's shape exactly. But unlike JSON libraries, `Value` is a native C++ type with no parsing overhead in the render path.
 
 The critical design choice is `shared_ptr` for maps and arrays. When you copy a `Value` that wraps a blog post with 20 fields, nested author objects, and an array of tags, the copy costs exactly one atomic increment. Not a deep copy. Not a serialization round-trip. One integer operation.
@@ -67,6 +77,8 @@ The critical design choice is `shared_ptr` for maps and arrays. When you copy a 
 This matters because the render phase copies page data into per-thread contexts. With deep copies, parallelism would create a bottleneck at the data distribution step. With `shared_ptr`, distributing data to 32 threads is essentially free.
 
 The underlying data is never mutated after construction. This means `Value` is safe to share across threads without locks, mutexes, or any synchronization mechanism beyond the atomic reference count that `shared_ptr` already provides.
+
+> **Deep dive:** [Value System](/internals/value-system/) — why `shared_ptr`, why `unordered_map` not `flat_map`, and dotted-path resolution internals.
 
 ---
 
@@ -159,6 +171,8 @@ JSON parsing uses simdjson, which processes data at gigabytes per second using S
 
 The function `from_simdjson()` converts a simdjson document into a `Value` tree. Once that conversion is done, simdjson does not exist for the rest of the pipeline. The render layer has never included a simdjson header. This boundary exists because simdjson's lazy parsing model produces transient references that become dangling if the source document is destroyed. By converting eagerly at the adapter boundary, the rest of the system works with owned, safe, `shared_ptr`-backed data.
 
+> **Deep dive:** [Adapters & Field Mapping](/internals/adapters/) — how `resolve_path` works, all 8 pagination strategies, and cross-reference injection.
+
 ---
 
 ### Phase 2: Prepare
@@ -231,6 +245,8 @@ for (size_t i = 0; i < pages.size(); ++i) {
 `schedule(dynamic)` means threads grab the next available page when they finish one, rather than being assigned a fixed block. This handles the variance in page complexity — a tag page with 3 posts renders faster than one with 50.
 
 There is zero contention between threads. Each has its own stack arena, its own output buffer, its own `Context`. The only shared state is `SharedSiteData` behind `shared_ptr<const>`, which is immutable and thread-safe by construction.
+
+> **Deep dive:** [Template Engine Bytecode](/internals/template-engine/) — complete opcode list, stack verification, `{% set %}` and `{% for %}` internals.
 
 ---
 
@@ -334,7 +350,9 @@ Guss building the same content:
 [2026-03-30 21:52:18.353] [console] [info]   Duration: 517ms
 ```
 
-> ⚠️ The garbled output above (`itemsd...`, `templateshing`) is a known race condition between spdlog and the indicators progress bar. Tracked in [#1](https://github.com/jibbex/guss/issues/1).
+> ⚠️
+>
+> The garbled output above (`itemsd...`, `templateshing`) is a known race condition of the progress bar. Tracked in [issue#1](https://github.com/jibbex/guss/issues/1).
 
 
 |                        | Gatsby (images pre-cached) | Guss             |
@@ -372,6 +390,15 @@ I tried to build this system five times across four programming languages before
 Guss is a personal project. I built it to replace Gatsby on my own blog. But it's also a case study in how much performance is available when you control every layer — from SIMD parsing to memory layout to bytecode execution — and make each layer's design decisions with full awareness of what the other layers need.
 
 The source code is available at [github.com/jibbex/guss](https://github.com/jibbex/guss).
+
+---
+
+### Next steps
+
+- **[Build Pipeline](/internals/pipeline/):** exact struct definitions and build stats
+- **[Template Syntax](/docs/templates/):** full language reference with examples
+- **[Filters Reference](/internals/filters/):** all 27 built-in filters and their signatures
+- **[Configuration](/docs/configuration/):** every `guss.yaml` option explained
 
 ---
 
