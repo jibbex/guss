@@ -32,7 +32,7 @@ The common thread: **tight coupling between content source and presentation**. C
 
 Guss operates as a strict four-phase pipeline:
 
-```
+```bash
 FETCH  →  PREPARE  →  RENDER  →  WRITE
 ```
 
@@ -201,7 +201,7 @@ Guss eliminates every one of those costs.
 
 #### The Compilation Pipeline
 
-```
+```bash
 Source (.html) → Lexer → Parser → Compiler → Verifier → Runtime
 ```
 
