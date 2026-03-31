@@ -9,3 +9,4 @@ guss-website/dist
 guss-website/templates/
 include/guss/cli/constants.hpp
 docs/
+themes/**/assets/*.css
