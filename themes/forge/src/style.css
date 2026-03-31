@@ -185,6 +185,16 @@ html {
     color: var(--text);
 }
 
+.prose a {
+    color: var(--color-primary);
+    text-underline-offset: 2px;
+    transition: all 0.15s;
+}
+
+.prose a:hover {
+    text-decoration: underline;
+}
+
 /* Inline code */
 .prose code {
     font-family: "JetBrains Mono", monospace;
