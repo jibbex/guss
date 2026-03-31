@@ -49,7 +49,7 @@ down.
 ```cpp
 using ValueVariant = std::variant<
     NullTag,
-    std::string_view,   // zero-copy view (adapter-internal, short-lived)
+    std::string_view,   // TODO: to be removed
     std::string,        // owned string (filter output, enriched fields)
     bool,
     int64_t,
@@ -59,6 +59,10 @@ using ValueVariant = std::variant<
     std::shared_ptr<ValueArray>   // indexed Value array
 >;
 ```
+
+
+
+> **Deprecated:** [std::string_view variant](/how-guss-works/#the-value-type) — Why it will be removed.
 
 The adapter converts `simdjson → Value` exactly once per item at fetch time. After
 that boundary, simdjson does not exist anywhere in the codebase.
