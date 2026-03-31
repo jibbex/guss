@@ -148,7 +148,6 @@ This single decision eliminates an entire class of complexity. The template engi
 
 ```
 Value = null
-      | std::string_view   (zero-copy view into adapter-owned memory)
       | std::string         (owned, e.g. from filter output)
       | bool
       | int64_t | uint64_t | double
