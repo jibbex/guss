@@ -58,7 +58,7 @@ struct BuildStats {
 /**
  * \brief Progress callback for build operations.
  */
-using ProgressCallback = std::function<void(std::string_view label, float fraction)>;
+using ProgressCallback = std::function<void(std::uint8_t percent)>;
 
 /**
  * \brief Build pipeline orchestrating the full SSG workflow.
@@ -73,9 +73,9 @@ public:
      * \param output_config  Output directory and asset settings.
      */
     Pipeline(adapters::AdapterPtr adapter,
-             const core::config::SiteConfig& site_config,
-             const core::config::CollectionCfgMap& collections,
-             const core::config::OutputConfig& output_config);
+             core::config::SiteConfig  site_config,
+             core::config::CollectionCfgMap  collections,
+             core::config::OutputConfig  output_config);
 
     /**
      * \brief Execute the full build pipeline.
@@ -103,17 +103,17 @@ private:
     [[nodiscard]] std::pair<std::vector<core::RenderItem>, size_t>
     phase_prepare(adapters::FetchResult& result) const;
 
-    [[nodiscard]] core::error::Result<std::vector<std::pair<std::filesystem::path, std::string>>>
+    [[nodiscard]] static core::error::Result<std::vector<std::pair<std::filesystem::path, std::string>>>
     phase_render(const std::vector<core::RenderItem>& items,
                  size_t archive_count,
                  const core::Value& site,
                  BuildStats& stats,
-                 ProgressCallback progress) const;
+                 const ProgressCallback& progress);
 
     [[nodiscard]] core::error::VoidResult phase_write(
         const std::vector<std::pair<std::filesystem::path, std::string>>& files,
         BuildStats& stats,
-        ProgressCallback progress) const;
+        const ProgressCallback& progress) const;
 
     [[nodiscard]] core::error::VoidResult copy_assets(BuildStats& stats) const;
 

@@ -3,21 +3,23 @@
  * @brief Build pipeline implementation for Guss SSG.
  */
 #include "guss/builder/pipeline.hpp"
-#include "guss/builder/generators.hpp"
 #include <algorithm>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <memory_resource>
+#include <ranges>
+#include <spdlog/spdlog.h>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
-#include <spdlog/spdlog.h>
+#include "guss/builder/generators.hpp"
 #include "guss/core/permalink.hpp"
 #include "guss/core/render_item.hpp"
+#include "guss/core/value.hpp"
 #include "guss/render/context.hpp"
 #include "guss/render/runtime.hpp"
-#include "guss/core/value.hpp"
 
 #ifdef GUSS_USE_OPENMP
 #include <omp.h>
@@ -26,20 +28,20 @@
 namespace guss::builder {
 
 Pipeline::Pipeline(adapters::AdapterPtr adapter,
-                   const core::config::SiteConfig& site_config,
-                   const core::config::CollectionCfgMap& collections,
-                   const core::config::OutputConfig& output_config)
+                   core::config::SiteConfig  site_config,
+                   core::config::CollectionCfgMap  collections,
+                   core::config::OutputConfig  output_config)
     : adapter_(std::move(adapter))
-    , site_config_(site_config)
-    , collections_(collections)
-    , output_config_(output_config)
+    , site_config_(std::move(site_config))
+    , collections_(std::move(collections))
+    , output_config_(std::move(output_config))
 {}
 
 std::expected<BuildStats, core::error::Error> Pipeline::build(const ProgressCallback& progress) const {
     BuildStats stats;
     auto total_start = std::chrono::steady_clock::now();
 
-    if (progress) progress("Starting build...", 0.0f);
+    if (progress) progress(0u);
 
     // Phase 1: Fetch
     spdlog::info("Phase 1: Fetching content from {}", adapter_->adapter_name());
@@ -56,14 +58,14 @@ std::expected<BuildStats, core::error::Error> Pipeline::build(const ProgressCall
 
     size_t total_collections = content.items.size();
     size_t total_items = 0;
-    for (const auto& [name, items] : content.items) total_items += items.size();
+    for (const auto &items: content.items | std::views::values) total_items += items.size();
     spdlog::info("Fetched {} collections, {} total items", total_collections, total_items);
 
     // Phase 2: Prepare
     spdlog::info("Phase 2: Preparing content");
     auto prepare_start = std::chrono::steady_clock::now();
 
-    if (progress) progress("Preparing content...", 0.25f);
+    if (progress) progress(25u);
     auto [render_items, archive_count] = phase_prepare(content);
 
     stats.prepare_duration = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -122,14 +124,7 @@ std::expected<BuildStats, core::error::Error> Pipeline::build(const ProgressCall
     stats.total_duration = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now() - total_start);
 
-    if (progress) progress("Build complete!", 1.0f);
-
-    spdlog::info("Build complete in {}ms ({} items, {} archives, {} extras, {} minified)",
-        stats.total_duration.count(),
-        stats.items_rendered,
-        stats.archives_rendered,
-        stats.extras_generated,
-        stats.files_minified);
+    if (progress) progress(100u);
 
     return stats;
 }
@@ -163,10 +158,10 @@ core::error::VoidResult Pipeline::ping() const {
 }
 
 std::expected<adapters::FetchResult, core::error::Error> Pipeline::phase_fetch(ProgressCallback progress) const {
-    return adapter_->fetch_all([&progress](size_t current, size_t total) {
+    return adapter_->fetch_all([&progress](const size_t current, const size_t total) {
         if (progress && total > 0) {
-            float p = 0.25f * static_cast<float>(current) / static_cast<float>(total);
-            progress("Fetching content...", p);
+            const std::uint8_t p = current / total * 100.0f;
+            progress(p);
         }
     });
 }
@@ -309,7 +304,7 @@ Pipeline::phase_render(const std::vector<core::RenderItem>& items,
                        size_t archive_count,
                        const core::Value& site,
                        BuildStats& stats,
-                       ProgressCallback progress) const {
+                       const ProgressCallback& progress) {
     std::vector<std::pair<std::filesystem::path, std::string>> files;
     files.resize(items.size());
 
@@ -362,8 +357,9 @@ Pipeline::phase_render(const std::vector<core::RenderItem>& items,
         }
     }
 
-    files.erase(std::remove_if(files.begin(), files.end(),
-        [](const auto& p){ return p.first.empty(); }), files.end());
+    std::erase_if(files, [](const auto &p) {
+        return p.first.empty();
+    });
 
     return files;
 }
@@ -371,7 +367,7 @@ Pipeline::phase_render(const std::vector<core::RenderItem>& items,
 core::error::VoidResult Pipeline::phase_write(
     const std::vector<std::pair<std::filesystem::path, std::string>>& files,
     BuildStats& stats,
-    ProgressCallback progress
+    const ProgressCallback& progress
 ) const {
     // Ensure output directory exists
     {
@@ -413,8 +409,8 @@ core::error::VoidResult Pipeline::phase_write(
         written++;
 
         if (progress) {
-            float p = 0.75f + 0.25f * static_cast<float>(written) / static_cast<float>(files.size());
-            progress("Writing files...", p);
+            const std::uint8_t p = written / files.size() * 100;
+            progress(p);
         }
     }
 
@@ -428,10 +424,13 @@ core::error::VoidResult Pipeline::copy_assets(BuildStats& stats) const {
     }
 
     auto theme_assets = std::filesystem::path("./templates") / "assets";
-    std::error_code ec;
-    if (!std::filesystem::exists(theme_assets, ec) || ec) {
-        spdlog::debug("No theme assets directory found at {}", theme_assets.string());
-        return {};
+
+    {
+        std::error_code ec;
+        if (!std::filesystem::exists(theme_assets, ec) || ec) {
+            spdlog::debug("No theme assets directory found at {}", theme_assets.string());
+            return {};
+        }
     }
 
     auto output_assets = output_config_.output_dir / "assets";
@@ -493,8 +492,9 @@ core::error::VoidResult Pipeline::generate_sitemap(
 
     f << xml;
     stats.extras_generated++;
-    const size_t url_count = std::count_if(files.begin(), files.end(),
-        [](const auto& p) { return !p.first.empty(); });
+    const size_t url_count = std::ranges::count_if(files, [](const auto& p) {
+        return !p.first.empty();
+    });
     spdlog::debug("Generated sitemap.xml ({} URLs)", url_count);
     return {};
 }
