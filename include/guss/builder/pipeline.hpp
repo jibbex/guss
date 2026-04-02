@@ -15,11 +15,13 @@
 #include "guss/core/config.hpp"
 #include "guss/core/render_item.hpp"
 #include "guss/core/error.hpp"
+
 #include <chrono>
 #include <filesystem>
 #include <functional>
 #include <string>
 #include <utility>
+#include <cstdint>
 
 namespace guss::builder {
 
