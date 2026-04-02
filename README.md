@@ -41,24 +41,17 @@ A pluggable static site generator written in C++23 that:
 [2026-03-30 21:52:18.315] [console] [info]   authors: 1 items
 [2026-03-30 21:52:18.315] [console] [info]   pages: 2 items
 [2026-03-30 21:52:18.315] [console] [info]   posts: 41 items
-[2026-03-30 21:52:18.315] [console] [info] Fetched 4 collections, 77 total itemsd...
+[2026-03-30 21:52:18.315] [console] [info] Fetched 4 collections, 77 total items
 [2026-03-30 21:52:18.315] [console] [info] Phase 2: Preparing content
-[2026-03-30 21:52:18.315] [console] [info] Phase 3: Rendering templateshing content...
+[2026-03-30 21:52:18.315] [console] [info] Phase 3: Rendering templates
 [2026-03-30 21:52:18.319] [console] [info] Phase 4: Writing 82 files
-[==================================================] 100% [00m:00s] Writing files...
-[2026-03-30 21:52:18.352] [console] [info] Build complete in 517ms (77 items, 5 archives, 2 extras, 0 minified)
-
+[████████████████████████████████████████] 100% 00:00
 [2026-03-30 21:52:18.353] [console] [info] Build complete!
 [2026-03-30 21:52:18.353] [console] [info]   Items:    77
 [2026-03-30 21:52:18.353] [console] [info]   Archives: 5
 [2026-03-30 21:52:18.353] [console] [info]   Assets:   12
 [2026-03-30 21:52:18.353] [console] [info]   Duration: 517ms
 ```
-
-> [!NOTE]
-> The garbled lines in the output above are a known race condition between
-> the logger and the progress bar, not a build error. Tracked in
-> [GitHub issue #1](https://github.com/jibbex/guss/issues/1).
 
 ---
 
