@@ -130,6 +130,7 @@ add_library(guss-core
     src/core/error.cpp
     src/core/permalink.cpp
     src/core/value.cpp
+    src/core/progressbar.cpp
 )
 
 target_include_directories(guss-core PUBLIC include)
@@ -229,7 +230,9 @@ endif()
 # -----------------------------------------------------------------------------
 # CLI binary
 # -----------------------------------------------------------------------------
-add_executable(guss src/cli/main.cpp)
+add_executable(guss
+    src/cli/main.cpp
+)
 
 target_link_libraries(guss PRIVATE
     guss-core
@@ -556,6 +559,7 @@ if(GUSS_BUILD_TESTS)
         tests/test_rest_adapter.cpp
         tests/test_markdown_adapter.cpp
         tests/test_generators.cpp
+        tests/test_progressbar.cpp
     )
     target_link_libraries(guss-tests PRIVATE
         guss-core
