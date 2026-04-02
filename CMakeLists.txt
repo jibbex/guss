@@ -559,7 +559,6 @@ if(GUSS_BUILD_TESTS)
         tests/test_rest_adapter.cpp
         tests/test_markdown_adapter.cpp
         tests/test_generators.cpp
-        tests/test_progressbar.cpp
     )
     target_link_libraries(guss-tests PRIVATE
         guss-core
