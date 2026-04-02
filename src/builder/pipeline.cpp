@@ -160,7 +160,9 @@ core::error::VoidResult Pipeline::ping() const {
 std::expected<adapters::FetchResult, core::error::Error> Pipeline::phase_fetch(ProgressCallback progress) const {
     return adapter_->fetch_all([&progress](const size_t current, const size_t total) {
         if (progress && total > 0) {
-            const std::uint8_t p = current / total * 100.0f;
+            const size_t bounded_current = std::min(current, total);
+            const auto ratio = static_cast<float>(bounded_current) / static_cast<float>(total);
+            const std::uint8_t p = static_cast<std::uint8_t>(ratio * 25.0f);
             progress(p);
         }
     });
