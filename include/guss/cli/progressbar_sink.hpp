@@ -41,9 +41,9 @@
 
 #include "guss/cli/progressbar.hpp"
 
-namespace guss::cli {
+namespace progress {
 
-class ProgressBarSink final : public spdlog::sinks::base_sink<std::mutex> {
+class Sink final : public spdlog::sinks::base_sink<std::mutex> {
 public:
     /**
      * \brief Construct the sink with a sensible default pattern.
@@ -54,7 +54,7 @@ public:
      * ANSI escape sequence around it.  The formatter appends \c \\n
      * automatically.
      */
-    ProgressBarSink() {
+    Sink() {
         set_pattern("[%^%l%$] %v");
     }
 
