@@ -411,7 +411,9 @@ core::error::VoidResult Pipeline::phase_write(
         written++;
 
         if (progress) {
-            const std::uint8_t p = written / files.size() * 100;
+            const std::uint8_t p = static_cast<std::uint8_t>(
+                (static_cast<double>(written) / static_cast<double>(files.size())) * 100.0
+            );
             progress(p);
         }
     }
