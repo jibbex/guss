@@ -1,5 +1,5 @@
 /**
- * \file log_sink.hpp
+ * \file progressbar_sink.hpp
  * \brief spdlog sink that reserves the last terminal line for a progress bar.
  *
  * \details
@@ -228,5 +228,5 @@ private:
     std::atomic<std::shared_ptr<progress::Bar>> bar_;
 };
 
-} // namespace guss::cli
+} // namespace progress
 
