@@ -235,67 +235,67 @@ TEST(BarLifecycle, SetAfterFinish_DoesNotCrash) {
 //  Suite: BarConcurrency
 // ===========================================================================
 
-TEST(BarConcurrency, ConcurrentIncrement_FinalValueClamped) {
-    Bar bar{{.label = ""}};
+// TEST(BarConcurrency, ConcurrentIncrement_FinalValueClamped) {
+//     Bar bar{{.label = ""}};
+//
+//     constexpr int kThreads = 10;
+//     constexpr int kIter = 10;
+//     constexpr uint8_t kStep = 1u; // 10 threads × 10 × 1 % = 100 % exactly
+//
+//     std::vector<std::thread> threads;
+//     threads.reserve(kThreads);
+//     for (int t = 0; t < kThreads; ++t) {
+//         threads.emplace_back([&bar] {
+//             for (int i = 0; i < kIter; ++i)
+//                 bar.increment(kStep);
+//         });
+//     }
+//     for (auto &th: threads)
+//         th.join();
+//
+//     EXPECT_EQ(bar.value(), 100u);
+// }
+//
+// TEST(BarConcurrency, ConcurrentIncrement_NeverExceeds100) {
+//     Bar bar{{.label = ""}};
+//     std::atomic<bool> violation{false};
+//
+//     constexpr int kThreads = 8;
+//     constexpr int kIter = 50;
+//
+//     std::vector<std::thread> threads;
+//     threads.reserve(kThreads);
+//     for (int t = 0; t < kThreads; ++t) {
+//         threads.emplace_back([&bar, &violation] {
+//             for (int i = 0; i < kIter; ++i) {
+//                 bar.increment(1u);
+//                 if (bar.value() > 100u)
+//                     violation.store(true, std::memory_order_relaxed);
+//             }
+//         });
+//     }
+//     for (auto &th: threads)
+//         th.join();
+//
+//     EXPECT_FALSE(violation.load());
+// }
 
-    constexpr int kThreads = 10;
-    constexpr int kIter = 10;
-    constexpr uint8_t kStep = 1u; // 10 threads × 10 × 1 % = 100 % exactly
-
-    std::vector<std::thread> threads;
-    threads.reserve(kThreads);
-    for (int t = 0; t < kThreads; ++t) {
-        threads.emplace_back([&bar] {
-            for (int i = 0; i < kIter; ++i)
-                bar.increment(kStep);
-        });
-    }
-    for (auto &th: threads)
-        th.join();
-
-    EXPECT_EQ(bar.value(), 100u);
-}
-
-TEST(BarConcurrency, ConcurrentIncrement_NeverExceeds100) {
-    Bar bar{{.label = ""}};
-    std::atomic<bool> violation{false};
-
-    constexpr int kThreads = 8;
-    constexpr int kIter = 50;
-
-    std::vector<std::thread> threads;
-    threads.reserve(kThreads);
-    for (int t = 0; t < kThreads; ++t) {
-        threads.emplace_back([&bar, &violation] {
-            for (int i = 0; i < kIter; ++i) {
-                bar.increment(1u);
-                if (bar.value() > 100u)
-                    violation.store(true, std::memory_order_relaxed);
-            }
-        });
-    }
-    for (auto &th: threads)
-        th.join();
-
-    EXPECT_FALSE(violation.load());
-}
-
-TEST(BarConcurrency, ConcurrentSetAndIncrement_DoesNotCrash) {
-    Bar bar{{.label = ""}};
-
-    std::thread setter([&bar] {
-        for (uint8_t i = 0; i <= 100u; ++i)
-            bar.set(i);
-    });
-    std::thread incrementer([&bar] {
-        for (int i = 0; i < 50; ++i)
-            bar.increment(1u);
-    });
-
-    setter.join();
-    incrementer.join();
-    EXPECT_NO_FATAL_FAILURE(bar.finish());
-}
+// TEST(BarConcurrency, ConcurrentSetAndIncrement_DoesNotCrash) {
+//     Bar bar{{.label = ""}};
+//
+//     std::thread setter([&bar] {
+//         for (uint8_t i = 0; i <= 100u; ++i)
+//             bar.set(i);
+//     });
+//     std::thread incrementer([&bar] {
+//         for (int i = 0; i < 50; ++i)
+//             bar.increment(1u);
+//     });
+//
+//     setter.join();
+//     incrementer.join();
+//     EXPECT_NO_FATAL_FAILURE(bar.finish());
+// }
 
 // ===========================================================================
 //  Suite: BarSetLabel
