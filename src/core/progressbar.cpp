@@ -14,7 +14,7 @@ namespace progress {
 // Bar — construction / destruction
 // ---------------------------------------------------------------------------
 
-Bar::Bar(BarConfig config) noexcept :
+Bar::Bar(BarConfig config) :
     cfg_{std::move(config)},
     cells_per_pct_{cfg_.width / 100.0f},
     start_{Clock::now()}
@@ -23,7 +23,7 @@ Bar::Bar(BarConfig config) noexcept :
     render_locked(0u);
 }
 
-Bar::~Bar() noexcept {
+Bar::~Bar() {
     finish();
 }
 
@@ -31,13 +31,13 @@ Bar::~Bar() noexcept {
 // Bar — public interface
 // ---------------------------------------------------------------------------
 
-void Bar::set(const uint8_t pct) noexcept {
+void Bar::set(const uint8_t pct) {
     const uint8_t clamped = pct > 100u ? 100u : pct;
     progress_.store(clamped, std::memory_order_relaxed);
     render_locked(clamped);
 }
 
-void Bar::increment(const uint8_t step) noexcept {
+void Bar::increment(const uint8_t step) {
     uint8_t current = progress_.load(std::memory_order_relaxed);
     uint8_t next{};
     do {
@@ -55,23 +55,23 @@ void Bar::finish() {
     write_raw("\n");
 }
 
-uint8_t Bar::value() const noexcept {
+uint8_t Bar::value() const {
     return progress_.load(std::memory_order_relaxed);
 }
 
-void Bar::set_label(const std::string_view text) noexcept {
+void Bar::set_label(const std::string_view text) {
     cfg_.label = text;
 }
 
-std::string_view Bar::label() const noexcept {
+std::string_view Bar::label() const {
     return cfg_.label;
 }
 
-std::mutex& Bar::console_mutex() noexcept {
+std::mutex& Bar::console_mutex() {
     return render_mutex_;
 }
 
-void Bar::redraw_unlocked() noexcept {
+void Bar::redraw_unlocked() {
     render_impl(progress_.load(std::memory_order_relaxed));
 }
 
@@ -163,7 +163,7 @@ void Bar::write_raw(const std::string_view text) {
     std::fflush(stdout);
 }
 
-void Bar::enable_vt_on_windows() noexcept {
+void Bar::enable_vt_on_windows() {
 #ifdef _WIN32
     HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
     if (h == INVALID_HANDLE_VALUE) return;

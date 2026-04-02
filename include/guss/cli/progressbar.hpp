@@ -241,7 +241,7 @@ public:
      *
      * \param config  Display configuration; all fields have defaults.
      */
-    explicit Bar(BarConfig config = {}) noexcept;
+    explicit Bar(BarConfig config = {});
 
     /**
      * \brief Destructor — calls \c finish() if not already finished.
@@ -250,7 +250,7 @@ public:
      * Ensures the bar is always closed cleanly (cursor on a new line, bar at
      * 100 %) even if an exception unwinds the owning scope.
      */
-    ~Bar() noexcept;
+    ~Bar();
 
     // -- Non-copyable, non-movable -------------------------------------------
 
@@ -270,7 +270,7 @@ public:
      *
      * \param pct Target progress in [0, 100].
      */
-    void set(uint8_t pct) noexcept;
+    void set(uint8_t pct);
 
     /**
      * \brief Advance progress by \p step percent using a lock-free CAS-loop.
@@ -281,7 +281,7 @@ public:
      *
      * \param step  Percentage points to add; defaults to 1.
      */
-    void increment(uint8_t step = 1u) noexcept;
+    void increment(uint8_t step = 1u);
 
     /**
      * \brief Seal the bar at 100 % and advance the cursor to the next line.
@@ -302,7 +302,7 @@ public:
      *
      * \retval uint8_t Current progress in [0, 100].
      */
-    [[nodiscard]] uint8_t value() const noexcept;
+    [[nodiscard]] uint8_t value() const;
 
     /**
      * \brief Replace the label text displayed to the left of the bar.
@@ -316,7 +316,7 @@ public:
      *
      * \param text  New label text. May be empty.
      */
-    void set_label(std::string_view text) noexcept;
+    void set_label(std::string_view text);
 
     /**
      * \brief Return the current label text.
@@ -324,7 +324,7 @@ public:
      * \retval std::string_view  View into the label stored in \c cfg_.label.
      *                           The view is valid until the next call to \c set_label().
      */
-    [[nodiscard]] std::string_view label() const noexcept;
+    [[nodiscard]] std::string_view label() const;
 
     /**
      * \brief Return a reference to the internal render mutex.
@@ -340,7 +340,7 @@ public:
      *
      * \retval std::mutex&  Reference to the render / console mutex.
      */
-    [[nodiscard]] std::mutex& console_mutex() noexcept;
+    [[nodiscard]] std::mutex& console_mutex();
 
     /**
      * \brief Render the current progress state without acquiring the mutex.
@@ -350,7 +350,7 @@ public:
      * Must only be called while the caller already holds \c console_mutex()
      * (i.e. from inside \c guss::cli::ProgressBarSink::sink_it_()).
      */
-    void redraw_unlocked() noexcept;
+    void redraw_unlocked();
 
 private:
     // -- Rendering -----------------------------------------------------------
@@ -435,7 +435,7 @@ private:
      * so that ANSI escape sequences are interpreted rather than printed
      * literally. On POSIX systems this function is a no-op.
      */
-    static void enable_vt_on_windows() noexcept;
+    static void enable_vt_on_windows();
 
     // -- Data ----------------------------------------------------------------
 
