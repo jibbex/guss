@@ -60,11 +60,17 @@ uint8_t Bar::value() const {
 }
 
 void Bar::set_label(const std::string_view text) {
+    std::lock_guard<std::mutex> lock(render_mutex_);
     cfg_.label = text;
 }
 
 std::string_view Bar::label() const {
-    return cfg_.label;
+    thread_local std::string label_snapshot;
+    {
+        std::lock_guard<std::mutex> lock(render_mutex_);
+        label_snapshot = cfg_.label;
+    }
+    return label_snapshot;
 }
 
 std::mutex& Bar::console_mutex() {
