@@ -13,9 +13,6 @@
 
 #include <CLI/CLI.hpp>
 #include <spdlog/spdlog.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
-#include <indicators/progress_bar.hpp>
-#include <indicators/cursor_control.hpp>
 
 #include "guss/adapters/markdown/markdown_adapter.hpp"
 #include "guss/adapters/rest/rest_adapter.hpp"
@@ -23,31 +20,37 @@
 #include "guss/core/config.hpp"
 #include "guss/core/error.hpp"
 #include "guss/cli/constants.hpp"
+#include "guss/cli/progressbar_sink.hpp"
+#include "guss/cli/progressbar.hpp"
 
-#include <iostream>
+#include <string_view>
 #include <fstream>
 #include <filesystem>
-#include <stdlib.h>
+#include <cstdlib>
 
 namespace fs = std::filesystem;
 
+/**
+ * \brief Configure spdlog to use ProgressBarSink and return the sink.
+ *
+ * \details
+ * Creates a \c ProgressBarSink as the sole sink for the "Guss" default logger.
+ * The returned \c shared_ptr allows the caller to call \c attach() / \c detach()
+ * when a progress bar is active.
+ *
+ * \param[in] level Log level as a constant reference to a string (debug, info, warn, error, off). Defaults to info.
+ * \return Shared pointer to the live sink.
+ */
+static std::shared_ptr<progress::Sink> setup_logging(const std::string& level) {
+    auto sink   = std::make_shared<progress::Sink>();
+    auto logger = std::make_shared<spdlog::logger>("Guss", sink);
+    spdlog::set_default_logger(logger);
+    spdlog::set_level(spdlog::level::from_str(level));
 
-void setup_logging(const std::string& level) {
-    auto console = spdlog::stdout_color_mt("console");
-    spdlog::set_default_logger(console);
-
-    if (level == "debug") {
-        spdlog::set_level(spdlog::level::debug);
-    } else if (level == "warn") {
-        spdlog::set_level(spdlog::level::warn);
-    } else if (level == "error") {
-        spdlog::set_level(spdlog::level::err);
-    } else {
-        spdlog::set_level(spdlog::level::info);
-    }
+    return sink;
 }
 
-int cmd_init(const std::string& directory) {
+static int cmd_init(const std::string& directory) {
     fs::path project_dir = directory.empty() ? fs::current_path() : fs::path(directory);
 
     spdlog::info("Initializing Guss project in " + project_dir.string());
@@ -109,8 +112,8 @@ int cmd_init(const std::string& directory) {
     return 0;
 }
 
-int cmd_build(const std::string& config_path, bool verbose, bool clean_first) {
-    setup_logging(verbose ? "debug" : "info");
+static int cmd_build(const std::string& config_path, bool verbose, bool clean_first) {
+    auto sink = setup_logging(verbose ? "debug" : "info");
 
     spdlog::info("🔥 GUSS BUILD, WITNESS PERFECTION");
     spdlog::info("Loading configuration from {}", config_path);
@@ -153,27 +156,25 @@ int cmd_build(const std::string& config_path, bool verbose, bool clean_first) {
         }
     }
 
-    // Setup progress bar
-    indicators::ProgressBar bar{
-        indicators::option::BarWidth{50},
-        indicators::option::Start{"["},
-        indicators::option::End{"]"},
-        indicators::option::ForegroundColor{indicators::Color::green},
-        indicators::option::ShowPercentage{true},
-        indicators::option::ShowElapsedTime{true},
-        indicators::option::PostfixText{"Starting..."}
-    };
-
-    indicators::show_console_cursor(false);
+    // Create the progress bar and attach it to the sink so that every log
+    // message above triggers the 4-step protocol (erase → log → \n → redraw),
+    // keeping the bar pinned to the last terminal line at all times.
+    auto bar = std::make_shared<progress::Bar>(progress::BarConfig{
+        .color_low  = { 255, 140,   0 },
+        .color_high = { 220,  30, 255 },
+        .show_eta   = true,
+    });
+    sink->attach(bar);
 
     // Run build
-    auto result = pipeline.build([&bar](std::string_view message, float progress) {
-        bar.set_progress(static_cast<size_t>(progress * 100));
-        bar.set_option(indicators::option::PostfixText{std::string(message)});
+    auto result = pipeline.build([&bar](const std::uint8_t progress) {
+        bar->set(progress);
     });
 
-    indicators::show_console_cursor(true);
-    std::cout << std::endl;
+    // Detach before finish() so the sink's no-bar path handles any final
+    // log messages cleanly, and finish() can write its \n uncontested.
+    sink->detach();
+    bar->finish();
 
     if (!result) {
         spdlog::error("Build failed: {}", result.error().format());
@@ -193,7 +194,7 @@ int cmd_build(const std::string& config_path, bool verbose, bool clean_first) {
     return stats.errors > 0 ? 1 : 0;
 }
 
-int cmd_ping(const std::string& config_path) {
+static int cmd_ping(const std::string& config_path) {
     setup_logging("info");
 
     spdlog::info("Testing connection...");
@@ -237,7 +238,7 @@ int cmd_ping(const std::string& config_path) {
     return 0;
 }
 
-int cmd_clean(const std::string& config_path) {
+static int cmd_clean(const std::string& config_path) {
     setup_logging("info");
 
     guss::core::config::Config config(config_path);
@@ -259,14 +260,14 @@ int cmd_clean(const std::string& config_path) {
     return 0;
 }
 
-int cmd_serve(std::string_view config_path) {
+static int cmd_serve(std::string_view config_path) {
     spdlog::info("Starting development server...");
     return system(std::format(
         "python3 -m http.server --bind 127.0.0.1 --directory {} 8000",
         config_path).c_str());
 }
 
-int main(int argc, char** argv) {
+int main(const int argc, char** argv) {
     CLI::App app{"Guss - A pluggable static site generator"};
     app.require_subcommand(1);
 
