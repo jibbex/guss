@@ -112,8 +112,14 @@ Alpine.bind('themeToggle', () => ({
          * @returns {void}
          */
         const apply = () => {
-            html.classList.toggle('dark', light);
-            localStorage.setItem('theme', light ? 'dark' : 'light');
+            try {
+                html.classList.toggle('dark', light);
+                this['aria-pressed'] = light;
+                localStorage.setItem('theme', light ? 'dark' : 'light');
+            } catch (e) {
+                // Fail silently if localStorage is unavailable or quota is exceeded.
+                console.warn('Failed to persist theme preference:', e);
+            }
         };
 
         if (event && document.startViewTransition) {
@@ -155,7 +161,7 @@ Alpine.bind('themeToggle', () => ({
             const transition = document.startViewTransition(apply);
 
             // Clean up once the transition has fully completed.
-            transition.finished.then(() => {
+            transition.finished.finally(() => {
                 html.classList.remove('theme-transitioning');
                 namedEls.forEach((el, i) => {
                     if (saved[i]) {
@@ -177,7 +183,7 @@ Alpine.bind('themeToggle', () => ({
  * Alpine.js data component for a "back to top" button.
  *
  * Tracks the window scroll position and exposes a `visible` flag that
- * becomes `true` once the user has scrolled past 300 px. A passive scroll
+ * becomes `true` once the user has scrolled past `scrollThreshold` px. A passive scroll
  * listener is registered on `init` and the flag is evaluated immediately
  * so the button state is correct on page load (e.g. after a browser
  * scroll-position restore).
@@ -186,18 +192,24 @@ Alpine.bind('themeToggle', () => ({
  *
  * @example
  * // In your HTML:
- * // <button x-data="backToTop" x-show="visible" @click="scrollToTop">
+ * // <button x-data="backToTop(200)" x-show="visible" @click="scrollToTop">
  * //   ↑ Top
  * // </button>
  */
-Alpine.data('backToTop', () => ({
+Alpine.data('backToTop', (scrollThreshold = 300) => ({
 
     /**
      * Whether the button should be visible.
-     * `true` when `window.scrollY` exceeds 300 px, `false` otherwise.
+     * `true` when `window.scrollY` exceeds `scrollThreshold` px, `false` otherwise.
      * @type {boolean}
      */
     visible: false,
+
+    /**
+     * Scroll position threshold (in pixels) for showing the button.
+     * @type {number}
+     */
+    scrollThreshold: scrollThreshold,
 
     /**
      * Smoothly scrolls the window back to the top of the page.
@@ -222,14 +234,15 @@ Alpine.data('backToTop', () => ({
 
         /**
          * Evaluates the current scroll position and toggles {@link visible}
-         * only when the threshold boundary (300 px) is crossed.
+         * only when the threshold boundary (`scrollThreshold` px) is crossed.
          *
          * @inner
          * @returns {void}
          */
         const update = () => { 
-            if ((window.scrollY > 300) !== this.visible) 
+            if ((window.scrollY > this.scrollThreshold) !== this.visible) {
                 this.visible = !this.visible; 
+            }
         };
 
         window.addEventListener('scroll', update, { passive: true });
@@ -312,7 +325,7 @@ Alpine.data('backToTop', () => ({
         html.classList.add('is-scrolling', 'sb-was-active');
         clearTimeout(timer);
         if (!nearBar) {
-            timer = setTimeout(hide, 800);
+            timer = setTimeout(hide, SCROLLBAR_HIDE_DELAY_MS);
         }
     }
 
