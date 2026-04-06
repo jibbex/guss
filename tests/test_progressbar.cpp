@@ -14,13 +14,16 @@
  *                       guarantee of \c Bar::finish().
  *  - **BarConcurrency** — multiple threads calling \c increment()
  *                         simultaneously; asserts the final value is exactly
- *                         100 and that no data race occurs.
+ *                         100 and that no data race occurs.  All concurrency
+ *                         tests suppress stdout via \c StdoutDevNull to avoid
+ *                         filling the ctest pipe buffer (400+ render calls at
+ *                         ~300 bytes each easily exceeds the 64 KiB default).
  *  - **BarSetLabel**  — label mutation via \c set_label(); state orthogonality
  *                       and output verification.
  *  - **BarOutput**    — captures fd 1 into a POSIX pipe and asserts that each
  *                       rendered frame contains the expected structural tokens:
- *                       carriage return, SGR colour escape, block glyph, and the
- *                       terminating newline emitted by \c finish().
+ *                       carriage return, SGR colour escape, block glyph, and
+ *                       the terminating newline emitted by \c finish().
  *
  * \note The output capture tests use POSIX \c pipe(2) / \c dup2(2) and are
  *       therefore skipped automatically on non-POSIX platforms via a
@@ -29,6 +32,7 @@
 
 #include <gtest/gtest.h>
 #include "guss/cli/progressbar.hpp"
+#include "test_helpers.hpp"
 
 #include <algorithm>
 #include <atomic>
@@ -37,60 +41,19 @@
 #include <thread>
 #include <vector>
 
-#ifndef _WIN32
-#include <unistd.h>
-#endif
-
 using progress::Bar;
 using progress::BarConfig;
 using progress::Rgb;
 
-// ===========================================================================
-//  Helpers
-// ===========================================================================
-
-namespace {
-
 #ifndef _WIN32
-class StdoutCapture {
-public:
-    StdoutCapture() {
-        std::fflush(stdout);
-        saved_fd_ = ::dup(1);
-        EXPECT_NE(saved_fd_, -1);
-        EXPECT_EQ(::pipe(fds_), 0);
-        EXPECT_EQ(::dup2(fds_[1], 1), 1);
-        ::close(fds_[1]);
-    }
-
-    ~StdoutCapture() {
-        std::fflush(stdout);
-        ::dup2(saved_fd_, 1);
-        ::close(saved_fd_);
-    }
-
-    [[nodiscard]] std::string read() const {
-        std::fflush(stdout);
-        std::string result;
-        char buf[256];
-        ssize_t n;
-        while ((n = ::read(fds_[0], buf, sizeof(buf))) > 0)
-            result.append(buf, static_cast<size_t>(n));
-        ::close(fds_[0]);
-        return result;
-    }
-
-private:
-    int saved_fd_{};
-    int fds_[2]{};
-};
-#endif
-
-bool contains(const std::string &haystack, std::string_view needle) {
-    return haystack.find(needle) != std::string::npos;
+using test_helpers::StdoutCapture;
+using test_helpers::StdoutDevNull;
+using test_helpers::contains;
+#else
+static bool contains(const std::string& h, std::string_view n) {
+    return h.find(n) != std::string::npos;
 }
-
-} // namespace
+#endif
 
 // ===========================================================================
 //  Suite: RgbLerp
@@ -149,23 +112,35 @@ TEST(RgbLerp, Monotonic_RedChannelIncreases) {
 // ===========================================================================
 
 TEST(BarState, DefaultConstruct_ValueIsZero) {
+#ifndef _WIN32
+    StdoutDevNull suppress;
+#endif
     Bar bar{{.label = ""}};
     EXPECT_EQ(bar.value(), 0u);
 }
 
 TEST(BarState, Set_StoresExactValue) {
+#ifndef _WIN32
+    StdoutDevNull suppress;
+#endif
     Bar bar{{.label = ""}};
     bar.set(50u);
     EXPECT_EQ(bar.value(), 50u);
 }
 
 TEST(BarState, Set_ClampsAbove100) {
+#ifndef _WIN32
+    StdoutDevNull suppress;
+#endif
     Bar bar{{.label = ""}};
     bar.set(200u);
     EXPECT_EQ(bar.value(), 100u);
 }
 
 TEST(BarState, Set_BoundaryValues) {
+#ifndef _WIN32
+    StdoutDevNull suppress;
+#endif
     Bar bar{{.label = ""}};
     bar.set(0u);
     EXPECT_EQ(bar.value(), 0u);
@@ -174,6 +149,9 @@ TEST(BarState, Set_BoundaryValues) {
 }
 
 TEST(BarState, Increment_AccumulatesCorrectly) {
+#ifndef _WIN32
+    StdoutDevNull suppress;
+#endif
     Bar bar{{.label = ""}};
     bar.increment(10u);
     bar.increment(10u);
@@ -182,6 +160,9 @@ TEST(BarState, Increment_AccumulatesCorrectly) {
 }
 
 TEST(BarState, Increment_SaturatesAt100) {
+#ifndef _WIN32
+    StdoutDevNull suppress;
+#endif
     Bar bar{{.label = ""}};
     bar.set(90u);
     bar.increment(20u);
@@ -189,6 +170,9 @@ TEST(BarState, Increment_SaturatesAt100) {
 }
 
 TEST(BarState, Increment_DefaultStep_IsOnePercent) {
+#ifndef _WIN32
+    StdoutDevNull suppress;
+#endif
     Bar bar{{.label = ""}};
     bar.increment();
     EXPECT_EQ(bar.value(), 1u);
@@ -199,10 +183,16 @@ TEST(BarState, Increment_DefaultStep_IsOnePercent) {
 // ===========================================================================
 
 TEST(BarLifecycle, ConstructAndDestroy_DoesNotThrow) {
+#ifndef _WIN32
+    StdoutDevNull suppress;
+#endif
     EXPECT_NO_THROW({ Bar bar{{.label = ""}}; });
 }
 
 TEST(BarLifecycle, Finish_SetsValueTo100) {
+#ifndef _WIN32
+    StdoutDevNull suppress;
+#endif
     Bar bar{{.label = ""}};
     bar.set(40u);
     bar.finish();
@@ -210,6 +200,9 @@ TEST(BarLifecycle, Finish_SetsValueTo100) {
 }
 
 TEST(BarLifecycle, Finish_IsIdempotent_NoThrow) {
+#ifndef _WIN32
+    StdoutDevNull suppress;
+#endif
     Bar bar{{.label = ""}};
     EXPECT_NO_THROW({
         bar.finish();
@@ -219,6 +212,9 @@ TEST(BarLifecycle, Finish_IsIdempotent_NoThrow) {
 }
 
 TEST(BarLifecycle, Finish_ThenDestructor_DoesNotThrow) {
+#ifndef _WIN32
+    StdoutDevNull suppress;
+#endif
     EXPECT_NO_THROW({
         Bar bar{{.label = ""}};
         bar.finish();
@@ -226,6 +222,9 @@ TEST(BarLifecycle, Finish_ThenDestructor_DoesNotThrow) {
 }
 
 TEST(BarLifecycle, SetAfterFinish_DoesNotCrash) {
+#ifndef _WIN32
+    StdoutDevNull suppress;
+#endif
     Bar bar{{.label = ""}};
     bar.finish();
     EXPECT_NO_THROW(bar.set(50u));
@@ -233,75 +232,91 @@ TEST(BarLifecycle, SetAfterFinish_DoesNotCrash) {
 
 // ===========================================================================
 //  Suite: BarConcurrency
+//
+//  StdoutDevNull suppresses bar renders so the ctest pipe buffer cannot fill.
+//  Without suppression 400+ render calls × ~300 bytes each exceeds the
+//  default 64 KiB pipe buffer, blocking fwrite() and hanging the test.
 // ===========================================================================
 
-// TEST(BarConcurrency, ConcurrentIncrement_FinalValueClamped) {
-//     Bar bar{{.label = ""}};
-//
-//     constexpr int kThreads = 10;
-//     constexpr int kIter = 10;
-//     constexpr uint8_t kStep = 1u; // 10 threads × 10 × 1 % = 100 % exactly
-//
-//     std::vector<std::thread> threads;
-//     threads.reserve(kThreads);
-//     for (int t = 0; t < kThreads; ++t) {
-//         threads.emplace_back([&bar] {
-//             for (int i = 0; i < kIter; ++i)
-//                 bar.increment(kStep);
-//         });
-//     }
-//     for (auto &th: threads)
-//         th.join();
-//
-//     EXPECT_EQ(bar.value(), 100u);
-// }
-//
-// TEST(BarConcurrency, ConcurrentIncrement_NeverExceeds100) {
-//     Bar bar{{.label = ""}};
-//     std::atomic<bool> violation{false};
-//
-//     constexpr int kThreads = 8;
-//     constexpr int kIter = 50;
-//
-//     std::vector<std::thread> threads;
-//     threads.reserve(kThreads);
-//     for (int t = 0; t < kThreads; ++t) {
-//         threads.emplace_back([&bar, &violation] {
-//             for (int i = 0; i < kIter; ++i) {
-//                 bar.increment(1u);
-//                 if (bar.value() > 100u)
-//                     violation.store(true, std::memory_order_relaxed);
-//             }
-//         });
-//     }
-//     for (auto &th: threads)
-//         th.join();
-//
-//     EXPECT_FALSE(violation.load());
-// }
+TEST(BarConcurrency, ConcurrentIncrement_FinalValueClamped) {
+#ifndef _WIN32
+    StdoutDevNull suppress;
+#endif
+    Bar bar{{.label = ""}};
 
-// TEST(BarConcurrency, ConcurrentSetAndIncrement_DoesNotCrash) {
-//     Bar bar{{.label = ""}};
-//
-//     std::thread setter([&bar] {
-//         for (uint8_t i = 0; i <= 100u; ++i)
-//             bar.set(i);
-//     });
-//     std::thread incrementer([&bar] {
-//         for (int i = 0; i < 50; ++i)
-//             bar.increment(1u);
-//     });
-//
-//     setter.join();
-//     incrementer.join();
-//     EXPECT_NO_FATAL_FAILURE(bar.finish());
-// }
+    constexpr int kThreads = 10;
+    constexpr int kIter = 10;
+    constexpr uint8_t kStep = 1u; // 10 threads × 10 × 1 % = 100 % exactly
+
+    std::vector<std::thread> threads;
+    threads.reserve(kThreads);
+    for (int t = 0; t < kThreads; ++t) {
+        threads.emplace_back([&bar] {
+            for (int i = 0; i < kIter; ++i)
+                bar.increment(kStep);
+        });
+    }
+    for (auto &th: threads)
+        th.join();
+
+    EXPECT_EQ(bar.value(), 100u);
+}
+
+TEST(BarConcurrency, ConcurrentIncrement_NeverExceeds100) {
+#ifndef _WIN32
+    StdoutDevNull suppress;
+#endif
+    Bar bar{{.label = ""}};
+    std::atomic<bool> violation{false};
+
+    constexpr int kThreads = 8;
+    constexpr int kIter = 50;
+
+    std::vector<std::thread> threads;
+    threads.reserve(kThreads);
+    for (int t = 0; t < kThreads; ++t) {
+        threads.emplace_back([&bar, &violation] {
+            for (int i = 0; i < kIter; ++i) {
+                bar.increment(1u);
+                if (bar.value() > 100u)
+                    violation.store(true, std::memory_order_relaxed);
+            }
+        });
+    }
+    for (auto &th: threads)
+        th.join();
+
+    EXPECT_FALSE(violation.load());
+}
+
+TEST(BarConcurrency, ConcurrentSetAndIncrement_DoesNotCrash) {
+#ifndef _WIN32
+    StdoutDevNull suppress;
+#endif
+    Bar bar{{.label = ""}};
+
+    std::thread setter([&bar] {
+        for (uint8_t i = 0; i <= 100u; ++i)
+            bar.set(i);
+    });
+    std::thread incrementer([&bar] {
+        for (int i = 0; i < 50; ++i)
+            bar.increment(1u);
+    });
+
+    setter.join();
+    incrementer.join();
+    EXPECT_NO_FATAL_FAILURE(bar.finish());
+}
 
 // ===========================================================================
 //  Suite: BarSetLabel
 // ===========================================================================
 
 TEST(BarSetLabel, SetLabel_DoesNotAffectProgress) {
+#ifndef _WIN32
+    StdoutDevNull suppress;
+#endif
     Bar bar{{.label = "Before", .show_eta = false}};
     bar.set(60u);
     bar.set_label("After");
@@ -309,18 +324,27 @@ TEST(BarSetLabel, SetLabel_DoesNotAffectProgress) {
 }
 
 TEST(BarSetLabel, SetLabel_LabelReflectsNewValue) {
+#ifndef _WIN32
+    StdoutDevNull suppress;
+#endif
     Bar bar{{.label = "Before", .show_eta = false}};
     bar.set_label("After");
     EXPECT_EQ(bar.label(), "After");
 }
 
 TEST(BarSetLabel, SetLabel_EmptyString_ClearsLabel) {
+#ifndef _WIN32
+    StdoutDevNull suppress;
+#endif
     Bar bar{{.label = "Remove me", .show_eta = false}};
     bar.set_label("");
     EXPECT_EQ(bar.label(), "");
 }
 
 TEST(BarSetLabel, SetLabel_CalledMultipleTimes_ReflectsLastValue) {
+#ifndef _WIN32
+    StdoutDevNull suppress;
+#endif
     Bar bar{{.label = "", .show_eta = false}};
     bar.set_label("Step 1");
     bar.increment(25u);
@@ -434,13 +458,14 @@ TEST(BarOutput, Brackets_PresentWhenEnabled) {
     EXPECT_TRUE(contains(out, "]"));
 }
 
-TEST(BarOutput, ZeroProgress_NoFullBlockGlyph) {
+// Read only the initial 0 % frame (before finish() runs) so the 100 % frame
+// written by the destructor does not pollute the assertion.
+TEST(BarOutput, ZeroProgress_InitialFrame_NoFullBlockGlyph) {
     StdoutCapture cap;
-    {
-        Bar bar{{.width = 10, .label = "", .show_eta = false}};
-        bar.finish();
-    }
-    EXPECT_FALSE(contains(cap.read(), "█"));
+    Bar bar{{.width = 10, .label = "", .show_eta = false}};
+    // cap.read() restores stdout; the bar destructor will finish() to real stdout.
+    const std::string out = cap.read();
+    EXPECT_FALSE(contains(out, "█"));
 }
 
 #endif // _WIN32
