@@ -113,8 +113,9 @@ Alpine.bind('themeToggle', () => ({
          */
         const apply = () => {
             try {
+                const toggled = Boolean(event.currentTarget.getAttribute('aria-pressed'));
                 html.classList.toggle('dark', light);
-                this['aria-pressed'] = light;
+                event.currentTarget.setAttribute('aria-pressed', !toggled);
                 localStorage.setItem('theme', light ? 'dark' : 'light');
             } catch (e) {
                 // Fail silently if localStorage is unavailable or quota is exceeded.
