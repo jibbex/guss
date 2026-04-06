@@ -104,6 +104,17 @@ Alpine.bind('themeToggle', () => ({
         const light = !html.classList.contains('dark');
 
         /**
+         * The theme toggle button element, queried at click time to ensure the
+         * most up-to-date state is captured (e.g. if the button itself is
+         * conditionally rendered or moved in the DOM). The presence of the
+         * `x-bind="themeToggle"` attribute is used to reliably identify the
+         * correct element, even if multiple buttons are present or the structure
+         * changes.
+         * @type {HTMLElement | null}
+         */
+        const button = document.querySelector('button[x-bind="themeToggle"]');
+
+        /**
          * Applies the theme change to the DOM and persists it.
          * Toggles the `dark` class on `<html>` and writes the new preference
          * to `localStorage` under the key `"theme"`.
@@ -113,9 +124,9 @@ Alpine.bind('themeToggle', () => ({
          */
         const apply = () => {
             try {
-                const toggled = Boolean(event.currentTarget.getAttribute('aria-pressed'));
+                const toggled = Boolean(button?.getAttribute('aria-pressed'));
                 html.classList.toggle('dark', light);
-                event.currentTarget.setAttribute('aria-pressed', !toggled);
+                button?.setAttribute('aria-pressed', !toggled);
                 localStorage.setItem('theme', light ? 'dark' : 'light');
             } catch (e) {
                 // Fail silently if localStorage is unavailable or quota is exceeded.
