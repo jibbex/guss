@@ -19,6 +19,7 @@ Bar::Bar(BarConfig config) :
     cells_per_pct_{cfg_.width / 100.0f},
     start_{Clock::now()}
 {
+    cache_gradient();
     enable_vt_on_windows();
     render_locked(0u);
 }
@@ -73,11 +74,11 @@ std::string_view Bar::label() const {
     return label_snapshot;
 }
 
-std::mutex& Bar::console_mutex() {
+std::mutex& Bar::console_mutex() const {
     return render_mutex_;
 }
 
-void Bar::redraw_unlocked() {
+void Bar::redraw_unlocked() const {
     render_impl(progress_.load(std::memory_order_relaxed));
 }
 
@@ -88,6 +89,15 @@ void Bar::redraw_unlocked() {
 void Bar::render_locked(const uint8_t pct) const {
     std::lock_guard lk{render_mutex_};
     render_impl(pct);
+}
+
+void Bar::cache_gradient() {
+    gradient_.reserve(cfg_.width);
+    gradient_.push_back(cfg_.color_low.lerp(cfg_.color_high, 0.0f));
+    for (float i = 1; i < cfg_.width; ++i) {
+        const float gradient_pos = i / static_cast<float>(cfg_.width - 1);
+        gradient_.push_back(cfg_.color_low.lerp(cfg_.color_high, gradient_pos));
+    }
 }
 
 void Bar::render_impl(const uint8_t pct) const {
@@ -106,14 +116,11 @@ void Bar::render_impl(const uint8_t pct) const {
     const int frac = static_cast<int>((filled_f - static_cast<float>(full)) * 8.0f);
 
     for (int i = 0; i < cfg_.width; ++i) {
-        const float gradient_pos = (cfg_.width > 1) ? static_cast<float>(i) / static_cast<float>(cfg_.width - 1) : 0.0f;
-        const Rgb col = cfg_.color_low.lerp(cfg_.color_high, gradient_pos);
-
         if (i < full) {
-            out += fg(col);
+            out += fg(gradient_[i]);
             out += "█";
         } else if (i == full && frac > 0) {
-            out += fg(col);
+            out += fg(gradient_[i]);
             out += kEighths[frac];
         } else {
             out += "\x1b[38;2;60;60;80m\x1b[2m";

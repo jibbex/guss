@@ -57,7 +57,7 @@ namespace progress {
  * The string is pre-allocated to this capacity to avoid heap reallocations
  * on every frame. The default value of 768 is sufficient for a bar width of
  * up to ~50 columns with brackets, percentage, and ETA enabled, accounting
- * for the overhead of ANSI escape sequences and multi-byte UTF-8 block glyphs.
+ * for the overhead of ANSI escape sequences and multibyte UTF-8 block glyphs.
  *
  * Increase this constant if a custom \c BarConfig produces noticeably wider
  * output (e.g. very long labels combined with a wide bar).
@@ -340,7 +340,7 @@ public:
      *
      * \retval std::mutex&  Reference to the render / console mutex.
      */
-    [[nodiscard]] std::mutex& console_mutex();
+    [[nodiscard]] std::mutex& console_mutex() const;
 
     /**
      * \brief Render the current progress state without acquiring the mutex.
@@ -350,7 +350,7 @@ public:
      * Must only be called while the caller already holds \c console_mutex()
      * (i.e. from inside \c guss::cli::ProgressBarSink::sink_it_()).
      */
-    void redraw_unlocked();
+    void redraw_unlocked() const;
 
 private:
     // -- Rendering -----------------------------------------------------------
@@ -437,6 +437,30 @@ private:
      */
     static void enable_vt_on_windows();
 
+    /**
+     * \brief Pre-compute and store one \c Rgb entry per inner cell into \c gradient_.
+     *
+     * \details
+     * Populates \c gradient_ with exactly \c cfg_.width elements. Each element at
+     * index \c i holds the result of linearly interpolating between \c cfg_.color_low
+     * (index 0) and \c cfg_.color_high (index \c width-1) via  \c Rgb::lerp(), using
+     * the normalized position i / (width - 1) as the blend factor. Doing this once
+     * at construction time means \c render_impl() can replace a per-frame, per-cell
+     * \c lerp() call with a direct \c gradient_[i] lookup, eliminating repeated
+     * floating-point arithmetic on the hot rendering path.
+     *
+     * \pre  \c cfg_.width must be set to its final value before this call.
+     *       The method is called exactly once from the constructor body.
+     * \post \c gradient_.size() == cfg_.width.
+     *       Every element is a valid \c Rgb value in the range
+     *       [\c cfg_.color_low, \c cfg_.color_high].
+     *
+     * \note Must not be called a second time after construction; \c cfg_ is
+     *       treated as immutable once the bar is live and rendering has begun.
+     */
+    void cache_gradient();
+
+
     // -- Data ----------------------------------------------------------------
 
     /**
@@ -453,12 +477,13 @@ private:
         " ", "▏", "▎", "▍", "▌", "▋", "▊", "▉", "█"
     };
 
-    BarConfig cfg_;                     ///< Display configuration (immutable after construction).
-    float cells_per_pct_;               ///< Precomputed cfg_.width / 100.0f; avoids repeated division in render_impl().
-    TimePoint start_;                   ///< Construction time; used as the origin for ETA calculation.
-    std::atomic<uint8_t> progress_{0u}; ///< Current progress as integer percent [0, 100]; always lock-free.
-    std::atomic<bool> finished_{false}; ///< Set by finish(); prevents duplicate newlines.
-    mutable std::mutex render_mutex_;   ///< serializes stdout writes; not held during state updates.
+    BarConfig cfg_;                         ///< Display configuration (immutable after construction).
+    float cells_per_pct_;                   ///< Precomputed cfg_.width / 100.0f; avoids repeated division in render_impl().
+    TimePoint start_;                       ///< Construction time; used as the origin for ETA calculation.
+    std::atomic<uint8_t> progress_{0u};   ///< Current progress as integer percent [0, 100]; always lock-free.
+    std::atomic<bool> finished_{false};   ///< Set by finish(); prevents duplicate newlines.
+    mutable std::mutex render_mutex_;       ///< serializes stdout writes; not held during state updates.
+    std::vector<Rgb> gradient_;             ///< Per-cell gradient palette, pre-computed by cache_gradient().
 };
 
 } // namespace progress
