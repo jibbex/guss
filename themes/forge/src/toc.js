@@ -109,7 +109,7 @@
             if (entry.isIntersecting) {
                 const id = entry.target.id;
                 /** @type {HTMLAnchorElement|null} */
-                const link = ul.querySelector(`a[href="#${id}"]`);
+                const link = ul.querySelector(`a[href="#${CSS.escape(id)}"]`);
                 if (link && link !== activeLink) {
                     if (activeLink) {
                         activeLink.classList.remove('active');
