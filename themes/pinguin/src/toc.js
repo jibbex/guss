@@ -59,7 +59,7 @@
 
         /** @type {HTMLAnchorElement} Fragment link pointing at this heading. */
         const a = document.createElement('a');
-        a.href = '#' + h.id;
+        a.href = `#${h.id}`;
         a.textContent = h.textContent || '';
         a.className = h.tagName === 'H3' ? 'toc-h3' : '';
         li.appendChild(a);
@@ -83,7 +83,7 @@
             if (entry.isIntersecting) {
                 const id = entry.target.id;
                 /** @type {HTMLAnchorElement|null} */
-                const link = ul.querySelector('a[href="#' + id + '"]');
+                const link = ul.querySelector( `a[href="#${id}"]`);
                 if (link && link !== activeLink) {
                     if (activeLink) {
                         activeLink.classList.remove('active');
