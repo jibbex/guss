@@ -36,8 +36,14 @@ Alpine.data('themeToggle', () => ({
          * Commits the theme change to the DOM and `localStorage`.
          */
         const apply = () => {
-            document.documentElement.setAttribute('data-theme', theme);
-            localStorage.setItem('forge-theme', theme);
+            try {
+                document.documentElement.setAttribute('data-theme', theme);
+                localStorage.setItem('forge-theme', theme);
+            } catch (e) {
+                // If localStorage is unavailable (e.g. in private mode), fail
+                // gracefully by applying the theme without persisting it.
+                console.warn('Failed to persist theme preference:', e);
+            }
         };
 
         if (event && document.startViewTransition) {
