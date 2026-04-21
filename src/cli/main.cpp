@@ -43,7 +43,7 @@ namespace fs = std::filesystem;
  */
 static std::shared_ptr<progress::Sink> setup_logging(const std::string& level) {
     auto sink   = std::make_shared<progress::Sink>();
-    auto logger = std::make_shared<spdlog::logger>("Guss", sink);
+    const auto logger = std::make_shared<spdlog::logger>("Guss", sink);
     spdlog::set_default_logger(logger);
     spdlog::set_level(spdlog::level::from_str(level));
 
@@ -71,8 +71,7 @@ static int cmd_init(const std::string& directory) {
     }
 
     // Write config file
-    auto config_path = project_dir / "guss.yaml";
-    if (!fs::exists(config_path)) {
+    if (auto config_path = project_dir / "guss.yaml"; !fs::exists(config_path)) {
         std::ofstream config_file(config_path);
         config_file << guss::cli::DEFAULT_CONFIG;
         spdlog::info("Created guss.yaml");
@@ -81,8 +80,7 @@ static int cmd_init(const std::string& directory) {
     // ---
 
     auto write_file = [&project_dir](std::string_view dir, std::string_view name, std::string_view content) {
-        auto path = project_dir / dir / name;
-        if (!fs::exists(path)) {
+        if (auto path = project_dir / dir / name; !fs::exists(path)) {
             std::ofstream file(path);
             file << content;
             spdlog::info("Created {}/{}", dir, name);
@@ -112,14 +110,14 @@ static int cmd_init(const std::string& directory) {
     return 0;
 }
 
-static int cmd_build(const std::string& config_path, bool verbose, bool clean_first) {
-    auto sink = setup_logging(verbose ? "debug" : "info");
+static int cmd_build(const std::string& config_path, const bool verbose, const bool clean_first) {
+    const auto sink = setup_logging(verbose ? "debug" : "info");
 
     spdlog::info("🔥 GUSS BUILD, WITNESS PERFECTION");
     spdlog::info("Loading configuration from {}", config_path);
 
     // Load config
-    guss::core::config::Config config(config_path);
+    const guss::core::config::Config config(config_path);
 
     // Create adapter based on config
     guss::adapters::AdapterPtr adapter;
@@ -140,7 +138,7 @@ static int cmd_build(const std::string& config_path, bool verbose, bool clean_fi
     }
 
     // Create pipeline
-    guss::builder::Pipeline pipeline(
+    const guss::builder::Pipeline pipeline(
         std::move(adapter),
         config.site(),
         config.collections(),
@@ -149,8 +147,7 @@ static int cmd_build(const std::string& config_path, bool verbose, bool clean_fi
 
     // Clean if requested
     if (clean_first) {
-        auto clean_result = pipeline.clean();
-        if (!clean_result) {
+        if (auto clean_result = pipeline.clean(); !clean_result) {
             spdlog::error("Clean failed: {}", clean_result.error().format());
             return 1;
         }
@@ -228,8 +225,7 @@ static int cmd_ping(const std::string& config_path) {
         config.output()
     );
 
-    auto result = pipeline.ping();
-    if (!result) {
+    if (auto result = pipeline.ping(); !result) {
         spdlog::error("Connection failed: {}", result.error().format());
         return 1;
     }
@@ -241,12 +237,11 @@ static int cmd_ping(const std::string& config_path) {
 static int cmd_clean(const std::string& config_path) {
     setup_logging("info");
 
-    guss::core::config::Config config(config_path);
+    const guss::core::config::Config config(config_path);
 
     spdlog::info("Cleaning output directory: {}", config.output().output_dir.string());
 
-    std::error_code ec;
-    if (fs::exists(config.output().output_dir, ec) && !ec) {
+    if (std::error_code ec; fs::exists(config.output().output_dir, ec) && !ec) {
         fs::remove_all(config.output().output_dir, ec);
         if (ec) {
             spdlog::error("Failed to clean: {}", ec.message());
@@ -276,12 +271,12 @@ int main(const int argc, char** argv) {
     std::string serve_path = "dist";
 
     // init subcommand
-    auto init_cmd = app.add_subcommand("init", "Initialize a new Guss project");
+    const auto init_cmd = app.add_subcommand("init", "Initialize a new Guss project");
     std::string init_dir;
     init_cmd->add_option("directory", init_dir, "Project directory (default: current)");
 
     // build subcommand
-    auto build_cmd = app.add_subcommand("build", "Build the static site");
+    const auto build_cmd = app.add_subcommand("build", "Build the static site");
     bool verbose = false;
     bool clean_first = false;
     build_cmd->add_option("-c,--config", config_path, "Configuration file path");
@@ -289,15 +284,15 @@ int main(const int argc, char** argv) {
     build_cmd->add_flag("--clean", clean_first, "Clean output directory first");
 
     // ping subcommand
-    auto ping_cmd = app.add_subcommand("ping", "Test connection to content source");
+    const auto ping_cmd = app.add_subcommand("ping", "Test connection to content source");
     ping_cmd->add_option("-c,--config", config_path, "Configuration file path");
 
     // clean subcommand
-    auto clean_cmd = app.add_subcommand("clean", "Clean the output directory");
+    const auto clean_cmd = app.add_subcommand("clean", "Clean the output directory");
     clean_cmd->add_option("-c,--config", config_path, "Configuration file path");
 
     // serve command
-    auto serve_cmd = app.add_subcommand("serve", "Start a local development server");
+    const auto serve_cmd = app.add_subcommand("serve", "Start a local development server");
     serve_cmd->add_option("-d, --directory", serve_path, "Directory to serve (default: dist)");
 
     CLI11_PARSE(app, argc, argv);
