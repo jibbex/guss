@@ -75,6 +75,9 @@ static int cmd_init(const std::string& directory) {
         std::ofstream config_file(config_path);
         config_file << guss::cli::DEFAULT_CONFIG;
         spdlog::info("Created guss.yaml");
+    } else {
+        spdlog::warn("{} already exists", config_path.string());
+        return 1;
     }
 
     // ---
@@ -83,7 +86,7 @@ static int cmd_init(const std::string& directory) {
         if (auto path = project_dir / dir / name; !fs::exists(path)) {
             std::ofstream file(path);
             file << content;
-            spdlog::info("Created {}/{}", dir, name);
+            spdlog::info("Created {}", path.string());
         }
     };
 
