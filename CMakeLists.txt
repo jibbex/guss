@@ -33,6 +33,10 @@ if(NOT DEFINED MAX_RECURSION)
     set(MAX_RECURSION 100000)
 endif()
 
+if (NOT DEFINED VERSION)
+    set(VERSION "0.10.9")
+endif()
+
 # -----------------------------------------------------------------------------
 # Dependencies via CPM
 # -----------------------------------------------------------------------------
@@ -248,7 +252,10 @@ if(GUSS_RUNTIME_CHECKS)
     target_compile_definitions(guss PRIVATE USE_RUNTIME_CHECKS=true)
 endif()
 
-target_compile_definitions(guss PRIVATE MAX_RECURSION=${MAX_RECURSION})
+target_compile_definitions(guss PRIVATE
+    MAX_RECURSION=${MAX_RECURSION}
+    VERSION=\"${VERSION}\"
+)
 
 # -----------------------------------------------------------------------------
 # Generate include/guss/cli/constants.hpp from themes/pinguin

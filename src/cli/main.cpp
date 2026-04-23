@@ -269,6 +269,10 @@ int main(const int argc, char** argv) {
     CLI::App app{"Guss - A pluggable static site generator"};
     app.require_subcommand(1);
 
+#ifdef VERSION
+    app.set_version_flag("--version", VERSION);
+#endif
+
     // Global options
     std::string config_path = "guss.yaml";
     std::string serve_path = "dist";
