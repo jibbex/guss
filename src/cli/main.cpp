@@ -200,7 +200,7 @@ static int cmd_ping(const std::string& config_path) {
     spdlog::info("Testing connection...");
 
     // Load config
-    guss::core::config::Config config(config_path);
+    const guss::core::config::Config config(config_path);
 
     // Create adapter
     guss::adapters::AdapterPtr adapter;
@@ -221,7 +221,7 @@ static int cmd_ping(const std::string& config_path) {
     }
 
     // Create minimal pipeline just for ping
-    guss::builder::Pipeline pipeline(
+    const guss::builder::Pipeline pipeline(
         std::move(adapter),
         config.site(),
         config.collections(),
@@ -270,7 +270,7 @@ int main(const int argc, char** argv) {
     app.require_subcommand(1);
 
 #ifdef VERSION
-    app.set_version_flag("--version", VERSION);
+    app.set_version_flag("-v,--version", VERSION);
 #endif
 
     // Global options
